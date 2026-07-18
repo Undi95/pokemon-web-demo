@@ -2521,8 +2521,8 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
   RemoveContextWindow();
   const itemType = GetItemType(itemId);
   if (itemType === 'ITEM_USE_PARTY_MENU' && gSaveBlock1Ptr.playerParty.length === 0) {
-    // 1:1 :1801 PrintThereIsNoPokemon.
-    _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+    // 1:1 item_menu.c:1801-1803 PrintThereIsNoPokemon.
+    PrintThereIsNoPokemon(task.taskId);
     return;
   }
   // 1:1 :1804-1806 — fill desc + dispatch (= GetItemFieldFunc(itemId)(taskId)),
@@ -2551,7 +2551,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       void itemName;
       void ApplyMedicineEffect;  // (utilisé par ItemUseCB_Medicine, exposé pour DCE)
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+        PrintThereIsNoPokemon(task.taskId);
         return;
       }
       setItemUseCB(ItemUseCB_Medicine);
@@ -2569,7 +2569,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // → OUI = UseTMHM (gItemUseCB = ItemUseCB_TMHM + SetUpItemUseCallback) /
       // NON = CloseItemMessage.
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+        PrintThereIsNoPokemon(task.taskId);
         return;
       }
       ItemUseOutOfBattle_TMHM(task);
@@ -2580,7 +2580,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       //     gItemUseCB = ItemUseCB_PPRecovery;
       //     SetUpItemUseCallback(taskId);
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+        PrintThereIsNoPokemon(task.taskId);
         return;
       }
       setItemUseCB(ItemUseCB_PPRecovery);
@@ -2590,7 +2590,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_PPUp': {
       // 1:1 décomp item_use.c:776-781 ItemUseOutOfBattle_PPUp.
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+        PrintThereIsNoPokemon(task.taskId);
         return;
       }
       setItemUseCB(ItemUseCB_PPUp);
@@ -2600,7 +2600,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_RareCandy': {
       // 1:1 décomp item_use.c:782-787 ItemUseOutOfBattle_RareCandy.
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+        PrintThereIsNoPokemon(task.taskId);
         return;
       }
       setItemUseCB(ItemUseCB_RareCandy);
@@ -2610,7 +2610,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_ReduceEV': {
       // 1:1 décomp item_use.c:758-763 ItemUseOutOfBattle_ReduceEV (= baies).
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+        PrintThereIsNoPokemon(task.taskId);
         return;
       }
       setItemUseCB(ItemUseCB_ReduceEV);
@@ -2620,7 +2620,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_SacredAsh': {
       // 1:1 décomp item_use.c:764-769 ItemUseOutOfBattle_SacredAsh.
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+        PrintThereIsNoPokemon(task.taskId);
         return;
       }
       setItemUseCB(ItemUseCB_SacredAsh);
@@ -2630,7 +2630,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_EvolutionStone': {
       // 1:1 décomp item_use.c:942-948 ItemUseOutOfBattle_EvolutionStone.
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+        PrintThereIsNoPokemon(task.taskId);
         return;
       }
       setItemUseCB(ItemUseCB_EvolutionStone);
@@ -2706,8 +2706,11 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // 1:1 décomp item_use.c:841-873 ItemUseOutOfBattle_Repel + Task_UseRepel.
       const repelActive = VarGet('VAR_REPEL_STEP_COUNT');
       if (repelActive > 0) {
-        // 1:1 :845 — un autre repel est encore actif (gText_RepelEffectsLingered).
-        _showItemMessage(task, _itemMsg('gText_RepelEffectsLingered'));
+        // 1:1 item_use.c:846 — un autre repel est encore actif → DisplayItemMessage(…, CloseItemMessage).
+        // gText_RepelEffectsLingered PORTE {PAUSE_UNTIL_PRESS} (printer attend A/B) — _itemMsg
+        // strippe ce code (baggage flux maison) → ré-ajouté ici. Cf. note DETTE dans _itemMsg.
+        DisplayItemMessage(task.taskId, FONT_NORMAL,
+          encodeOwText(_itemMsg('gText_RepelEffectsLingered') + '{PAUSE_UNTIL_PRESS}'), CloseItemMessage);
       } else {
         // 1:1 :867-868 — set step count = holdEffectParam de l'item + RemoveUsedItem.
         const itemKey = _itemKeyFromBag(itemId);
@@ -2715,8 +2718,11 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         const steps = item?.holdEffectParam ?? 100;
         VarSet('VAR_REPEL_STEP_COUNT', steps);
         _CtxRemoveUsedItem(itemId);
-        // 1:1 Task_UseRepel — gText_UsedVar2WildRepelled ({PLAYER} utilise {STR_VAR_2}…).
-        _showItemMessageThenRebuild(task, _itemMsg('gText_UsedVar2WildRepelled', { v2: itemName }));
+        // 1:1 Task_UseRepel (item_use.c:870) — gText_UsedVar2WildRepelled → DisplayItemMessage(…,
+        // CloseItemMessage). CloseItemMessage rebuild la liste (= l'item consommé disparaît, comme
+        // l'ancien `_showItemMessageThenRebuild`). {PAUSE_UNTIL_PRESS} ré-ajouté (strippé par _itemMsg).
+        DisplayItemMessage(task.taskId, FONT_NORMAL,
+          encodeOwText(_itemMsg('gText_UsedVar2WildRepelled', { v2: itemName }) + '{PAUSE_UNTIL_PRESS}'), CloseItemMessage);
       }
       return;
     }
@@ -2778,7 +2784,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // pour cette ROM-port l'enigma berry est vierge → fallback CannotUse 1:1.
       const ef = GetItemEffectType(itemId);
       if (gSaveBlock1Ptr.playerParty.length === 0) {
-        _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+        PrintThereIsNoPokemon(task.taskId);
         return;
       }
       switch (ef) {
@@ -2892,7 +2898,13 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // Handler inconnu → DadsAdvice 1:1 FR pour ne pas exposer le nom interne.
       msg = _itemMsg('gText_DadsAdvice');
   }
-  _showItemMessage(task, msg);
+  // 1:1 : les messages d'usage terminaux (DadsAdvice via DisplayCannotUseItemMessage item_use.c:148,
+  // CoinCase :661, PowderJar :676, BlackWhiteFlute :882, Itemfinder) se terminent TOUS par
+  // {PAUSE_UNTIL_PRESS} dans le décomp et passent par DisplayItemMessage(…, CloseItemMessage) : le
+  // printer attend A/B au pause, puis CloseItemMessage ferme + rebuild la liste. _itemMsg / les replace
+  // inline strippent le code (baggage du flux maison instantané) → ré-ajouté ici. DETTE SÉPARÉE : voie
+  // 1:1 = laisser le pause dans la data (StringExpandPlaceholders+gStringVar4), non entreprise ce lot.
+  DisplayItemMessage(task.taskId, FONT_NORMAL, encodeOwText(msg + '{PAUSE_UNTIL_PRESS}'), CloseItemMessage);
 }
 
 /** Construit un message à partir d'un gText EXTRAIT (strings.json), avec expansion
@@ -2907,57 +2919,13 @@ function _itemMsg(gTextKey: string, opts?: { v1?: string; v2?: string }): string
     .replace(/\\n/g, '\n').replace(/\\p/g, '\n');
 }
 
-/** Helper temporaire : affiche `msg` dans WIN_DESCRIPTION puis bascule la
- *  task en wait-for-A. Sur press A/B → return list (sans rebuild). */
-/** 1:1 décomp : les messages d'utilisation d'item (DadsAdvice, CoinCase, Repel,
- *  Itemfinder…) s'affichent dans la VRAIE boîte message ITEMWIN_MESSAGE (encadrée,
- *  27 tiles pleine largeur) — PAS WIN_DESCRIPTION (14 tiles → débordement, ex
- *  gText_DadsAdvice "…{PLAYER}, chaque chose en son temps!"). On dessine le cadre
- *  dialogue (tile=10 pal=13, = DisplayMessageAndContinueTask) + texte instantané +
- *  wait-task. (Le flux TOSS garde WIN_DESCRIPTION via _CtxPrintItemMessage.) */
-function _printItemUseMessageBox(msg: string): void {
-  const wid = AddItemMessageWindow(ITEMWIN_MESSAGE);
-  DrawDialogFrameWithCustomTileAndPalette(wid, true, 10, 13);
-  FillWindowPixelBuffer(wid, PIXEL_FILL(1));
-  // 1:1 décomp `DisplayMessageAndContinueTask` (menu_helpers.c:133) : couleurs de la
-  // boîte de dialogue = fg=DARK_GRAY (texte SOMBRE), bg=WHITE, shadow=LIGHT_GRAY.
-  // ⚠️ PAS COLORID_NORMAL (fg=WHITE=index 1) : dans la palette du cadre-dialogue
-  // (slot 13), l'index WHITE rend blanc → texte invisible sur fond clair. (La liste
-  // rend sombre avec COLORID_NORMAL car SA fenêtre utilise une AUTRE palette où
-  // l'index 1 est sombre.) speed=0 = instantané (le wait-for-A gère la fermeture).
-  AddTextPrinterParameterized2(wid, FONT_NORMAL, msg, 0, null,
-    TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
-  ScheduleBgCopyTilemapToVram(1);
-}
-function _showItemMessage(task: DecompTask, msg: string): void {
-  _printItemUseMessageBox(msg);
-  task.func = Task_ItemUseMessageWaitForA;
-}
-
-/** Variant qui rebuild la liste après press A (= post-use d'item consommé :
- *  Repel/Medicine/etc. → quantité décrémentée, faut recharger la liste). */
-function _showItemMessageThenRebuild(task: DecompTask, msg: string): void {
-  _printItemUseMessageBox(msg);
-  task.func = Task_ItemUseMessageWaitForAThenRebuild;
-}
-
-/** Task wait-for-A : tout press A/B → return list. */
-function Task_ItemUseMessageWaitForA(task: DecompTask): void {
-  if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)) {
-    PlaySE(SE_SELECT);
-    RemoveItemMessageWindow(ITEMWIN_MESSAGE);  // ferme la boîte message encadrée
-    _CtxReturnToList(task.taskId);
-  }
-}
-
-/** Variant Task qui rebuild la liste après press. */
-function Task_ItemUseMessageWaitForAThenRebuild(task: DecompTask): void {
-  if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)) {
-    PlaySE(SE_SELECT);
-    RemoveItemMessageWindow(ITEMWIN_MESSAGE);  // ferme la boîte message encadrée
-    _CtxReturnToListWithRebuild(task.taskId);
-  }
-}
+// ── Flux message d'usage d'objet : flux MAISON RETIRÉ (2026-07-18) ────────────
+// _printItemUseMessageBox / _showItemMessage / _showItemMessageThenRebuild /
+// Task_ItemUseMessageWaitForA[ThenRebuild] supprimés — les ~18 call-sites passent
+// désormais par le 1:1 décomp DisplayItemMessage(…, {CloseItemMessage | HandleErrorMessage})
+// (texte PROGRESSIF via DisplayMessageAndContinueTask + vitesse joueur, au lieu de
+// l'ancien rendu instantané + wait-task maison). Cf. HandleErrorMessage/PrintThereIsNoPokemon/
+// PrintItemCantBeHeld ci-dessus (item_menu.c:1958-1977).
 
 /** Récupère l'itemKey items.json à partir d'un itemId numérique. Pour les
  *  items non-TM/HM (= cas standard : POTION, REPEL, BIKE, etc.), l'enum-
@@ -3193,6 +3161,37 @@ export function DisplayItemMessage(taskId: number, fontId: number, str: string |
 export function CloseItemMessage(task: DecompTask): void {
   RemoveItemMessageWindow(ITEMWIN_MESSAGE);
   _CtxReturnToListWithRebuild(task.taskId);
+}
+
+/** 1:1 décomp `HandleErrorMessage(taskId)` (item_menu.c:1970) :
+ *    if (JOY_NEW(A_BUTTON)) { PlaySE(SE_SELECT); CloseItemMessage(taskId); }
+ *  Callback des messages d'ERREUR du sac (NoPokemon, CantWriteMail, Var1CantBeHeld) :
+ *  ces gText n'ont PAS de {PAUSE_UNTIL_PRESS} — c'est le callback qui attend l'appui A
+ *  (≠ CloseItemMessage direct, réservé aux messages qui PORTENT le pause). A SEUL (pas B),
+ *  1:1 décomp. */
+function HandleErrorMessage(task: DecompTask): void {
+  if (JOY_NEW(A_BUTTON)) {
+    PlaySE(SE_SELECT);
+    CloseItemMessage(task);
+  }
+}
+
+/** 1:1 décomp `PrintThereIsNoPokemon(taskId)` (item_menu.c:1958) :
+ *    DisplayItemMessage(taskId, FONT_NORMAL, gText_NoPokemon, HandleErrorMessage). */
+function PrintThereIsNoPokemon(taskId: number): void {
+  DisplayItemMessage(taskId, FONT_NORMAL, encodeOwText(_itemMsg('gText_NoPokemon')), HandleErrorMessage);
+}
+
+/** 1:1 décomp `PrintItemCantBeHeld(taskId)` (item_menu.c:1963) :
+ *    CopyItemName(gSpecialVar_ItemId, gStringVar1);
+ *    StringExpandPlaceholders(gStringVar4, gText_Var1CantBeHeld);
+ *    DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, HandleErrorMessage);
+ *  Note port : le nom de l'objet est injecté via `_itemMsg` (même dette {STR_VAR_1}/{PLAYER}
+ *  que le reste du fichier) au lieu de CopyItemName+gStringVar1 — équivalent visuel. */
+function PrintItemCantBeHeld(taskId: number): void {
+  DisplayItemMessage(taskId, FONT_NORMAL,
+    encodeOwText(_itemMsg('gText_Var1CantBeHeld', { v1: GetItemName(gSpecialVar.ItemId) })),
+    HandleErrorMessage);
 }
 
 // ─── Chaîne CT/CS (1:1 item_use.c:789-822) ────────────────────────────────────
@@ -3510,17 +3509,16 @@ export function UseRegisteredKeyItemOnField(): boolean {
  *    - CalculatePlayerPartyCount==0 → "Il n'y a pas de POKéMON."
  *    - sinon → gBagMenu.newScreenCallback = CB2_ChooseMonToGiveItem + fade+close.
  *  Le retour du party menu revient au SAC (CB2_ReturnToBagMenu = GoToBagMenu LAST).
- *  Note port : les 3 messages d'erreur passent par _showItemMessage (= même boîte
- *  ITEMWIN_MESSAGE + wait A + retour liste) au lieu de DisplayItemMessage+HandleError
- *  Message — visuellement/comportement 1:1 (cf. les autres gardes du dispatcher). */
+ *  1:1 décomp : CantWriteMail → DisplayItemMessage(…, HandleErrorMessage) (:1938),
+ *  party vide → PrintThereIsNoPokemon (:1944), objet non-tenable → PrintItemCantBeHeld (:1954). */
 function ItemMenu_Give(task: DecompTask): void {
   RemoveContextWindow();
   const item = gSpecialVar.ItemId;
   if (!IsWritingMailAllowed(item)) {
-    _showItemMessage(task, _itemMsg('gText_CantWriteMail'));
+    DisplayItemMessage(task.taskId, FONT_NORMAL, encodeOwText(_itemMsg('gText_CantWriteMail')), HandleErrorMessage);
   } else if (GetItemImportance(item) === 0) {
     if (gSaveBlock1Ptr.playerParty.length === 0) {   // 1:1 CalculatePlayerPartyCount() == 0
-      _showItemMessage(task, _itemMsg('gText_NoPokemon'));
+      PrintThereIsNoPokemon(task.taskId);
     } else {
       // 1:1 :1948-1949 — gBagMenu->newScreenCallback = CB2_ChooseMonToGiveItem ;
       // Task_FadeAndCloseBagMenu (l'exitCallback lira gSpecialVar.ItemId).
@@ -3529,7 +3527,7 @@ function ItemMenu_Give(task: DecompTask): void {
     }
   } else {
     // 1:1 PrintItemCantBeHeld : "Impossible de tenir {STR_VAR_1}!".
-    _showItemMessage(task, _itemMsg('gText_Var1CantBeHeld', { v1: GetItemName(item) }));
+    PrintItemCantBeHeld(task.taskId);
   }
 }
 
@@ -3543,11 +3541,11 @@ function Task_ItemContext_GiveToPC(task: DecompTask): void {
   RemoveContextWindow();
   const item = gSpecialVar.ItemId;
   if (ItemIsMail(item)) {
-    _showItemMessage(task, _itemMsg('gText_CantWriteMail'));
+    DisplayItemMessage(task.taskId, FONT_NORMAL, encodeOwText(_itemMsg('gText_CantWriteMail')), HandleErrorMessage);
   } else if (gBagPosition.pocket !== KEYITEMS_POCKET && GetItemImportance(item) === 0) {
     Task_FadeAndCloseBagMenu(task);
   } else {
-    _showItemMessage(task, _itemMsg('gText_Var1CantBeHeld', { v1: GetItemName(item) }));
+    PrintItemCantBeHeld(task.taskId);
   }
 }
 
