@@ -595,6 +595,14 @@ function buildDom(): void {
         </div>
         <div id="dvt-enc-status" class="dvt-dim"></div>
       </details>
+      <details><summary>🧪 Maps debug <span class="dvt-dim">(CS/field moves)</span></summary>
+        <div id="dvt-dbgmap" class="dvt-scn">
+          <button data-dbgmap="1" title="Grotte sombre tout-en-un : Flash/Surf/Pêche/Cascade/Plongée/Coupe/Force/Éclate-Roc/Doux Parfum/Cherch'Objet/Force Cachée">🕳️ Debug_1 grotte</button>
+          <button data-dbgmap="2" title="Centre/PC (échelle depuis Debug_1)">🏠 Debug_2 PC</button>
+          <button data-dbgmap="3" title="Fond sous-marin (plongée depuis Debug_1)">🌊 Debug_3 fond marin</button>
+        </div>
+        <div id="dvt-dbgmap-status" class="dvt-dim"></div>
+      </details>
       <details><summary>💬 Easy Chat <span class="dvt-dim">(tous les écrans, démo)</span></summary>
         <div id="dvt-ec" class="dvt-tpgrid">${easyChatButtonsHtml()}</div>
       </details>
@@ -780,6 +788,17 @@ function wireControls(): void {
         break;
       }
     }
+  });
+  // ─── 🧪 Maps debug (CS/field moves) — dev.debugMap(n), cf. debug-maps.ts ───
+  document.getElementById('dvt-dbgmap')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-dbgmap]') as HTMLElement | null;
+    if (!btn) return;
+    const n = Number(btn.dataset.dbgmap);
+    const dm = ((globalThis as Record<string, unknown>).dev as { debugMap?: (n: number) => string } | undefined)?.debugMap;
+    const st = document.getElementById('dvt-dbgmap-status');
+    if (!dm) { if (st) st.textContent = 'dev.debugMap absent (boot pas fini ?)'; return; }
+    const msg = dm(n);
+    if (st) st.textContent = typeof msg === 'string' ? msg : `TP → MAP_DEBUG_${n}`;
   });
   // Libellé initial du bouton de cycle (espèces chargées depuis le JSON de données).
   void loadAlteringCaveSpecies().then(() => {

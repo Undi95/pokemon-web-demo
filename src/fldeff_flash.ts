@@ -16,6 +16,7 @@
  */
 
 import { CreateFieldMoveTask } from './field_effect_helpers';
+import { gFieldEffectArguments } from './field_effect';
 import { FlagSet } from './engine/script/script-vars';
 import { ScriptContext_SetupScript } from './script';
 
@@ -42,6 +43,13 @@ function FldEff_UseFlash(): void {
  *  comme `gPostMenuFieldCallback` par le party menu (Task_FieldMoveWaitForFade). */
 export function FieldCallback_Flash(): void {
   CreateFieldMoveTask(FldEff_UseFlash);
+  // 1:1 fldeff_flash.c:90 : gFieldEffectArguments[0] = GetCursorSelectionMonId() — consommé
+  // par FldEff_FieldMoveShowMonInit (gPlayerParty[arg0 & 0xFF]). L'ancienne omission (« posé
+  // par le menu » = FAUX) laissait un résidu hors-party → GetMonData(undefined) → task-throw
+  // à CHAQUE frame = gel du Flash (découvert sur MAP_DEBUG_1). Pont party_menu anti-cycle,
+  // même pattern que Task_UseFly.
+  const cur = (globalThis as Record<string, unknown>).__getCursorSelectionMonId as (() => number) | undefined;
+  gFieldEffectArguments[0] = (cur?.() ?? 0) & 0xFF;
 }
 
 // Exposé pour le party menu (SetUpFieldMove_Flash pose gPostMenuFieldCallback =

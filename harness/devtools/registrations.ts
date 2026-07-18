@@ -261,6 +261,21 @@ function registerJeu(): void {
       },
     },
     {
+      id: 'jeu.debugmap1', category: 'jeu', label: '🕳️ Debug_1 grotte (CS)', ui: 'grid',
+      description: 'TP map de test CS : Flash/Surf/Pêche/Cascade/Plongée/Coupe/Force/Éclate-Roc/Doux Parfum/Cherch\'Objet',
+      run: () => String((g().dev as { debugMap?: (n: number) => string } | undefined)?.debugMap?.(1) ?? 'dev.debugMap absent'),
+    },
+    {
+      id: 'jeu.debugmap2', category: 'jeu', label: '🏠 Debug_2 PC', ui: 'grid',
+      description: 'TP map de test : Centre/PC',
+      run: () => String((g().dev as { debugMap?: (n: number) => string } | undefined)?.debugMap?.(2) ?? 'dev.debugMap absent'),
+    },
+    {
+      id: 'jeu.debugmap3', category: 'jeu', label: '🌊 Debug_3 fond marin', ui: 'grid',
+      description: 'TP map de test : fond sous-marin (remontée par le trou central)',
+      run: () => String((g().dev as { debugMap?: (n: number) => string } | undefined)?.debugMap?.(3) ?? 'dev.debugMap absent'),
+    },
+    {
       id: 'jeu.goto', category: 'jeu', label: '🎯 Goto map',
       description: 'TP arbitraire — __devGotoMap(map, x, y) ; la case doit être WALKABLE',
       args: [

@@ -48,8 +48,8 @@ const T = {
   LADDER:  { id: 517, coll: 0, elev: 3 } as Cell,  // MB_LADDER 0x61 — échelle (warp → Debug_2)
   // gTileset_General (primary) :
   GRASS:   { id: 13,  coll: 0, elev: 3 } as Cell,  // MB_TALL_GRASS 0x02 — rencontres terrestres
-  WATER:   { id: 152, coll: 0, elev: 1 } as Cell,  // MB_POND_WATER 0x10 — surfable/pêchable/rencontres (PAS plongée)
-  DIVE:    { id: 334, coll: 0, elev: 1 } as Cell,  // MB_DEEP_WATER 0x12 — surf + PLONGÉE
+  WATER:   { id: 0x170, coll: 0, elev: 1 } as Cell,  // METATILE_General_CalmWater (metatile_labels.h:210) — 152 rendait une FALAISE (glitch user)
+  DIVE:    { id: 0x14F, coll: 0, elev: 1 } as Cell,  // METATILE_General_RoughDeepWater (:233) — 334=RoughWater (pas deep → plongée KO)
   WF_TOP:  { id: 187, coll: 0, elev: 1 } as Cell,  // MB_WATERFALL 0x13 — haut de cascade (EverGrande)
   WF_BODY: { id: 185, coll: 0, elev: 1 } as Cell,  // MB_WATERFALL 0x13 — corps de cascade
   SBSPOT:  { id: 416, coll: 1, elev: 0 } as Cell,  // MB_SECRET_BASE_SPOT_RED_CAVE 0x90 — renfoncement Force Cachée
