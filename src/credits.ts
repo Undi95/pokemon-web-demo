@@ -480,6 +480,7 @@ export function CB2_StartCreditsSequence(): void {
   let bikeTaskId = 0;
   let pageTaskId = 0;
   _bindCreditsAssets(); // lie les assets préchargés (assetCache) aux globals — AVANT tout LoadX sync
+  _softResetToTitleStarted = false;   // (re)armement du retour-titre pour ce lancement de générique
   ResetGpuAndVram();
   SetVBlankCallback(null);
   InitHeap(gHeap, HEAP_SIZE);
@@ -746,10 +747,40 @@ function Task_CreditsTheEnd6(taskId: number): void {
   }
 }
 
+// Garde : Task_CreditsSoftReset tourne CHAQUE frame ; on ne doit amorcer le retour-titre
+// (import dynamique async) qu'UNE fois. Remis à false au (re)lancement du générique.
+let _softResetToTitleStarted = false;
+
 /** 1:1 `static void Task_CreditsSoftReset(u8 taskId)` (credits.c:648-652). */
 function Task_CreditsSoftReset(taskId: number): void {
-  if (!gPaletteFade.active)
-    SoftReset(RESET_ALL);
+  void taskId;
+  if (!gPaletteFade.active) {
+    if (_softResetToTitleStarted) return;
+    _softResetToTitleStarted = true;
+    SoftReset(RESET_ALL);   // 1:1 conservé : LOG l'exemption matérielle (reset BIOS no-op web).
+    // ADAPTATION DOCUMENTÉE : SoftReset(RESET_ALL) 1:1 = reboot BIOS → le jeu se réamorce
+    // (copyright → intro → titre). Non reproductible sur web → on retourne à l'écran-titre
+    // (jamais d'écran mort). Mécanisme IDENTIQUE au fallback hall_of_fame.ts:642 : import
+    // DYNAMIQUE de title_screen (anti-bombe TDZ du graphe credits, cf. StartCredits) +
+    // SetMainCallback2(CB2_InitTitleScreen) — dont le case 1 fait ResetTasks/ResetSpriteData/
+    // FreeAllSpritePalettes + recharge les gfx titre depuis l'assetCache.
+    // On appelle preloadTitleAssets() AVANT : dans le flux réel (boot → titre → … → générique)
+    // les assets titre sont déjà en cache (no-op rapide), mais un lancement direct du générique
+    // (ex. ?debug) ne les a jamais chargés → sans ça l'écran-titre s'afficherait NOIR
+    // (LoadPalette('gTitleScreenBgPalettes') ne résout rien). Garantit « jamais d'écran mort ».
+    void (async () => {
+      try {
+        const [loader, ts] = await Promise.all([
+          import('../harness/boot/intro-asset-loader'),
+          import('./title_screen'),
+        ]);
+        await loader.preloadTitleAssets();
+        SetMainCallback2(ts.CB2_InitTitleScreen as unknown as () => void);
+      } catch (e) {
+        console.error('[credits] retour titre (SoftReset = exemption hardware web)', e);
+      }
+    })();
+  }
 }
 
 /** 1:1 `static void ResetGpuAndVram(void)` (credits.c:654-674). */
@@ -817,6 +848,11 @@ function Task_UpdatePage(taskId: number): void {
             BeginNormalPaletteFade(0x300, 0, 16, 0, COLOR_LIGHT_GREEN);
           else
             // MODE_SHOW_MONS
+            // FIX transpile : le `BeginNormalPaletteFade(…COLOR_DARK_GREEN)` de cette branche else
+            // (1:1 credits.c:544) avait été LARGUÉ → le `return` unconditionnel qui suivait était
+            // absorbé comme corps du `else`, donc en MODE_BIKE_SCENE (mode de départ) le flux
+            // retombait sur `tState = 10` (fin) APRÈS chaque page → générique coupé dès la page 0.
+            BeginNormalPaletteFade(0x300, 0, 16, 0, COLOR_DARK_GREEN);
           return;
         }
         // Reached final page of Credits, end task
@@ -849,6 +885,9 @@ function Task_UpdatePage(taskId: number): void {
         BeginNormalPaletteFade(0x300, 0, 0, 16, COLOR_LIGHT_GREEN);
       else
         // MODE_SHOW_MONS
+        // FIX transpile (même largage 1:1 credits.c:825) : sans cette ligne, le `return` était
+        // absorbé par le `else` → fall-through dans case 5 en MODE_BIKE_SCENE (non 1:1).
+        BeginNormalPaletteFade(0x300, 0, 0, 16, COLOR_DARK_GREEN);
       return;
     case 5:
       if (!gPaletteFade.active)

@@ -650,6 +650,21 @@ function SpriteCB_AMIndicator(rt: DecompRuntime): void {
 
 // ─── State machine tasks 1:1 décomp ─────────────────────────────────────────
 
+/** Pont anti-cycle vers `scrcmd.SignalWaitState` (posé sur globalThis par scrcmd.ts).
+ *  `StartWallClock` / `Special_ViewWallClock` sont `def_special … waitstate=1` (specials.inc:173-174)
+ *  → le `special` compilé émet un opcode `waitstate` IMPLICITE juste après (asm/macros/event.inc:284).
+ *  Comme TOUS les overlays waitstate=1 du port (region-map.ts:282, player_pc.ts:2044), la fermeture
+ *  de l'horloge DOIT relâcher ce waitstate en émettant SignalWaitState — sinon le script reste gelé
+ *  sur l'opcode `waitstate` (l'overlayPoll de special_flows ne fait qu'attendre la fermeture, pas
+ *  relâcher le waitstate). Historiquement l'horloge s'appuyait sur un `_waitStateSignaled=true` STALE
+ *  laissé par un flow antérieur ; la purge du latch à `ScrCmd_dofieldeffect` (commit 1682a5844,
+ *  scrcmd.ts:1274, corrective des CS Coupe/Force) a supprimé ce résidu → GEL à la pendule au new-game.
+ *  Import statique de scrcmd interdit (tire tout le byte-VM dans le sous-arbre d'éval → TDZ boot,
+ *  cf. region-map.ts:43-45). */
+function SignalWaitState(): void {
+  ((globalThis as Record<string, unknown>).__SignalWaitState as (() => void) | undefined)?.();
+}
+
 /** 1:1 décomp `Task_SetClock_WaitFadeIn` (wallclock.c:785-791). */
 function Task_SetClock_WaitFadeIn(task: DecompTask): void {
   const rt = getRuntime();
@@ -774,6 +789,9 @@ function Task_SetClock_Exit(task: DecompTask): void {
   if (exitCb) rt.SetMainCallback2(exitCb);
   else rt.SetMainCallback2(null);
   rt.DestroyTask(task.taskId);
+  // Relâche le `waitstate` implicite qui suit `special StartWallClock` (waitstate=1) — sinon le
+  // script reste gelé (cf. helper SignalWaitState ci-dessus). Émis APRÈS restore du callback field.
+  SignalWaitState();
 }
 
 /** 1:1 décomp `Task_ViewClock_WaitFadeIn` (wallclock.c:877-881). */
@@ -811,6 +829,9 @@ function Task_ViewClock_Exit(task: DecompTask): void {
   if (exitCb) rt.SetMainCallback2(exitCb);
   else rt.SetMainCallback2(null);
   rt.DestroyTask(task.taskId);
+  // Relâche le `waitstate` implicite qui suit `special Special_ViewWallClock` (waitstate=1) — même
+  // mécanisme que le mode SET (CheckWallClock : `special … ; releaseall` reste bloqué sinon).
+  SignalWaitState();
 }
 
 // ─── CB2 entry points (= 1:1 décomp CB2_StartWallClock + CB2_ViewWallClock) ─
