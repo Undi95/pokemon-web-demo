@@ -201,6 +201,10 @@ export function AddTextPrinterWithCallbackForMessage(
 // DLG_WINDOW_* : source unique include/menu.ts (miroir header, hotfix TDZ).
 import { DLG_WINDOW_PALETTE_NUM, DLG_WINDOW_BASE_TILE_NUM } from '../include/menu';
 export { DLG_WINDOW_PALETTE_NUM, DLG_WINDOW_BASE_TILE_NUM };
+// 1:1 : DisplayItemMessageOnField (menu.c:457) délègue à menu_helpers.c:124 — même
+// arête que le décomp (menu_helpers n'importe PAS src/menu : pas de cycle).
+import { DisplayMessageAndContinueTask } from './menu_helpers';
+import type { DecompTask } from '../harness/runtime/decomp-runtime';
 const STD_WINDOW_PALETTE_NUM = 14;
 /** 1:1 `PLTT_SIZEOF(n)` (palette.h) = n couleurs × sizeof(u16). */
 const STD_WINDOW_PALETTE_SIZE = 10 * 2;
@@ -274,6 +278,20 @@ export function InitTextBoxGfxAndPrinters(): void {
 export function LoadMessageBoxAndBorderGfx(): void {
   LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(DLG_WINDOW_PALETTE_NUM));
   LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM));
+}
+
+/** 1:1 décomp `menu.c:457 DisplayItemMessageOnField(taskId, string, callback)` —
+ *  LA primitive « message-objet overworld » (~43 call-sites décomp : player_pc,
+ *  decoration, item_use, shop, secret_base — jusqu'ici ré-inlinés écran par
+ *  écran, dette Phase C). Cadre dialogue + message animé + continuation via
+ *  DisplayMessageAndContinueTask (menu_helpers.c:124, portée). */
+export function DisplayItemMessageOnField(
+  taskId: number, str: string | Uint8Array, callback: (task: DecompTask) => void,
+): void {
+  LoadMessageBoxAndBorderGfx();
+  DisplayMessageAndContinueTask(taskId, 0, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
+    FONT_NORMAL, GetPlayerTextSpeedDelay(), str, callback);
+  CopyWindowToVram(0, COPYWIN_FULL);
 }
 
 // ─── Draw / Clear frame (menu.c:216-422) ─────────────────────────────────────
