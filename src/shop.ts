@@ -190,6 +190,10 @@ type ShopSubState =
   | 'shop_menu'          // Task_ShopMenu (overlay)
   | 'buy_goto'           // Task_GoToBuyOrSellMenu (attend le fade → CB2 swap)
   | 'sell_goto'          // Task_GoToBuyOrSellMenu côté vente (fade → CB2_GoToSellMenu)
+  | 'handed_off'         // 1:1 décomp shop.c:457 : Task_GoToBuyOrSellMenu s'est DestroyTask
+                         //   après le swap CB2. L'outer-menu est INERTE : le CB2 cible (buy
+                         //   plein écran / sac-vente) possède l'écran. TickShop ne le re-tick
+                         //   plus → interdit la RÉ-OUVERTURE du sac au retour OW (cf. fix ci-dessous).
   | 'buy_list'           // Task_BuyMenu (gTasks, plein écran)
   | 'buy_qty'            // Task_BuyHowManyDialogueHandleInput
   | 'buy_after_purchase'; // Task_ReturnToItemListAfterItemPurchase (attend A/B)
@@ -391,6 +395,11 @@ function _tickGoToBuyMenu(): void {
   // 1:1 décomp : SetMainCallback2(CB2_InitBuyMenu). Le buy menu prend l'écran.
   rt.gMain.state = 0;
   rt.SetMainCallback2(CB2_InitBuyMenu);
+  // 1:1 décomp shop.c:457 `Task_GoToBuyOrSellMenu` : `DestroyTask(taskId)` APRÈS le swap CB2.
+  // Notre « task » = le tick sSubState de TickShop → « détruire » = passer INERTE, sinon
+  // TickShop re-fire ce goto au retour OW (buy : CB2_InitBuyMenu repose 'buy_list' — inoffensif
+  // ici, mais on garde la parité 1:1 avec le DestroyTask partagé buy/sell).
+  sSubState = 'handed_off';
 }
 
 // ─── Task_HandleShopMenuSell (1:1 shop.c:425) → fade puis CB2 swap vers le sac ─
@@ -411,6 +420,13 @@ function _tickGoToSellMenu(): void {
   // POCKETS_COUNT, CB2_ExitSellMenu). Le sac prend l'écran en mode vente.
   rt.gMain.state = 0;
   rt.SetMainCallback2(CB2_GoToSellMenu);
+  // 1:1 décomp shop.c:457 `Task_GoToBuyOrSellMenu` : `DestroyTask(taskId)` APRÈS le swap CB2 (task
+  // one-shot). CB2_GoToSellMenu passe la main au SAC (module item_menu) qui ne touche PAS sSubState,
+  // donc sans ceci sSubState resterait 'sell_goto' à VIE. Au retour OW (B dans la liste → close →
+  // CB2_ExitSellMenu → overworld), TickShop re-verrait 'sell_goto' et _tickGoToSellMenu RÉ-OUVRIRAIT
+  // le sac dès que gPaletteFade retombe, AVANT que Task_ReturnToShopMenu n'affiche « autre chose ? ».
+  // Symptôme = « B ne ferme pas le sac » (il ferme puis rouvre) + survit à un B forcé 30 frames.
+  sSubState = 'handed_off';
 }
 
 // ─── CB2_ExitSellMenu (1:1 shop.c:434) — retour OW + re-montre le menu shop ──
