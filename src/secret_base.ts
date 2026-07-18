@@ -2129,3 +2129,34 @@ registerSpecial('GetCurSecretBaseRegistrationValidity', GetCurSecretBaseRegistra
 registerSpecial('PrepSecretBaseBattleFlags', PrepSecretBaseBattleFlags);
 registerSpecial('SetSecretBaseOwnerGfxId', SetSecretBaseOwnerGfxId);
 registerSpecial('SetPlayerSecretBase', SetPlayerSecretBase);
+// ─── Câblage complet (fermeture 99/99) : les specials de data/specials.inc:22-42
+// + :297-379 dont le foyer est secret_base.c. (DoSecretBasePCTurnOffEffect =
+// fldeff_misc.c, GetSecretBaseNearbyMapName = field_specials.c — déjà dans
+// specials-registry, PAS ici.) EnterNewlyCreatedSecretBase : waitstate=1 côté
+// script (le special lance la task 1:1 ; le byte-VM waitstate attend le lock).
+registerSpecial('CheckPlayerHasSecretBase', CheckPlayerHasSecretBase);
+registerSpecial('EnterSecretBase', EnterSecretBase);
+registerSpecial('ClearAndLeaveSecretBase', ClearAndLeaveSecretBase);
+registerSpecial('MoveOutOfSecretBase', MoveOutOfSecretBase);
+registerSpecial('ToggleCurSecretBaseRegistry', ToggleCurSecretBaseRegistry);
+registerSpecial('ShowSecretBaseDecorationMenu', ShowSecretBaseDecorationMenu);
+registerSpecial('ShowSecretBaseRegistryMenu', ShowSecretBaseRegistryMenu);
+registerSpecial('GetSecretBaseOwnerAndState', GetSecretBaseOwnerAndState);
+registerSpecial('InitSecretBaseDecorationSprites', InitSecretBaseDecorationSprites);
+registerSpecial('GetSecretBaseTypeInFrontOfPlayer', GetSecretBaseTypeInFrontOfPlayer);
+registerSpecial('EnterNewlyCreatedSecretBase', EnterNewlyCreatedSecretBase);
+registerSpecial('SetBattledOwnerFromResult', SetBattledOwnerFromResult);
+registerSpecial('CopyCurSecretBaseOwnerName_StrVar1', CopyCurSecretBaseOwnerName_StrVar1);
+registerSpecial('MoveOutOfSecretBaseFromOutside', MoveOutOfSecretBaseFromOutside);
+registerSpecial('InitSecretBaseVars', InitSecretBaseVars);
+registerSpecial('CheckInteractedWithFriendsSandOrnament', CheckInteractedWithFriendsSandOrnament);
+registerSpecial('DeclinedSecretBaseBattle', DeclinedSecretBaseBattle);
+registerSpecial('DrewSecretBaseBattle', DrewSecretBaseBattle);
+registerSpecial('WonSecretBaseBattle', WonSecretBaseBattle);
+registerSpecial('LostSecretBaseBattle', LostSecretBaseBattle);
+registerSpecial('CheckInteractedWithFriendsDollDecor', CheckInteractedWithFriendsDollDecor);
+registerSpecial('CheckInteractedWithFriendsCushionDecor', CheckInteractedWithFriendsCushionDecor);
+registerSpecial('CheckInteractedWithFriendsFurnitureBottom', CheckInteractedWithFriendsFurnitureBottom);
+registerSpecial('CheckInteractedWithFriendsFurnitureMiddle', CheckInteractedWithFriendsFurnitureMiddle);
+registerSpecial('CheckInteractedWithFriendsFurnitureTop', CheckInteractedWithFriendsFurnitureTop);
+registerSpecial('CheckInteractedWithFriendsPosterDecor', CheckInteractedWithFriendsPosterDecor);

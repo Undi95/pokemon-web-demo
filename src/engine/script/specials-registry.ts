@@ -1023,11 +1023,7 @@ registerSpecial('Script_TryGainNewFanFromCounter', Script_TryGainNewFanFromCount
  *  }
  *  ```
  *  Set battle outcome bool sur secretBase[CURRENT]. */
-registerSpecial('SetBattledOwnerFromResult', () => {
-  const idx = VarGet('VAR_CURRENT_SECRET_BASE');
-  const base = gSaveBlock1Ptr.secretBases?.[idx];
-  if (base) base.battledOwnerToday = gSpecialVar.Result;
-});
+// 'SetBattledOwnerFromResult' — inline RETIRÉE (dupe) : foyer src/secret_base.ts (99/99).
 // DoSpecialTrainerBattle — porté 1:1 (case SPECIAL_BATTLE_STEVEN) dans src/battle_tower.ts
 // (jalon multi Steven). Rebranché sur la vraie fn (retiré du stub `() => 0`).
 registerSpecial('DoSpecialTrainerBattle', DoSpecialTrainerBattle);
@@ -1237,87 +1233,10 @@ registerSpecial('GetTraderTradedFlag', () => {
   return 0;
 });
 
-/** 1:1 décomp `CheckInteractedWithFriendsDollDecor` (secret_base.c:1834-1838) :
- *  ```c
- *  void CheckInteractedWithFriendsDollDecor(void) {
- *      if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
- *          VarSet(HIGH_TV, HIGH_TV | SECRET_BASE_USED_DOLL);
- *  }
- *  ```
- *  SECRET_BASE_USED_DOLL = (1 << 11). */
-registerSpecial('CheckInteractedWithFriendsDollDecor', () => {
-  if (VarGet('VAR_CURRENT_SECRET_BASE') !== 0) {
-    const high = VarGet('VAR_SECRET_BASE_HIGH_TV_FLAGS');
-    VarSet('VAR_SECRET_BASE_HIGH_TV_FLAGS', (high | (1 << 11)) & 0xFFFF);
-  }
-});
-
-/** 1:1 décomp `CheckInteractedWithFriendsCushionDecor` (secret_base.c:1840-1844) :
- *  ```c
- *  void CheckInteractedWithFriendsCushionDecor(void) {
- *      if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
- *          VarSet(LOW_TV, LOW_TV | SECRET_BASE_USED_CUSHION);
- *  }
- *  ```
- *  SECRET_BASE_USED_CUSHION = (1 << 10). */
-registerSpecial('CheckInteractedWithFriendsCushionDecor', () => {
-  if (VarGet('VAR_CURRENT_SECRET_BASE') !== 0) {
-    const low = VarGet('VAR_SECRET_BASE_LOW_TV_FLAGS');
-    VarSet('VAR_SECRET_BASE_LOW_TV_FLAGS', (low | (1 << 10)) & 0xFFFF);
-  }
-});
-
-/** 1:1 décomp `InitSecretBaseVars` (secret_base.c:1805-1817) :
- *  ```c
- *  void InitSecretBaseVars(void) {
- *      VarSet(VAR_SECRET_BASE_STEP_COUNTER, 0);
- *      VarSet(VAR_SECRET_BASE_LAST_ITEM_USED, 0);
- *      VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, 0);
- *      VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, 0);
- *      if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
- *          VarSet(VAR_SECRET_BASE_IS_NOT_LOCAL, TRUE);
- *      else
- *          VarSet(VAR_SECRET_BASE_IS_NOT_LOCAL, FALSE);
- *      sInFriendSecretBase = FALSE;
- *  }
- *  ```
- *  Note 1:1 : sInFriendSecretBase est un static C ; non porté → flag implicite
- *  géré par notre system de secret base ultérieurement. */
-registerSpecial('InitSecretBaseVars', () => {
-  VarSet('VAR_SECRET_BASE_STEP_COUNTER', 0);
-  VarSet('VAR_SECRET_BASE_LAST_ITEM_USED', 0);
-  VarSet('VAR_SECRET_BASE_LOW_TV_FLAGS', 0);
-  VarSet('VAR_SECRET_BASE_HIGH_TV_FLAGS', 0);
-  const isInOtherBase = VarGet('VAR_CURRENT_SECRET_BASE') !== 0;
-  VarSet('VAR_SECRET_BASE_IS_NOT_LOCAL', isInOtherBase ? 1 : 0);
-});
-
-/** 1:1 décomp `DeclinedSecretBaseBattle` (secret_base.c:1846-1853) :
- *  ```c
- *  void DeclinedSecretBaseBattle(void) {
- *      if (VarGet(VAR_CURRENT_SECRET_BASE) != 0) {
- *          VarSet(LOW_TV, LOW_TV & ~(WON | LOST | DECLINED));
- *          VarSet(HIGH_TV, HIGH_TV & ~(DRAW));
- *          VarSet(LOW_TV, LOW_TV | DECLINED);
- *      }
- *  }
- *  ```
- *  Flags : SECRET_BASE_BATTLED_WON=1<<11, _LOST=1<<12, _DECLINED=1<<13,
- *  _DRAW=1<<0 (high). */
-registerSpecial('DeclinedSecretBaseBattle', () => {
-  if (VarGet('VAR_CURRENT_SECRET_BASE') !== 0) {
-    const WON = 1 << 11, LOST = 1 << 12, DECLINED = 1 << 13;
-    const DRAW = 1 << 0;
-    let low = VarGet('VAR_SECRET_BASE_LOW_TV_FLAGS');
-    let high = VarGet('VAR_SECRET_BASE_HIGH_TV_FLAGS');
-    low = low & ~(WON | LOST | DECLINED);
-    high = high & ~DRAW;
-    low = low | DECLINED;
-    VarSet('VAR_SECRET_BASE_LOW_TV_FLAGS', low & 0xFFFF);
-    VarSet('VAR_SECRET_BASE_HIGH_TV_FLAGS', high & 0xFFFF);
-  }
-});
-registerSpecial('DoSecretBasePCTurnOffEffect', () => { /* no-op */ });
+// 'CheckInteractedWithFriendsDollDecor' / 'CheckInteractedWithFriendsCushionDecor' /
+// 'InitSecretBaseVars' / 'DeclinedSecretBaseBattle' — inlines RETIRÉES (dupe/clobber) :
+// foyer 1:1 = src/secret_base.ts (fermeture 99/99, badfdb896) qui les enregistre.
+registerSpecial('DoSecretBasePCTurnOffEffect', () => { /* no-op — foyer fldeff_misc.c non porté (dette) */ });
 
 /** Interview / TV — portés 1:1 tv.ts (transpilé) : dispatchers des 25 shows. */
 registerSpecial('InterviewBefore', () => { _InterviewBefore(); return 0; });
@@ -1850,62 +1769,8 @@ registerSpecial('SetMirageTowerVisibility', () => {
   FlagClear('FLAG_MIRAGE_TOWER_VISIBLE');
 });
 
-/** 1:1 décomp `WonSecretBaseBattle` (secret_base.c:1856-1864) :
- *  ```c
- *  void WonSecretBaseBattle(void) {
- *      if (VarGet(VAR_CURRENT_SECRET_BASE) != 0) {
- *          LOW_TV &= ~(WON | LOST | DECLINED);
- *          HIGH_TV &= ~(DRAW);
- *          LOW_TV |= WON;
- *      }
- *  }
- *  ``` */
-registerSpecial('WonSecretBaseBattle', () => {
-  if (VarGet('VAR_CURRENT_SECRET_BASE') !== 0) {
-    const WON = 1 << 11, LOST = 1 << 12, DECLINED = 1 << 13;
-    const DRAW = 1 << 0;
-    let low = VarGet('VAR_SECRET_BASE_LOW_TV_FLAGS');
-    let high = VarGet('VAR_SECRET_BASE_HIGH_TV_FLAGS');
-    low = low & ~(WON | LOST | DECLINED);
-    high = high & ~DRAW;
-    low = low | WON;
-    VarSet('VAR_SECRET_BASE_LOW_TV_FLAGS', low & 0xFFFF);
-    VarSet('VAR_SECRET_BASE_HIGH_TV_FLAGS', high & 0xFFFF);
-  }
-});
-
-/** 1:1 décomp `LostSecretBaseBattle` (secret_base.c:1866-1874).
- *  Same pattern WonSecretBaseBattle mais set LOST flag au lieu de WON. */
-registerSpecial('LostSecretBaseBattle', () => {
-  if (VarGet('VAR_CURRENT_SECRET_BASE') !== 0) {
-    const WON = 1 << 11, LOST = 1 << 12, DECLINED = 1 << 13;
-    const DRAW = 1 << 0;
-    let low = VarGet('VAR_SECRET_BASE_LOW_TV_FLAGS');
-    let high = VarGet('VAR_SECRET_BASE_HIGH_TV_FLAGS');
-    low = low & ~(WON | LOST | DECLINED);
-    high = high & ~DRAW;
-    low = low | LOST;
-    VarSet('VAR_SECRET_BASE_LOW_TV_FLAGS', low & 0xFFFF);
-    VarSet('VAR_SECRET_BASE_HIGH_TV_FLAGS', high & 0xFFFF);
-  }
-});
-
-/** 1:1 décomp `ToggleCurSecretBaseRegistry` (secret_base.c:891-895) :
- *  ```c
- *  void ToggleCurSecretBaseRegistry(void) {
- *      gSaveBlock1Ptr->secretBases[VarGet(VAR_CURRENT_SECRET_BASE)].registryStatus ^= 1;
- *      FlagSet(FLAG_SECRET_BASE_REGISTRY_ENABLED);
- *  }
- *  ```
- *  Toggle registry status pour la base courante + set flag global. */
-registerSpecial('ToggleCurSecretBaseRegistry', () => {
-  const baseIdx = VarGet('VAR_CURRENT_SECRET_BASE');
-  const base = gSaveBlock1Ptr.secretBases?.[baseIdx];
-  if (base) {
-    base.registryStatus = (base.registryStatus ?? 0) ^ 1;
-  }
-  FlagSet('FLAG_SECRET_BASE_REGISTRY_ENABLED');
-});
+// 'WonSecretBaseBattle' / 'LostSecretBaseBattle' / 'ToggleCurSecretBaseRegistry' —
+// inlines RETIRÉES (dupe/clobber) : foyer 1:1 = src/secret_base.ts (99/99, badfdb896).
 
 /** 1:1 décomp `IsMonOTIDNotPlayers` (tv.c:3329-3335) :
  *  ```c
@@ -2010,22 +1875,22 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'CheckForPlayersHouseNews' — handler concret enregistré supra (= TV path dispatch 1:1).
   // 'CheckInteractedWithFriendsCushionDecor' — porté 1:1 décomp secret_base.c:1840 ci-bas.
   // 'CheckInteractedWithFriendsDollDecor' — porté 1:1 décomp secret_base.c:1834 ci-bas.
-  'CheckInteractedWithFriendsFurnitureBottom', 'CheckInteractedWithFriendsFurnitureMiddle',
-  'CheckInteractedWithFriendsFurnitureTop', 'CheckInteractedWithFriendsPosterDecor',
-  'CheckInteractedWithFriendsSandOrnament',
+  // 'CheckInteractedWithFriendsFurniture{Bottom,Middle,Top}'/'…PosterDecor'/'…SandOrnament'
+  // — portés 1:1 secret_base.ts (99/99, badfdb896) ; RETIRÉS du stub-loop (clobber).
   // 'CheckLeadMon{Cool,Beauty,Cute,Smart,Tough}' — portés 1:1 field_specials.c:1190 ci-haut.
   // 'CheckPlayerHasSecretBase' — porté 1:1 décomp secret_base.c:258 ci-bas.
   // 'CheckRelicanthWailord' — porté 1:1 décomp braille_puzzles.c:92 ci-bas.
   'ChooseItemsToTossFromPyramidBag', 'ChooseMonForMoveRelearner',
   'ChooseMonForMoveTutor', 'ChooseMonForWirelessMinigame',
   // 'ChooseSendDaycareMon' — porté 1:1 décomp daycare.c:1294 (bloc PENSION ci-bas).
-  'CleanupLinkRoomState', 'ClearAndLeaveSecretBase',
+  'CleanupLinkRoomState',
+  // 'ClearAndLeaveSecretBase' — porté 1:1 secret_base.ts ; RETIRÉ du stub-loop.
   // 'ClearQuizLadyPlayerAnswer' — porté 1:1 décomp lilycove_lady.c:505 ci-bas (batch B45).
   // 'ClearQuizLadyQuestionAndAnswer' — porté 1:1 décomp lilycove_lady.c:526 ci-bas (batch B45).
   'CloseBattlePikeCurtain',
   // 'CompareLotadSize' — porté 1:1 décomp pokemon_size_record.c:183 (batch B8).
   // 'CompareSeedotSize' — porté 1:1 décomp pokemon_size_record.c:164 (batch B8).
-  'CopyCurSecretBaseOwnerName_StrVar1',
+  // 'CopyCurSecretBaseOwnerName_StrVar1' — porté 1:1 secret_base.ts ; RETIRÉ du stub-loop.
   'CopyEReaderTrainerGreeting',
   // 'CountPartyAliveNonEggMons' — porté 1:1 décomp pokemon_storage_system.c:1440 ci-bas.
   // 'CountPartyAliveNonEggMons_IgnoreVar0x8004Slot' — porté 1:1 ci-bas.
@@ -2048,11 +1913,13 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'DoesContestCategoryHaveMuseumPainting' — porté 1:1 décomp contest_util.c:2332 ci-bas (batch B50).
   // 'DoesPartyHaveEnigmaBerry' — porté 1:1 décomp script_pokemon_util.c:128 ci-bas (batch B6).
   // 'DoesPlayerHaveNoDecorations' — porté 1:1 décomp trader.c:145 ci-bas.
-  'DrewSecretBaseBattle',
+  // 'DrewSecretBaseBattle' — porté 1:1 secret_base.ts ; RETIRÉ du stub-loop.
   // 'EggHatch' — porté 1:1 décomp egg_hatch.c:472 (src/egg_hatch.ts, scène complète), handler ci-bas.
-  'EndLotteryCornerComputerEffect', 'EnterNewlyCreatedSecretBase',
+  'EndLotteryCornerComputerEffect',
+  // 'EnterNewlyCreatedSecretBase' — porté 1:1 secret_base.ts ; RETIRÉ du stub-loop.
   // 'EnterSafariMode'/'ExitSafariMode' — portés 1:1 safari_zone.ts (transpilé), handlers ci-bas.
-  'EnterSecretBase', 'ExitLinkRoom',
+  // 'EnterSecretBase' — porté 1:1 secret_base.ts ; RETIRÉ du stub-loop.
+  'ExitLinkRoom',
   // 'FavorLadyGetPrize' — porté 1:1 décomp lilycove_lady.c:278 ci-bas (batch B9).
   // 'FieldShowRegionMap' — handler concret enregistré infra (= fade-from-black
   // jusqu'au port 1:1 worldmap UI region_map.c).
@@ -2099,7 +1966,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetRecordedCyclingRoadResults',
   // 'GetSecretBaseNearbyMapName' — porté 1:1 décomp field_specials.c:1274 ci-bas (batch B43).
   // 'GetSecretBaseOwnerAndState' — porté 1:1 décomp secret_base.c:1176 ci-bas (batch B22).
-  'GetSecretBaseTypeInFrontOfPlayer',
+  // 'GetSecretBaseTypeInFrontOfPlayer' — porté 1:1 secret_base.ts (99/99) ; RETIRÉ du stub-loop.
   // 'GetSelectedTVShow' — porté 1:1 décomp tv.c:882 ci-bas.
   // 'GetSelectedMonNicknameAndSpecies' — porté 1:1 décomp daycare.c:960 (bloc PENSION ci-bas).
   // 'GetTraderTradedFlag' — porté 1:1 décomp trader.c:139 ci-bas.
@@ -2120,8 +1987,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'HipsterTryTeachWord',
   // 'IncrementDailyPickedBerries' — porté 1:1 décomp tv.c:2528 ci-bas.
   // 'IncrementDailyPlantedBerries' — porté 1:1 décomp tv.c:2523 ci-bas.
-  'InitSecretBaseDecorationSprites',
-  // 'InitSecretBaseVars' — porté 1:1 décomp secret_base.c:1805 ci-bas.
+  // 'InitSecretBaseDecorationSprites' — porté 1:1 secret_base.ts (99/99) ; RETIRÉ du stub-loop.
+  // 'InitSecretBaseVars' — porté 1:1 secret_base.ts.
   'InitUnionRoom', 'InteractWithShieldOrTVDecoration',
   // 'InterviewAfter' — porté 1:1 tv.ts (transpilé), handler ci-haut.
   // 'IsContestDebugActive' — porté 1:1 décomp contest_util.c:2571 ci-bas (= toujours FALSE).
@@ -2148,7 +2015,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'MauvilleGymSetDefaultBarriers' — porté 1:1 field_specials.ts, registerSpecial ci-bas (anti-clobber).
   // 'MonOTNameNotPlayer' — porté 1:1 décomp field_specials.c:1572 ci-bas.
   'MoveDeleterChooseMoveToForget', 'MoveDeleterForgetMove',
-  'MoveOutOfSecretBase', 'MoveOutOfSecretBaseFromOutside',
+  // 'MoveOutOfSecretBase'/'MoveOutOfSecretBaseFromOutside' — portés 1:1 secret_base.ts ; RETIRÉS du stub-loop.
   // ObjectEventInteractionGetBerryTreeData/GetBerryCountString/GetBerryName/
   // PickBerryTree/RemoveBerryTree/WaterBerryTree/PlantBerryTree : handlers concrets
   // 1:1 décomp enregistrés plus bas (récolte + arrosage + plantation).
@@ -2239,7 +2106,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'ShowPokemonStorageSystemPC' — PORTÉ (phase 1 menu PC, pokemon_storage_system.ts) + registré
   //   ci-dessus. RETIRÉ de la stub-loop (sinon `() => 0` écrase → accéder au PC ne ferait RIEN).
   'ShowRankingHallRecordsWindow',
-  'ShowSecretBaseDecorationMenu', 'ShowSecretBaseRegistryMenu',
+  // 'ShowSecretBaseDecorationMenu'/'ShowSecretBaseRegistryMenu' — portés 1:1 secret_base.ts ; RETIRÉS du stub-loop.
   // 'ShowTrainerCantBattleSpeech' — porté 1:1 décomp battle_setup.c:1435 (game/battle_setup.ts).
   'ShowTrainerHillRecords',
   // 'ShowTrainerIntroSpeech' — porté 1:1 décomp battle_setup.c:1378 (game/battle_setup.ts).
@@ -2467,16 +2334,7 @@ registerSpecial('DoWateringBerryTreeAnim', () => { /* dette player-avatar : cf s
 
 // ─── Session A2 batch 1 — ports 1:1 strict ─────────────────────────────────
 
-/** 1:1 décomp `CheckPlayerHasSecretBase` (secret_base.c:258-265) (VOID) :
- *  gSpecialVar_Result = TRUE si le joueur a une secret base (= slot 0 non-zero),
- *  sinon FALSE. Player's secret base est toujours en slot 0. Appelé via `special`
- *  (Mossdeep House4 = enregistrement de Base Secrète) → VarSet explicite (l'opcode
- *  `special` ignore le retour). [[gotcha-special-vs-specialvar-varresult]] */
-registerSpecial('CheckPlayerHasSecretBase', () => {
-  const result = gSaveBlock1Ptr.secretBases[0].secretBaseId ? 1 : 0;
-  VarSet('VAR_RESULT', result);
-  return result;
-});
+// 'CheckPlayerHasSecretBase' — inline RETIRÉE (dupe) : foyer src/secret_base.ts (99/99).
 
 /** 1:1 décomp `CheckRelicanthWailord` (braille_puzzles.c:92-104) — impl transpilée
  *  dans src/braille_puzzles.ts (source unique ; utilise MON_DATA_SPECIES_OR_EGG
@@ -4138,23 +3996,7 @@ registerSpecial('TraderDoDecorationTrade', () => {
  *  }
  *  ```
  *  GetSecretBaseOwnerType (secret_base.c:1133) = (trainerId[0] % 5) + (gender * 5). */
-registerSpecial('GetSecretBaseOwnerAndState', () => {
-  const idx = VarGet('VAR_CURRENT_SECRET_BASE');
-  if (!FlagGet('FLAG_DAILY_SECRET_BASE')) {
-    for (let i = 0; i < 20; i++) {  // SECRET_BASES_COUNT = 20
-      const b = gSaveBlock1Ptr.secretBases?.[i];
-      if (b) b.battledOwnerToday = 0;
-    }
-    FlagSet('FLAG_DAILY_SECRET_BASE');
-  }
-  const base = gSaveBlock1Ptr.secretBases?.[idx];
-  if (base) {
-    // 1:1 décomp `GetSecretBaseOwnerType` (secret_base.c:1133).
-    const ownerType = ((base.trainerId?.[0] ?? 0) % 5) + ((base.gender ?? 0) * 5);
-    VarSet('VAR_0x8004', ownerType);
-    gSpecialVar.Result = base.battledOwnerToday ?? 0;
-  }
-});
+// 'GetSecretBaseOwnerAndState' — inline RETIRÉE (dupe) : foyer src/secret_base.ts (99/99).
 
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */
