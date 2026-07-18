@@ -4232,7 +4232,7 @@ const FLDEFF_FLY_IN = 32;
 const MOVEMENT_ACTION_FACE_LEFT = 0x2;               // event_object_movement.h:89
 const MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT = 0x48;     // event_object_movement.h:159
 const ANIM_GET_ON_OFF_POKEMON_WEST = 22;             // ANIM_STD_COUNT(20) + 2
-const PLAYER_AVATAR_STATE_NORMAL_FLY = 0;            // global.fieldmap.h
+const PLAYER_AVATAR_STATE_NORMAL = 0;                // global.fieldmap.h (nom 1:1 décomp)
 const TAG_FLY_BIRD = 0x1361;
 
 // Asset oiseau (préchargé, comme les autres field-effects — LoadSpriteSheet une fois).
@@ -4384,6 +4384,8 @@ function SpriteCB_FlyBirdLeaveBall(sprite: DecompSprite, _rt: DecompRuntime): vo
       sprite.data[7]++;  // sAnimCompleted
       sprite.affineMode = 0;  // ST_OAM_AFFINE_OFF — l'OAM suit via syncSpritesToOam (item 6)
       FreeOamMatrix(sprite.matrixNum);
+      // 1:1 field_effect.c:3379 lit sprite->oam.shape/size — ici constants (oiseau
+      // gObjectEventBaseOam_32x32 : shape SQUARE=0, size 32×32=2), affineMode OFF=0.
       const v = CalcCenterToCornerVec(0, 2, 0);
       sprite.centerToCornerVecX = v.centerToCornerVecX;
       sprite.centerToCornerVecY = v.centerToCornerVecY;
@@ -4681,7 +4683,7 @@ function FlyInFieldEffect_WaitBirdReturn(task: DecompTask): void {
 function FlyInFieldEffect_End(task: DecompTask): void {
   if ((--task.data[1]) === 0) {
     const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
-    let state = PLAYER_AVATAR_STATE_NORMAL_FLY;
+    let state = PLAYER_AVATAR_STATE_NORMAL;
     if (task.data[15] & PLAYER_AVATAR_FLAG_SURFING) {
       state = PLAYER_AVATAR_STATE_SURFING;
       SetSurfBlob_BobState(getRuntime(), objectEvent.fieldEffectSpriteId, BOB_PLAYER_AND_MON);
@@ -4736,14 +4738,18 @@ function Task_FlyIntoMap(task: DecompTask): void {
   }
 }
 
-/** 1:1 `FieldCallback_FlyIntoMap` (field_effect.c:1380) — posé comme `gFieldCallback` par
- *  StartFlyOutThenWarp ; RunFieldCallback l'exécute À L'ARRIVÉE sur la map dest. Rend le joueur
- *  invisible (l'oiseau le fera réapparaître) + le tourne ouest si surf, puis lance Task_FlyIntoMap.
+/** 1:1 `FieldCallback_FlyIntoMap` (field_effect.c:1380) — décomp : posé comme `gFieldCallback`
+ *  par Task_UseFly, consommé à l'arrivée par CB2_LoadMap ; port : appelé DIRECTEMENT par
+ *  executeWarp Phase 5 (kind 'fly', TestOverworldScene) = même point du flux, à l'abri du
+ *  clobber warp-exit. Les 2 premiers appels du décomp (:1382-1383) sont RELOCALISÉS dans
+ *  executeWarp : Overworld_PlaySpecialMapMusic → loadAndInitMap (Phase 3) ; FadeInFromBlack
+ *  → Phase 4 (FillPalBufferBlack + fade FROM_BLACK). Rend le joueur invisible (l'oiseau le
+ *  fera réapparaître) + le tourne ouest si surf, puis lance Task_FlyIntoMap.
  *  Recharge d'abord l'asset oiseau + gfx pose (le warp a pu reset les sprites/gfx chargés). */
 export function FieldCallback_FlyIntoMap(): void {
   const rt = getRuntime();
   if (!rt) return;
-  void preloadFlyBirdEffect();
+  preloadFlyBirdEffect().catch((e) => console.error('[fly] preload oiseau/gfx pose', e));  // Règle 3 : jamais de void nu
   const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
   objectEvent.invisible = true;
   if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING) ObjectEventTurn(objectEvent, DIR_WEST);
@@ -4809,7 +4815,7 @@ export function FieldCallback_UseFly(): void {
   // est garantie propre par le redraw sync ci-dessus.
   rt.gPlttBufferFaded.flushTo();
   gPaletteFade.bufferTransferDisabled = false;
-  void preloadFlyBirdEffect();
+  preloadFlyBirdEffect().catch((e) => console.error('[fly] preload oiseau/gfx pose', e));  // Règle 3 : jamais de void nu
   rt.CreateTask(Task_UseFly, 0);
   LockPlayerFieldControls();
   // 1:1 FreezeObjectEvents() — adaptation held-movement : SAUF le joueur, sinon son
