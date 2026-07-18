@@ -42,11 +42,9 @@ import {
   gMapHeader,
 } from './fieldmap';
 import { GetStringRightAlignXOffset, CHAR_SPACER_STR } from './text';
-import { AddTextPrinterParameterized3 } from './menu';
+import { AddTextPrinterParameterized3, DisplayItemMessageOnField } from './menu';
 import { StringExpandPlaceholders, gStringVar4 } from '../include/string_util';
 import { GetPlayerTextSpeedDelay } from './menu';
-import { ShowFieldMessage, IsFieldMessageBoxHidden } from './field_message_box';
-import { encodeOwText } from './text';
 import { InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap } from './menu';
 import {
   getRuntime, PlaySE, LoadPalette, BlendPalettes,
@@ -67,7 +65,8 @@ import { AdjustQuantityAccordingToDPadInput, CreateYesNoMenuWithCallbacks, Displ
 import { IncrementGameStat, GetXYCoordsOneStepInFrontOfPlayer } from './field_player_avatar';
 import { getString } from '../harness/runtime/decomp-strings';
 import { setStringVar } from '../include/text';
-import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './field_weather';
+import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK, IsWeatherNotFadingIn } from './field_weather';
+import { FadeInFromBlack } from './field_screen_effect';
 import { loadTileBin, loadTilemapBin, extractPngPlte } from '../harness/gba/png-loader';
 import { CB2_ReturnToFieldLocal_Manual } from './overworld';
 import { CreateTask, DestroyTask } from './task';
@@ -148,8 +147,10 @@ const MAX_ITEMS_SHOWN = 8;
 // 1:1 décomp item.h `#define MAX_BAG_ITEM_CAPACITY 99`.
 const MAX_BAG_ITEM_CAPACITY = 99;
 
-// 1:1 décomp shop.c enum MART_TYPE_*.
+// 1:1 décomp shop.c enum MART_TYPE_* (shop.c:68).
 const MART_TYPE_NORMAL = 0;
+const MART_TYPE_DECOR = 1;
+const MART_TYPE_DECOR2 = 2;
 // 1:1 décomp shop.c:43 `#define TAG_ITEM_ICON_BASE 2110`.
 const TAG_ITEM_ICON = 2110;
 
@@ -191,8 +192,7 @@ type ShopSubState =
   | 'sell_goto'          // Task_GoToBuyOrSellMenu côté vente (fade → CB2_GoToSellMenu)
   | 'buy_list'           // Task_BuyMenu (gTasks, plein écran)
   | 'buy_qty'            // Task_BuyHowManyDialogueHandleInput
-  | 'buy_after_purchase' // Task_ReturnToItemListAfterItemPurchase (attend A/B)
-  | 'reopen_msg';        // Task_ReturnToShopMenu (DisplayItemMessageOnField → re-ouvre le menu)
+  | 'buy_after_purchase'; // Task_ReturnToItemListAfterItemPurchase (attend A/B)
 
 let sShopOpen = false;
 let sSubState: ShopSubState = 'shop_menu';
@@ -207,7 +207,6 @@ let sDescWindowId = -1;
 let sBagQtyWindowId = -1;
 let sPriceQtyWindowId = -1;
 let sMessageWindowId = -1;
-let sReopenMsgShown = false;           // 1:1 garde de Task_ReturnToShopMenu (1 seul Show)
 let sListTaskId = -1;
 let sBuyTaskId = -1;                    // gTasks task du buy menu
 let sIconSpriteId = -1;                 // sprite icône d'objet (slot unique)
@@ -332,7 +331,6 @@ export function TickShop(): void {
     case 'shop_menu':  _tickShopMenu(); break;
     case 'buy_goto':   _tickGoToBuyMenu(); break;
     case 'sell_goto':  _tickGoToSellMenu(); break;
-    case 'reopen_msg': _tickReopenShopMenu(); break;
   }
 }
 
@@ -416,17 +414,14 @@ function _tickGoToSellMenu(): void {
 }
 
 // ─── CB2_ExitSellMenu (1:1 shop.c:434) — retour OW + re-montre le menu shop ──
-/** 1:1 décomp `CB2_ExitSellMenu` :
+/** 1:1 décomp `CB2_ExitSellMenu` (shop.c:434) :
  *    gFieldCallback = MapPostLoadHook_ReturnToShopMenu ; SetMainCallback2(CB2_ReturnToField).
- *  Identique au tail de `Task_ExitBuyMenu` : reconstruit l'OW puis 'reopen_msg' affiche
- *  « Autre chose ? » avant de re-montrer le menu Acheter/Vendre/Quitter. */
+ *  Le hook (exécuté par RunFieldCallback au retour OW) fade-in puis crée Task_ReturnToShopMenu,
+ *  qui affiche « Autre chose ? » avant de re-montrer le menu Acheter/Vendre/Quitter. */
 export function CB2_ExitSellMenu(): void {
   const rt = getRuntime();
   if (!rt) return;
-  (globalThis as Record<string, unknown>).gFieldCallback = () => {
-    sReopenMsgShown = false;
-    sSubState = 'reopen_msg';
-  };
+  (globalThis as Record<string, unknown>).gFieldCallback = MapPostLoadHook_ReturnToShopMenu;
   rt.gMain.state = 0;
   rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
 }
@@ -1015,7 +1010,7 @@ function _buyReturnToItemList(): void {
 function _exitBuyMenu(): void {
   FadeScreen(FADE_TO_BLACK, 0);
   // Task_ExitBuyMenu attend le fade puis cleanup + retour OW. Task_BuyMenu est détruit
-  // ci-dessous → le substate devient inerte jusqu'au reopen (pas besoin de park).
+  // ci-dessous → le substate devient inerte jusqu'à la ré-ouverture du menu shop (pas besoin de park).
   const rt = getRuntime();
   if (!rt) return;
   // Remplace Task_BuyMenu par un task d'attente de fade.
@@ -1038,36 +1033,47 @@ function Task_ExitBuyMenu(_task: DecompTask): void {
   _removeWindow(() => sPriceQtyWindowId, v => (sPriceQtyWindowId = v));
   _clearMessage();
   if (sBuyTaskId >= 0) { DestroyTask(sBuyTaskId); sBuyTaskId = -1; }
-  // 1:1 décomp : gFieldCallback = MapPostLoadHook_ReturnToShopMenu ;
-  // SetMainCallback2(CB2_ReturnToField). Reconstruit l'OW puis (via 'reopen_msg')
-  // affiche « Je peux faire quelque chose d'autre ? » AVANT de re-montrer le menu shop.
-  // sShopOpen reste true → le script reste bloqué.
-  (globalThis as Record<string, unknown>).gFieldCallback = () => {
-    sReopenMsgShown = false;
-    sSubState = 'reopen_msg';
-  };
+  // 1:1 décomp `ExitBuyMenu`/`Task_ExitBuyMenu` (shop.c:1193/1200) :
+  // gFieldCallback = MapPostLoadHook_ReturnToShopMenu ; SetMainCallback2(CB2_ReturnToField).
+  // Reconstruit l'OW puis le hook (fade-in + Task_ReturnToShopMenu) affiche « Je peux faire
+  // quelque chose d'autre ? » AVANT de re-montrer le menu shop. sShopOpen reste true → le
+  // script reste bloqué.
+  (globalThis as Record<string, unknown>).gFieldCallback = MapPostLoadHook_ReturnToShopMenu;
   rt.gMain.state = 0;
   rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
 }
 
+// ─── MapPostLoadHook_ReturnToShopMenu (1:1 shop.c:462) ──────────────────────
+/** 1:1 décomp `MapPostLoadHook_ReturnToShopMenu` (shop.c:462) : posé comme gFieldCallback
+ *  par CB2_ExitSellMenu / Task_ExitBuyMenu, exécuté par RunFieldCallback au retour OW.
+ *  Fade-in depuis le noir puis crée la task Task_ReturnToShopMenu. Pattern gFieldCallback →
+ *  CreateTask du port (le runtime passe l'OBJET DecompTask → wrapper t.taskId ; précédent
+ *  decoration.ts FieldCB_InitDecorationItemsWindow:1809). */
+function MapPostLoadHook_ReturnToShopMenu(): void {
+  FadeInFromBlack();
+  CreateTask((t: DecompTask) => Task_ReturnToShopMenu(t.taskId), 8);
+}
+
 // ─── Task_ReturnToShopMenu (1:1 shop.c:468) — après retour au terrain ───────
-// 1:1 : DisplayItemMessageOnField(gText_AnythingElseICanHelp, ShowShopMenuAfterExitingBuyOrSellMenu).
-// Le « bug 5 » (dialogue de sortie manquant) = ce message qui était sauté ; on l'affiche
-// via la field message box (= fenêtre 0, le vrai DisplayItemMessageOnField), PUIS on re-crée
-// le menu Acheter/Vendre/Quitter quand le texte a fini de s'imprimer (il reste visible).
-function _tickReopenShopMenu(): void {
-  const rt = getRuntime();
-  if (!rt) return;
-  if (rt.gPaletteFade.active) return;  // ≈ IsWeatherNotFadingIn (attend le fade-in OW)
-  if (!sReopenMsgShown) {
-    if (ShowFieldMessage(encodeOwText(getString('gText_AnythingElseICanHelp')))) {
-      sReopenMsgShown = true;
-    }
-    return;
+/** 1:1 décomp `Task_ReturnToShopMenu(taskId)` (shop.c:468) : gate IsWeatherNotFadingIn, puis
+ *  affiche le message de sortie via le VRAI DisplayItemMessageOnField (fenêtre 0), continuation
+ *  = ShowShopMenuAfterExitingBuyOrSellMenu. Magasin déco DECOR2 → « Vous avez besoin d'autre
+ *  chose? » ; sinon (Pokémart) → « Je peux faire quelque chose d'autre? ». */
+function Task_ReturnToShopMenu(taskId: number): void {
+  if (IsWeatherNotFadingIn() === true) {
+    if (sMartType === MART_TYPE_DECOR2)
+      DisplayItemMessageOnField(taskId, getString('gText_CanIHelpWithAnythingElse'), (t) => ShowShopMenuAfterExitingBuyOrSellMenu(t.taskId));
+    else
+      DisplayItemMessageOnField(taskId, getString('gText_AnythingElseICanHelp'), (t) => ShowShopMenuAfterExitingBuyOrSellMenu(t.taskId));
   }
-  if (!IsFieldMessageBoxHidden()) return;  // attend la fin de l'impression
-  sReopenMsgShown = false;
+}
+
+// ─── ShowShopMenuAfterExitingBuyOrSellMenu (1:1 shop.c:479) ─────────────────
+/** 1:1 décomp `ShowShopMenuAfterExitingBuyOrSellMenu(taskId)` (shop.c:479) : re-crée le menu
+ *  Acheter/Vendre/Quitter (CreateShopMenu = _createShopMenu) puis détruit la task. */
+function ShowShopMenuAfterExitingBuyOrSellMenu(taskId: number): void {
   _createShopMenu(sMartType);
+  DestroyTask(taskId);
 }
 
 

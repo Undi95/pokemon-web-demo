@@ -67,6 +67,12 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
 > menu.ts `d7a0a20e5`), GetBgAttribute PSS (dédupliqué → window.ts, commenté PSS:115).
 1. Inventaire des DUPES restantes :
    DisplayItemMessageOnField ré-inliné ×43 (item_menu.ts:2676 « DETTE »),
+   > Reco agent 2026-07-18 (requalification) : shop.ts 'reopen_msg' ≠ redirect — c'est une
+   > state-machine maison (poll _tickReopenShopMenu + ShowFieldMessage) à RE-TRANSCRIRE en
+   > Task_ReturnToShopMenu task-based (shop.c:468) + ShowShopMenuAfterExitingBuyOrSellMenu +
+   > branche MART_TYPE_DECOR2 ABSENTE (gText_CanIHelpWithAnythingElse) — EN COURS.
+   > item_use.ts : AUCUNE ré-inline (déféral console.error honnête, branche field inatteignable
+   > en combat ; les vrais call-sites field vivent dans fldeff_dig/player_pc/item_menu) — RIEN À FAIRE.
    pipeline tile-data ×3 copies (dont 2 divergentes pokenav/mail),
    CreateInvisibleSpriteWithCallback local battle_main (→ la charpente battle_transition a
    désormais CreateInvisibleSprite, sprite.c:524 — rapprocher),
