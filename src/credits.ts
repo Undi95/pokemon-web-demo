@@ -345,7 +345,10 @@ const sSpriteSheet_MonBg = [
 /** 1:1 (credits.c:233) */
 const sSpritePalette_MonBg = [
   {
-    data: gDecompressionBuffer[MONBG_OFFSET] /* TRANSPILER-TODO &élément scalaire (out-param ?) */,
+    // 1:1 `(const u16 *)&gDecompressionBuffer[MONBG_OFFSET]` (credits.c:234) — VUE u16 (16 couleurs)
+    // sur le buffer partagé à l'offset palette (MONBG_OFFSET pair). Task_LoadShowMons y écrit
+    // temp[0..3] (MÊME région mémoire) avant LoadSpritePalette. `[MONBG_OFFSET]` scalaire = octet.
+    data: new Uint16Array(gDecompressionBuffer.buffer, MONBG_OFFSET, 16),
     tag: TAG_MON_BG },
   [
 
@@ -497,7 +500,7 @@ export function CB2_StartCreditsSequence(): void {
   gTasks[bikeTaskId].data[0] /* tState */ = 40;
   SetGpuReg(REG_OFFSET_BG0VOFS, 0xFFFC);
   pageTaskId = CreateTask((t: { taskId: number }) => Task_UpdatePage(t.taskId), 0);
-  gTasks[pageTaskId].data[2] /* tMainTaskId */ = taskId;
+  gTasks[pageTaskId].data[1] /* tMainTaskId */ = taskId;
   gTasks[taskId].data[15] /* tTaskId_UpdatePage */ = pageTaskId;
   BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
   EnableInterrupts(INTR_FLAG_VBLANK);
@@ -609,7 +612,7 @@ function Task_LoadShowMons(taskId: number): void {
         ResetSpriteData();
         ResetAllPicSprites();
         FreeAllSpritePalettes();
-        gReservedSpritePaletteCount = 8;
+        (globalThis as any).gReservedSpritePaletteCount = 8;
         LZ77UnCompVram(gBirchBagGrass_Gfx, VRAM);
         LZ77UnCompVram(gBirchGrassTilemap, (BG_SCREEN_ADDR(7)));
         // 1:1 credits.c:506 — `gBirchBagGrass_Pal + 1` = offset d'1 u16 (skip couleur 0),
@@ -630,7 +633,10 @@ function Task_LoadShowMons(taskId: number): void {
           gDecompressionBuffer[MON_PIC_SIZE + i] = 0x22;
         for (i = 0; i < MON_PIC_SIZE; i++)
           gDecompressionBuffer[MON_PIC_SIZE * 2 + i] = 0x33;
-        temp = (gDecompressionBuffer[MONBG_OFFSET] /* TRANSPILER-TODO &élément scalaire (out-param ?) */);
+        // 1:1 `temp = (u16 *)&gDecompressionBuffer[MONBG_OFFSET]` (credits.c:515) — VUE u16 sur le
+        // MÊME buffer partagé (offset palette) que sSpritePalette_MonBg[0].data ; temp[0..3] écrit les
+        // 4 couleurs mon-bg, relues par LoadSpritePalette. `[MONBG_OFFSET]` scalaire = octet (crash strict).
+        temp = new Uint16Array(gDecompressionBuffer.buffer, MONBG_OFFSET, 16);
         temp[0] = RGB_BLACK;
         temp[1] = RGB(31, 31, 20);
         // light yellow
@@ -638,15 +644,15 @@ function Task_LoadShowMons(taskId: number): void {
         // light red
         temp[3] = RGB(20, 20, 31);
         // light blue
-        LoadSpriteSheet(sSpriteSheet_MonBg);
-        LoadSpritePalette(sSpritePalette_MonBg);
+        LoadSpriteSheet(sSpriteSheet_MonBg[0]);   // 1:1 credits.c:521 — décroissance array→&[0] (LoadSpriteSheet prend UN sheet, pas le tableau + terminateur {}).
+        LoadSpritePalette(sSpritePalette_MonBg[0]); // 1:1 credits.c:522 — idem &[0] (sinon .data/.size undefined → NaN alloc / palette non chargée).
         gMain.state++;
         break;
       }
     case 1:
       gTasks[taskId].data[3] /* tTaskId_ShowMons */ = CreateTask((t: { taskId: number }) => Task_ShowMons(t.taskId), 0);
       gTasks[gTasks[taskId].data[3] /* tTaskId_ShowMons */].data[0] /* tState */ = 1;
-      gTasks[gTasks[taskId].data[3] /* tTaskId_ShowMons */].data[2] /* tMainTaskId */ = taskId;
+      gTasks[gTasks[taskId].data[3] /* tTaskId_ShowMons */].data[1] /* tMainTaskId */ = taskId;
       gTasks[gTasks[taskId].data[3] /* tTaskId_ShowMons */].data[2] = gTasks[taskId].data[7] /* tSceneNum */;
       // data[2] never read
       BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
@@ -655,7 +661,7 @@ function Task_LoadShowMons(taskId: number): void {
       SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(7) | BGCNT_16COLOR | BGCNT_TXT256x256);
       SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG0_ON | DISPCNT_BG3_ON | DISPCNT_OBJ_ON);
       gMain.state = 0;
-      gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_NORMAL;
+      (globalThis as any).gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_NORMAL;
       gTasks[taskId].func = (t: { taskId: number }) => Task_WaitPaletteFade(t.taskId);
       break;
   }
@@ -783,7 +789,7 @@ function Task_UpdatePage(taskId: number): void {
       {
         gTasks[taskId].data[0] /* tState */ = 1;
         gTasks[taskId].data[4] /* tDelay */ = 72;
-        gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[14] /* tPrintedPage */ = false;
+        gTasks[gTasks[taskId].data[1] /* tMainTaskId */].data[14] /* tPrintedPage */ = false;
         sUnkVar = 0;
       }
       return;
@@ -796,7 +802,7 @@ function Task_UpdatePage(taskId: number): void {
       gTasks[taskId].data[0] /* tState */++;
       return;
     case 2:
-      if (gTasks[gTasks[taskId].data[2] /* tMainTaskId */].func == Task_CreditsMain)
+      if (gTasks[gTasks[taskId].data[1] /* tMainTaskId */].func == Task_CreditsMain)
       {
         if (gTasks[taskId].data[2] /* tCurrentPage */ < PAGE_COUNT)
         {
@@ -806,8 +812,8 @@ function Task_UpdatePage(taskId: number): void {
           CopyWindowToVram(0, COPYWIN_GFX);
           gTasks[taskId].data[2] /* tCurrentPage */++;
           gTasks[taskId].data[0] /* tState */++;
-          gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[14] /* tPrintedPage */ = true;
-          if (gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[13] /* tCurrentMode */ == MODE_BIKE_SCENE)
+          gTasks[gTasks[taskId].data[1] /* tMainTaskId */].data[14] /* tPrintedPage */ = true;
+          if (gTasks[gTasks[taskId].data[1] /* tMainTaskId */].data[13] /* tCurrentMode */ == MODE_BIKE_SCENE)
             BeginNormalPaletteFade(0x300, 0, 16, 0, COLOR_LIGHT_GREEN);
           else
             // MODE_SHOW_MONS
@@ -817,7 +823,7 @@ function Task_UpdatePage(taskId: number): void {
         gTasks[taskId].data[0] /* tState */ = 10;
         return;
       }
-      gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[14] /* tPrintedPage */ = false;
+      gTasks[gTasks[taskId].data[1] /* tMainTaskId */].data[14] /* tPrintedPage */ = false;
       return;
     case 3:
       if (!gPaletteFade.active)
@@ -833,13 +839,13 @@ function Task_UpdatePage(taskId: number): void {
         gTasks[taskId].data[4] /* tDelay */--;
         return;
       }
-      if (CheckChangeScene((gTasks[taskId].data[2] /* tCurrentPage */ & 0xFF), (gTasks[taskId].data[2] /* tMainTaskId */ & 0xFF)))
+      if (CheckChangeScene((gTasks[taskId].data[2] /* tCurrentPage */ & 0xFF), (gTasks[taskId].data[1] /* tMainTaskId */ & 0xFF)))
       {
         gTasks[taskId].data[0] /* tState */++;
         return;
       }
       gTasks[taskId].data[0] /* tState */++;
-      if (gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[13] /* tCurrentMode */ == MODE_BIKE_SCENE)
+      if (gTasks[gTasks[taskId].data[1] /* tMainTaskId */].data[13] /* tCurrentMode */ == MODE_BIKE_SCENE)
         BeginNormalPaletteFade(0x300, 0, 0, 16, COLOR_LIGHT_GREEN);
       else
         // MODE_SHOW_MONS
@@ -854,7 +860,7 @@ function Task_UpdatePage(taskId: number): void {
       }
       return;
     case 10:
-      gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[4] /* tEndCredits */ = true;
+      gTasks[gTasks[taskId].data[1] /* tMainTaskId */].data[4] /* tEndCredits */ = true;
       DestroyTask(taskId);
       FreeCreditsBgsAndWindows();
       sCreditsData = null /* FREE_AND_SET_NULL — GC */;
@@ -862,7 +868,10 @@ function Task_UpdatePage(taskId: number): void {
   }
 }
 
-const PAGE_INTERVAL = (PAGE_COUNT / 9) // 9 scenes (5 bike scenes, 4 Pokémon interludes); // 1:1 credits.c:783
+// 1:1 credits.c:783 — `PAGE_COUNT / 9` = division ENTIÈRE C (55/9 = 6, PAS 6.111). En JS `/`
+// rend un float → `page == PAGE_INTERVAL * N` (CheckChangeScene) ne serait JAMAIS vrai (page = int)
+// et AUCUN changement de scène ne se déclencherait. Math.trunc restaure la sémantique C.
+const PAGE_INTERVAL = Math.trunc(PAGE_COUNT / 9); // 9 scenes (5 bike scenes, 4 Pokémon interludes)
 
 /** 1:1 `static u8 CheckChangeScene(u8 page, u8 taskId)` (credits.c:785-848). */
 function CheckChangeScene(page: number, taskId: number): number {
@@ -928,12 +937,12 @@ function Task_ShowMons(taskId: number): void {
     case 0:
       break;
     case 1:
-      if (sCreditsData!.nextImgPos == POS_LEFT && gTasks[gTasks[taskId].data[2] /* tMainTaskId */].data[14] /* tPrintedPage */ == 0)
+      if (sCreditsData!.nextImgPos == POS_LEFT && gTasks[gTasks[taskId].data[1] /* tMainTaskId */].data[14] /* tPrintedPage */ == 0)
         break;
       gTasks[taskId].data[0] /* tState */++;
       break;
     case 2:
-      if (sCreditsData!.imgCounter == NUM_MON_SLIDES || gTasks[gTasks[taskId].data[2] /* tMainTaskId */].func != Task_CreditsMain)
+      if (sCreditsData!.imgCounter == NUM_MON_SLIDES || gTasks[gTasks[taskId].data[1] /* tMainTaskId */].func != Task_CreditsMain)
         break;
       spriteId = CreateCreditsMonSprite(sCreditsData!.monToShow[sCreditsData!.currShownMon], sMonSpritePos[sCreditsData!.nextImgPos][0], sMonSpritePos[sCreditsData!.nextImgPos][1], sCreditsData!.nextImgPos);
       if (sCreditsData!.currShownMon < sCreditsData!.numMonToShow - 1)
@@ -977,13 +986,13 @@ function Task_ShowMons(taskId: number): void {
 function Task_BikeScene(taskId: number): void {
   switch (gTasks[taskId].data[0] /* tState */) {
     case 0:
-      gIntroCredits_MovingSceneryVOffset = Sin((gTasks[taskId].data[5] /* tSinIdx */ >> 1) & 0x7F, 12);
+      (globalThis as any).gIntroCredits_MovingSceneryVOffset = Sin((gTasks[taskId].data[5] /* tSinIdx */ >> 1) & 0x7F, 12);
       gTasks[taskId].data[5] /* tSinIdx */++;
       break;
     case 1:
       if (gIntroCredits_MovingSceneryVOffset != 0)
       {
-        gIntroCredits_MovingSceneryVOffset = Sin((gTasks[taskId].data[5] /* tSinIdx */ >> 1) & 0x7F, 12);
+        (globalThis as any).gIntroCredits_MovingSceneryVOffset = Sin((gTasks[taskId].data[5] /* tSinIdx */ >> 1) & 0x7F, 12);
         gTasks[taskId].data[5] /* tSinIdx */++;
       }
       else
@@ -997,7 +1006,7 @@ function Task_BikeScene(taskId: number): void {
       if (gTasks[taskId].data[5] /* tSinIdx */ < 64)
       {
         gTasks[taskId].data[5] /* tSinIdx */++;
-        gIntroCredits_MovingSceneryVOffset = Sin(gTasks[taskId].data[5] /* tSinIdx */ & 0x7F, 20);
+        (globalThis as any).gIntroCredits_MovingSceneryVOffset = Sin(gTasks[taskId].data[5] /* tSinIdx */ & 0x7F, 20);
       }
       else
       {
@@ -1025,7 +1034,7 @@ function Task_BikeScene(taskId: number): void {
       if (gTasks[taskId].data[5] /* tSinIdx */ > 0)
       {
         gTasks[taskId].data[5] /* tSinIdx */--;
-        gIntroCredits_MovingSceneryVOffset = Sin(gTasks[taskId].data[5] /* tSinIdx */ & 0x7F, 20);
+        (globalThis as any).gIntroCredits_MovingSceneryVOffset = Sin(gTasks[taskId].data[5] /* tSinIdx */ & 0x7F, 20);
       }
       else
       {
@@ -1208,8 +1217,8 @@ function LoadBikeScene(scene: number, taskId: number): boolean {
       gMain.state = 1;
       break;
     case 1:
-      gIntroCredits_MovingSceneryVBase = 34;
-      gIntroCredits_MovingSceneryVOffset = 0;
+      (globalThis as any).gIntroCredits_MovingSceneryVBase = 34;
+      (globalThis as any).gIntroCredits_MovingSceneryVOffset = 0;
       LoadCreditsSceneGraphics(scene);
       gMain.state++;
       break;
@@ -1282,19 +1291,20 @@ function ResetCreditsTasks(taskId: number): void {
     DestroyTask(gTasks[taskId].data[3] /* tTaskId_ShowMons */);
     gTasks[taskId].data[3] /* tTaskId_ShowMons */ = 0;
   }
-  gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_DESTROY;
+  (globalThis as any).gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_DESTROY;
 }
 
 /** 1:1 `static void LoadTheEndScreen(u16 tileOffsetLoad, u16 tileOffsetWrite, u16 palOffset)` (credits.c:1242-1254). */
 function LoadTheEndScreen(tileOffsetLoad: number, tileOffsetWrite: number, palOffset: number): void {
   let baseTile = 0;
-  let i = 0;
   LZ77UnCompVram(gCreditsCopyrightEnd_Gfx, (VRAM + tileOffsetLoad));
-  LoadPalette(gIntroCopyright_Pal, palOffset, gIntroCopyright_Pal.length /* TRANSPILER-TODO sizeof */);
+  LoadPalette(gIntroCopyright_Pal, palOffset, gIntroCopyright_Pal.byteLength); // 1:1 sizeof(gIntroCopyright_Pal) = OCTETS (Uint16Array → byteLength=32, précédent hall_of_fame.ts:787). `.length`=16 chargeait la MOITIÉ (LoadPalette fait floor(size/2) entrées).
   baseTile = (Math.trunc(palOffset / 16)) << 12;
-  for (i = 0; i < 32 * 32; i++)
-    ((VRAM + tileOffsetWrite))[i] = baseTile;
-  //!< French Difference
+  // 1:1 credits.c:1252-1253 (French Difference) : la boucle `((u16*)(VRAM+tileOffsetWrite))[i] = baseTile`
+  // remplit 32×32 entrées u16 du tilemap avec la CONSTANTE baseTile. VRAM = adresse NUMÉRIQUE en JS
+  // (indexer un number n'écrit rien) → DmaFill16, primitive u16 canonique du moteur, déjà utilisée par
+  // ResetGpuAndVram ci-dessus. 32×32 u16 = 0x800 octets. Écriture d'une constante = fill exact 1:1.
+  DmaFill16(3, baseTile, VRAM + tileOffsetWrite, 32 * 32 * 2);
 }
 
 /**
@@ -1429,8 +1439,8 @@ function SpriteCB_CreditsMon(sprite: DecompSprite): void {
   switch (sprite.data[0] /* sState */) {
     case 0:
     default:
-      sprite.oam.affineMode = ST_OAM_AFFINE_NORMAL;
-      sprite.oam.matrixNum = sprite.data[1] /* sPosition */;
+      sprite.affineMode = ST_OAM_AFFINE_NORMAL;
+      sprite.matrixNum = sprite.data[1] /* sPosition */;
       sprite.data[2] = 16;
       SetOamMatrix(sprite.data[1] /* sPosition */, Math.trunc(0x10000 / sprite.data[2]), 0, 0, Math.trunc(0x10000 / sprite.data[2]));
       sprite.invisible = false;
@@ -1470,7 +1480,7 @@ function SpriteCB_CreditsMon(sprite: DecompSprite): void {
       {
         SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG0 | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_BG2 | BLDCNT_TGT2_BG3);
         SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16, 0));
-        sprite.oam.objMode = ST_OAM_OBJ_BLEND;
+        sprite.objMode = ST_OAM_OBJ_BLEND;
         sprite.data[3] = 16;
         sprite.data[0] /* sState */++;
       }
@@ -1507,7 +1517,7 @@ function CreateCreditsMonSprite(nationalDexNum: number, x: number, y: number, po
   let monSpriteId = 0;
   let bgSpriteId = 0;
   monSpriteId = CreateMonSpriteFromNationalDexNumber(nationalDexNum, x, y, position);
-  gSprites[monSpriteId].oam.priority = 1;
+  gSprites[monSpriteId].priority = 1;
   gSprites[monSpriteId].data[1] /* sPosition */ = position + 1;
   gSprites[monSpriteId].invisible = true;
   gSprites[monSpriteId].callback = SpriteCB_CreditsMon;
@@ -1527,9 +1537,9 @@ function SpriteCB_CreditsMonBg(sprite: DecompSprite): void {
   }
   // Copy sprite data from the associated Pokémon
   sprite.invisible = gSprites[sprite.data[0] /* sMonSpriteId */].invisible;
-  sprite.oam.objMode = gSprites[sprite.data[0] /* sMonSpriteId */].oam.objMode;
-  sprite.oam.affineMode = gSprites[sprite.data[0] /* sMonSpriteId */].oam.affineMode;
-  sprite.oam.matrixNum = gSprites[sprite.data[0] /* sMonSpriteId */].oam.matrixNum;
+  sprite.objMode = gSprites[sprite.data[0] /* sMonSpriteId */].objMode;
+  sprite.affineMode = gSprites[sprite.data[0] /* sMonSpriteId */].affineMode;
+  sprite.matrixNum = gSprites[sprite.data[0] /* sMonSpriteId */].matrixNum;
   sprite.x = gSprites[sprite.data[0] /* sMonSpriteId */].x;
   sprite.y = gSprites[sprite.data[0] /* sMonSpriteId */].y;
 }
@@ -1751,10 +1761,15 @@ function CreateMovingScenerySprites(hasVerticalMove: number, metadata: any[], an
     const ctc = CalcCenterToCornerVec(metadata[i].shape, metadata[i].size, ST_OAM_AFFINE_OFF);
     gSprites[sprite].centerToCornerVecX = ctc.centerToCornerVecX;
     gSprites[sprite].centerToCornerVecY = ctc.centerToCornerVecY;
-    gSprites[sprite].oam.priority = 3;
-    gSprites[sprite].oam.shape = metadata[i].shape;
-    gSprites[sprite].oam.size = metadata[i].size;
-    gSprites[sprite].oam.paletteNum = 0;
+    // 1:1 décomp `gSprites[spriteId].oam.priority/shape/size/paletteNum` — le modèle DecompSprite
+    // de CE moteur est PLAT (pas de sous-objet `.oam` ; cf. mémoire « .oam.paletteNum n'existe pas »).
+    // `.oam.FIELD` (undefined) crashait ; on écrit les champs plats (affineMode/matrixNum/objMode sont
+    // relus par syncSpritesToOam). priority/shape/size/paletteNum sont figés à la création (template) →
+    // ces écritures restent inertes au rendu = imperfection cosmétique connue (scenery à la taille template).
+    gSprites[sprite].priority = 3;
+    gSprites[sprite].shape = metadata[i].shape;
+    gSprites[sprite].size = metadata[i].size;
+    gSprites[sprite].paletteNum = 0;
     gSprites[sprite].anims = anims;
     StartSpriteAnim(gSprites[sprite], metadata[i].animNum);
     gSprites[sprite].data[0] = hasVerticalMove; // tHasVerticalMove
@@ -1822,8 +1837,8 @@ function LoadCreditsSceneGraphics(scene: number): void {
       CreateHouseSprites();
       break;
   }
-  gReservedSpritePaletteCount = 8;
-  gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_NORMAL;
+  (globalThis as any).gReservedSpritePaletteCount = 8;
+  (globalThis as any).gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_NORMAL;
 }
 
 /** 1:1 `void SetCreditsSceneBgCnt(u8 scene)` (intro_credits_graphics.c:889-910). scene unused. */
