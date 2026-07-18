@@ -215,7 +215,11 @@ import { GetHealLocation } from './heal_location';
 import { GetCurrentApproachingTrainerObjectEventId, doLockForTrainer, IsOverworldLinkActive } from './scrcmd_trainer';
 import { ScriptMenu_Multichoice, ScriptMenu_MultichoiceWithDefault, ScriptMenu_MultichoiceGrid, ScriptMenu_YesNo } from './script_menu';
 import { gStdStrings } from './data/script_menu';
-import { DecorationAdd, DecorationCheckSpace } from './decoration';
+// Réconciliation (dette bannérisée soldée) : add/checkspace pointaient sur les shims
+// « liste plate » de decoration.ts pendant que remove/check (:28) lisaient DÉJÀ
+// l'inventaire per-catégorie → un decor ajouté par script était INTROUVABLE au
+// checkdecor. Les 4 opcodes lisent désormais le MÊME foyer 1:1 decoration_inventory.
+import { DecorationAdd, DecorationCheckSpace } from './decoration_inventory';
 import { sContestNames } from './contest_strings';
 import { doPokemart } from './shop';
 import { makeSpecialInlineFlowPoll } from './special_flows';
@@ -614,8 +618,8 @@ const ScrCmd_showmonpic: ScrCmdFunc = (ctx) => { VarGet(ScriptReadHalfword(ctx))
 const ScrCmd_hidemonpic: ScrCmdFunc = (ctx) => { let f = 0; SetupNativeScript(ctx, () => { f++; return f >= 8; }); return true; };             // :1456
 
 // ─── décoration (1:1 scrcmd.c:549/565 ; suivi possession partagé decoration — voie A) ──
-const ScrCmd_adddecoration: ScrCmdFunc = (ctx) => { setResult(DecorationAdd(VarGet(ScriptReadHalfword(ctx)))); return false; };          // :549
-const ScrCmd_checkdecorspace: ScrCmdFunc = (ctx) => { setResult(DecorationCheckSpace(VarGet(ScriptReadHalfword(ctx)))); return false; }; // :565
+const ScrCmd_adddecoration: ScrCmdFunc = (ctx) => { setResult(DecorationAdd(VarGet(ScriptReadHalfword(ctx))) ? 1 : 0); return false; };          // :549
+const ScrCmd_checkdecorspace: ScrCmdFunc = (ctx) => { setResult(DecorationCheckSpace(VarGet(ScriptReadHalfword(ctx))) ? 1 : 0); return false; }; // :565
 
 // ─── pokemart (1:1 scrcmd.c:1886 ; logique partagée shop.doPokemart — voie A) ──
 // ptr u32 = la liste produits est référencée par LABEL présent DANS l'image → le compilo

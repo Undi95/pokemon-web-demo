@@ -2736,47 +2736,8 @@ function FreePlayerSpritePalette(): void {
 // `HideSecretBaseDecorationSprites` (secret_base.c) — CÂBLÉ 1:1 : importé de
 // './secret_base' (ex-garde-fou console.error remplacé par l'import réel).
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  PONT scrcmd PRÉ-EXISTANT (NON-1:1) — dette à réconcilier avec decoration_inventory.ts
-// ─────────────────────────────────────────────────────────────────────────────
-//  `scrcmd.ts:218` importe `DecorationAdd`/`DecorationCheckSpace` d'ICI. Ces 4 shims
-//  = adaptation « liste plate capacité 256 » (héritage du squelette). Le VRAI 1:1
-//  per-catégorie vit dans `decoration_inventory.ts` (DecorationAdd/Remove/CheckSpace/
-//  CheckHasDecoration). DÉRIVE connue : à terme, câbler scrcmd sur decoration_inventory
-//  et supprimer ces shims. Laissés INTACTS ici (retour number = 1/0 attendu par
-//  `setResult`/gSpecialVar_Result) pour ne rien casser hors de la vague MENU.
-// ═════════════════════════════════════════════════════════════════════════════
-
-const DECORATION_CAPACITY = 256;
-
-/** shim scrcmd — `gSaveBlock1Ptr->decorations[]` (liste plate, lazy-init). NON-1:1. */
-function decorationsArr(): number[] {
-  if (!gSaveBlock1Ptr) return [];
-  if (!gSaveBlock1Ptr.decorations) gSaveBlock1Ptr.decorations = [];
-  return gSaveBlock1Ptr.decorations as number[];
-}
-
-/** shim scrcmd `DecorationAdd(decorId)` → 1 = ajouté, 0 = plein. NON-1:1 (voir bannière). */
-export function DecorationAdd(decorId: number): number {
-  const arr = decorationsArr();
-  if (arr.length < DECORATION_CAPACITY) { arr.push(decorId); return 1; }
-  return 0;
-}
-
-/** shim scrcmd `DecorationRemove(decorId)` → 1 = retiré, 0 = absent. NON-1:1. */
-export function DecorationRemove(decorId: number): number {
-  const arr = decorationsArr();
-  const idx = arr.indexOf(decorId);
-  if (idx >= 0) { arr.splice(idx, 1); return 1; }
-  return 0;
-}
-
-/** shim scrcmd `DecorationCheckSpace(decorId)` → 1 = place dispo, 0 = plein. NON-1:1. */
-export function DecorationCheckSpace(_decorId: number): number {
-  return decorationsArr().length < DECORATION_CAPACITY ? 1 : 0;
-}
-
-/** shim scrcmd `CheckHasDecoration(decorId)` → 1 = possédée, 0 = non. NON-1:1. */
-export function CheckHasDecoration(decorId: number): number {
-  return decorationsArr().includes(decorId) ? 1 : 0;
-}
+// (Ex-shims « liste plate » DecorationAdd/Remove/CheckSpace/CheckHasDecoration :
+//  DETTE SOLDÉE — scrcmd lit désormais le foyer 1:1 decoration_inventory.ts
+//  per-catégorie pour les 4 opcodes adddecoration/removedecoration/
+//  checkdecorspace/checkdecor. La liste plate gSaveBlock1Ptr.decorations
+//  n'a plus aucun écrivain.)
