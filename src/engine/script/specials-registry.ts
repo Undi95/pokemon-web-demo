@@ -81,7 +81,7 @@ import {
 import { EnterSafariMode, ExitSafariMode, GetPokeblockFeederInFront } from '../../safari_zone';
 import { SetMewAboveGrass, DestroyMewEmergingGrassSprite } from '../../faraway_island';
 import { MALE, FEMALE } from '../../../harness/runtime/decomp-globals';
-import { GetCurrentMap } from '../../load_save';
+import { GetCurrentMap, SavePlayerPartyBackup, LoadPlayerPartyBackup } from '../../load_save';
 import {
   CheckForPlayersHouseNews as _CheckForPlayersHouseNews,
   ChangePokemonNickname as _ChangePokemonNickname,
@@ -722,14 +722,16 @@ registerSpecial('IsTrainerRegistered', () => {
  *  pour rival NPC dialog. May = "fille", Brendan = "fils". 3x usage. */
 registerSpecial('GetRivalSonDaughterString', GetRivalSonDaughterString);  // impl 1:1 → src/field_specials.ts
 
-/** 1:1 décomp `SavePlayerParty` / `LoadPlayerParty` — battle frontier party
- *  save state. Le décomp original copie `gPlayerParty` → `gSaveBlock2Ptr->
- *  frontier.playerParty` (mem-to-mem), PAS d'appel à `TrySavingData`. La
- *  save SRAM se fait uniquement via START → SAUVER explicite. (Avant : on
- *  appelait `gameState.save()` ici → cause user-flag "save random" 2026-05-21).
- *  Notre party est déjà partagée en RAM, donc no-op suffit côté TS. */
-registerSpecial('SavePlayerParty', () => { /* mem-to-mem, no SRAM write */ });
-registerSpecial('LoadPlayerParty', () => { /* loaded at boot already */ });
+/** 1:1 décomp `SavePlayerParty` / `LoadPlayerParty` (load_save.c:160/170) — backup/restore
+ *  MEM-TO-MEM de la party joueur autour du combat MULTI (Steven Mossdeep, Battle Tent). Le
+ *  script fait : SavePlayerParty → ReducePlayerPartyToSelectedMons (compacte, DESTRUCTIF) →
+ *  FillPartnerParty (mons du partenaire en slots 4-6) → combat → LoadPlayerParty (restore).
+ *  AVANT : ces specials étaient de VRAIS no-op alors que la réduction+FillPartner est réelle →
+ *  3 mons du joueur PERDUS après le combat (user-flag "party corrompue au multi Mossdeep").
+ *  FIX : buffer de backup DÉDIÉ (deep copy) dans load_save.ts — PAS block1.playerParty (aliasé
+ *  sur gPlayerParty → n'y sauvegarde rien). Pas de write SRAM (mem-to-mem, comme le décomp). */
+registerSpecial('SavePlayerParty', SavePlayerPartyBackup);
+registerSpecial('LoadPlayerParty', LoadPlayerPartyBackup);
 
 /** 1:1 décomp `IsStarterInParty` (field_specials.c:1437-1448).
  *  Loop party, return TRUE si starter (= GetStarterPokemon(VAR_STARTER_MON))

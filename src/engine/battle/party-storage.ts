@@ -109,6 +109,11 @@ export type { Pokemon };
 // Re-export pur (aucun user interne).
 export { MonKnowsMove, GiveMoveToMon } from '../../pokemon';
 
+// CopyMon (= 1:1 décomp pokemon.c:4356, deep copy struct + arrays moves/pp) : foyer pokemon.c.
+// Re-export pour les modules qui l'importent d'ICI sans fermer d'arête foyer directe (anti-cycle) —
+// ex. load_save.ts (backup party du combat multi frontier). party-storage importe déjà pokemon.
+export { CopyMon } from '../../pokemon';
+
 // IsPokemonStorageFull / IsPlayerPartyAndPokemonStorageFull : foyer pokemon.c. Re-export pour
 // les modules BATTLE (battle_main) qui les importent d'ICI (anti-cycle : pas d'edge foyer direct).
 export { IsPokemonStorageFull, IsPlayerPartyAndPokemonStorageFull } from '../../pokemon';

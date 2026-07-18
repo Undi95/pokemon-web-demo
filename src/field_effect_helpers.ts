@@ -57,7 +57,7 @@ import { OBJ_PLTT_ID, BG_PLTT_ID,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../harness/runtime/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix, CalcCenterToCornerVec, StartSpriteAnim } from './sprite';
 import { UpdateSpritePaletteWithWeather, FadeScreen, FADE_TO_BLACK, IsWeatherNotFadingIn } from './field_weather';
-import { FadeInFromBlack } from './field_screen_effect';
+import { FadeInFromBlack, GetFlashLevel } from './field_screen_effect';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../harness/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
@@ -108,7 +108,7 @@ import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gPlayerAvatar } from './field_player_avatar';
 // Musique : appel de la LECTURE existante (PlayBGM/m4a) — autorisé (on ne modifie pas
 // l'engine son, seulement on le pilote). MUS_SURF jouée au mount du surf (1:1 FldEff_UseSurf).
-import { Overworld_ClearSavedMusic, Overworld_ChangeMusicTo, Overworld_ResetStateAfterFly, getWarpDestination, setPendingWarp, SetWarpDestinationFromMapName } from './overworld';
+import { Overworld_ClearSavedMusic, Overworld_ChangeMusicTo, Overworld_ResetStateAfterFly, getWarpDestination, setPendingWarp, SetWarpDestinationFromMapName, InitCurrentFlashLevelScanlineEffect } from './overworld';
 import { MUS_SURF, SE_BALL, MUS_HEAL, SE_M_FLY } from '../include/constants/songs';
 import { Cos, Sin } from './trig';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
@@ -1822,6 +1822,18 @@ function FieldMoveShowMonOutdoorsEffect_RestoreBg(task: DecompTask): void {
   task.data[0]++;
 }
 
+/** ADAPTATION port DOCUMENTÉE (FIX Bug 1) — RÉ-ARME la fenêtre WIN0 par-scanline de la pénombre de
+ *  grotte (flash) à la fin d'un banner field-move. Le décomp n'en a PAS besoin : son banner
+ *  FieldMoveShowMon ne perturbe pas WIN0 (indoors = WIN1 seul ; outdoors = re-pose WIN0/WININ/WINOUT
+ *  depuis ses PROPRES data, cohérentes avec un WIN0 non-flash). Chez nous, ces écritures WIN0/WININ/
+ *  WINOUT (Task_FieldMoveShowMon* + les _End) écrasent l'effet scanline du flash → la pénombre
+ *  "saute" après CHAQUE CS (Cut/RockSmash/Strength/Flash — constat en jeu sur MAP_DEBUG_1). On
+ *  re-arme UNIQUEMENT si le flash courant > 0 (no-op hors grotte). InitCurrentFlashLevelScanlineEffect
+ *  lit gSaveBlock1Ptr.flashLevel et ré-inscrit sFlashEffectParams (WriteFlashScanlineEffectBuffer). */
+function _reArmFlashScanlineAfterFieldMoveBanner(): void {
+  if (GetFlashLevel() > 0) InitCurrentFlashLevelScanlineEffect();
+}
+
 /** 1:1 STRICT `FieldMoveShowMonOutdoorsEffect_End` (field_effect.c:2713). */
 function FieldMoveShowMonOutdoorsEffect_End(task: DecompTask): void {
   const rt = getRuntime();
@@ -1830,6 +1842,7 @@ function FieldMoveShowMonOutdoorsEffect_End(task: DecompTask): void {
   InitTextBoxGfxAndPrinters();
   _freeFieldMoveMonSprite(rt, task.data[15]);
   FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
+  _reArmFlashScanlineAfterFieldMoveBanner();  // ADAPTATION port (cf. helper) — pénombre grotte
   DestroyTask(FindTaskIdByFunc(Task_FieldMoveShowMonOutdoors));
 }
 
@@ -1970,6 +1983,7 @@ function FieldMoveShowMonIndoorsEffect_End(task: DecompTask): void {
   rt.gba.windows.win1.enabled = (task.data[7] === 1);
   rt.SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE(0xFF, 0xFF));
   rt.SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE(0xFF, 0xFF));
+  _reArmFlashScanlineAfterFieldMoveBanner();  // ADAPTATION port (cf. helper) — pénombre grotte
   DestroyTask(FindTaskIdByFunc(Task_FieldMoveShowMonIndoors));
 }
 

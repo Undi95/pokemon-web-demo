@@ -124,6 +124,7 @@ import {
   SetDiveWarpDive,
   SetDiveWarpEmerge,
   DoDiveWarp,
+  StoreInitialPlayerAvatarState,
 } from './overworld';
 import { CheckStandardWildEncounter, UpdateRepelCounter } from './wild_encounter';
 
@@ -938,16 +939,19 @@ export function TryStartInteractionScript(
  *    return FALSE;
  *  Appelé par `DiveFieldEffect_TryWarp` (Task_UseDive) → exécute le warp.
  *  `position` = coords INTERNAL du joueur ; SetDiveWarp* veut du LOCAL (− MAP_OFFSET).
- *  ⚠️ DETTE : `StoreInitialPlayerAvatarState()` non porté (le joueur se ré-init sur la
- *  map dest, cohérent avec __devGotoMap) ; PlaySE(SE_M_DIVE) skip (audio). */
+ *  FIX (Bug 2b/3b) : `StoreInitialPlayerAvatarState()` MAINTENANT câblé (1:1 field_control_avatar.c:
+ *  946/957) — mémorise l'état monté (surf/underwater) AVANT le warp pour que GetInitialPlayerAvatar
+ *  State le ré-applique à l'arrivée (plongée → underwater ; émersion → surf). PlaySE(SE_M_DIVE) skip (audio). */
 export function TryDoDiveWarp(position: MapPosition, metatileBehavior: number): boolean {
   if (gMapHeader?.mapType === 'MAP_TYPE_UNDERWATER' && !MetatileBehavior_IsUnableToEmerge(metatileBehavior)) {
     if (SetDiveWarpEmerge(position.x - MAP_OFFSET, position.y - MAP_OFFSET)) {
+      StoreInitialPlayerAvatarState();
       DoDiveWarp();
       return true;
     }
   } else if (MetatileBehavior_IsDiveable(metatileBehavior) === true) {
     if (SetDiveWarpDive(position.x - MAP_OFFSET, position.y - MAP_OFFSET)) {
+      StoreInitialPlayerAvatarState();
       DoDiveWarp();
       return true;
     }

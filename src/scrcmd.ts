@@ -1262,7 +1262,19 @@ const ScrCmd_setobjectmovementtype: ScrCmdFunc = (ctx) => {
 };
 
 // ─── field effects (1:1 scrcmd.c:1973-2003 ; logique partagée scrcmd_fieldeffect — voie A) ──
-const ScrCmd_dofieldeffect: ScrCmdFunc = (ctx) => { doFieldEffect(VarGet(ScriptReadHalfword(ctx))); return false; };                                  // :1973
+const ScrCmd_dofieldeffect: ScrCmdFunc = (ctx) => {                                                                                                    // :1973
+  // FIX (Bug 6 / Force) : purge le latch waitstate GLOBAL AVANT de lancer le FLDEFF.
+  // `_waitStateSignaled` est partagé par TOUS les flows (field_screen_effect / party_menu /
+  // region_map / PC). Un signal STALE (flow UI fermé sans que son `waitstate` l'ait consommé)
+  // ferait sauter le `waitstate` qui SUIT dofieldeffect — l'arbre de Cut/RockSmash/Strength/Force
+  // ne lance son `waitstate` qu'APRÈS ce dofieldeffect, donc un latch résiduel casse l'attente
+  // (anim tronquée pendant le banner ; Force part en vrille). On force le waitstate suivant à
+  // attendre le VRAI SignalWaitState émis par la fin de l'effet. Purge MINIMALE (ici seulement) :
+  // ne change PAS la sémantique générale du latch (risque large sur les autres flows).
+  _waitStateSignaled = false;
+  doFieldEffect(VarGet(ScriptReadHalfword(ctx)));
+  return false;
+};
 const ScrCmd_setfieldeffectargument: ScrCmdFunc = (ctx) => { const a = ScriptReadByte(ctx); setFieldEffectArgument(a, VarGet(ScriptReadHalfword(ctx))); return false; }; // :1982
 const ScrCmd_waitfieldeffect: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, setWaitFieldEffect(VarGet(ScriptReadHalfword(ctx)))); return true; };    // :1998
 

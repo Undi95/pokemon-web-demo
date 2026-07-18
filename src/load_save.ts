@@ -34,7 +34,7 @@ import { GetSaveBlock1, GetSaveBlock2 } from './save';
 import { SetSaveBlock1 } from './engine/save/save-block-state';
 import { SetBagItemsPointers } from './engine/bag/bag';
 import { SetDecorationInventoriesPointers } from './decoration_inventory';
-import { RefreshPlayerPartyViews, gPlayerParty, createEmptyPokemon, PARTY_SIZE } from './engine/battle/party-storage';
+import { RefreshPlayerPartyViews, gPlayerParty, createEmptyPokemon, PARTY_SIZE, CopyMon, CalculatePlayerPartyCount, type Pokemon } from './engine/battle/party-storage';
 import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
   SetObjectEventSpritePosToMapCoords,
@@ -220,6 +220,43 @@ export function LoadPlayerParty(): void {
     else Object.assign(gPlayerParty[i], createEmptyPokemon());
   }
   RefreshPlayerPartyViews();  // block1.playerParty ← refs numériques aux slots gPlayerParty
+}
+
+/** Buffer de backup DÉDIÉ (deep copy) de la party joueur pour le combat MULTI (Steven Mossdeep,
+ *  Battle Tent). Rôle 1:1 décomp `SavePlayerParty`/`LoadPlayerParty` (load_save.c:160/170) :
+ *  backup gPlayerParty AVANT `ReducePlayerPartyToSelectedMons` + `FillPartnerParty` (qui posent
+ *  les mons du partenaire en slots 4-6), restore APRÈS le combat.
+ *
+ *  ⚠️ PIÈGE (payé) : dans le décomp le backup va vers `gSaveBlock1Ptr->playerParty` (stockage RÉEL,
+ *  distinct de gPlayerParty). Dans le port, `block1.playerParty` est ALIASÉ sur gPlayerParty
+ *  (RefreshPlayerPartyViews = refs numériques) → y copier gPlayerParty ne sauvegarde RIEN. On
+ *  MATÉRIALISE donc un buffer séparé (deep copy champ-à-champ via CopyMon, comme
+ *  ReducePlayerPartyToSelectedMons). Ce backup est le rôle FRONTIER (mem-to-mem) — DISTINCT de
+ *  `SavePlayerParty`/`LoadPlayerParty` ci-dessus qui servent le SAVE-système (CopyPartyAndObjectsTo/
+ *  FromSave, sync du compte via l'alias). Les deux ne peuvent pas être fusionnés : le save-système
+ *  Load lit block1.playerParty (données désérialisées au RESUME), le frontier lit CE buffer. */
+const sSavedPlayerParty: Pokemon[] = [];
+
+/** 1:1 rôle décomp `SavePlayerParty(void)` (load_save.c:160), variante FRONTIER (mem-to-mem, buffer
+ *  dédié — cf. sSavedPlayerParty). Deep copy gPlayerParty → backup avant la réduction party du multi. */
+export function SavePlayerPartyBackup(): void {
+  sSavedPlayerParty.length = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = createEmptyPokemon();
+    CopyMon(mon, gPlayerParty[i]);
+    sSavedPlayerParty.push(mon);
+  }
+}
+
+/** 1:1 rôle décomp `LoadPlayerParty(void)` (load_save.c:170), variante FRONTIER. Restore gPlayerParty
+ *  ← backup après le combat multi (annule ReducePlayerPartyToSelectedMons + FillPartnerParty). */
+export function LoadPlayerPartyBackup(): void {
+  if (sSavedPlayerParty.length === 0) return;  // pas de backup en vol → no-op sûr
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if (sSavedPlayerParty[i]) CopyMon(gPlayerParty[i], sSavedPlayerParty[i]);
+  }
+  CalculatePlayerPartyCount();
+  RefreshPlayerPartyViews();  // ré-aligne block1.playerParty (refs) sur les slots restaurés
 }
 
 /** 1:1 décomp `CopyPartyAndObjectsToSave(void)` (load_save.c:196). */

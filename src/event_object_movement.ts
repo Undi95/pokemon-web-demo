@@ -8389,7 +8389,7 @@ export function ObjectEventSetGraphicsId(objectEvent: ObjectEvent, graphicsId: s
  *
  *  Re-crée tous les sprites OAM des NPCs déjà actifs depuis leur currentCoords.
  *  PRÉSERVE gObjectEvents memory (= positions/facing post-script intacts). */
-export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promise<void> {
+export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime, persistedPlayerGraphicsId?: string): Promise<void> {
   if (!_graphicsCatalog) return;
   const catalog = _graphicsCatalog;
   // 1:1 STRICT décomp event_object_movement.c:1719 ClearPlayerAvatarInfo().
@@ -8402,9 +8402,20 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promi
   // = à pied ON_FOOT | CONTROLLABLE). Sans ça, ClearPlayerAvatarInfo laissait flags=0 (CONTROLLABLE
   // clear → forced movement armé dès le 1er pas au lieu d'être suppressé 1 cycle). Notre archi
   // préserve objectEventId/spriteId/gender → on n'appelle QUE la part transition (1:1 flags).
+  //
+  // FIX (Bug 2a) — `persistedPlayerGraphicsId` : le graphicsId de l'état PERSISTÉ (surf/underwater)
+  // survivant au combat. Notre InitPlayerAvatar (spécifique port : recrée la feuille NORMAL réservée
+  // + snapshot pour notre sprite joueur, chemin que le décomp générique n'a pas) est appelé AVANT
+  // ce spawn et CLOBBERE gObjectEvents[slot].graphicsId en 'Brendan'/'May'. Le harness snapshot donc
+  // le graphicsId AVANT InitPlayerAvatar et le passe ICI → SetPlayerAvatarExtraStateTransition
+  // re-dérive SURFING/UNDERWATER (PlayerAvatarTransition_Surfing → ObjectEventSetGraphicsId(surf) swap
+  // le sprite + FieldEffectStart(FLDEFF_SURF_BLOB) recrée le blob). Fallback playerSlot.graphicsId
+  // (= chemin où le harness ne passe rien, ex. à pied → ON_FOOT, comportement inchangé).
   {
     const playerSlot = gObjectEvents[gPlayerAvatar.objectEventId];
-    if (playerSlot) SetPlayerAvatarExtraStateTransition(playerSlot.graphicsId, 1 << 5 /* PLAYER_AVATAR_FLAG_CONTROLLABLE */);
+    const gfxForTransition = persistedPlayerGraphicsId ?? playerSlot?.graphicsId;
+    if (playerSlot && gfxForTransition !== undefined)
+      SetPlayerAvatarExtraStateTransition(gfxForTransition, 1 << 5 /* PLAYER_AVATAR_FLAG_CONTROLLABLE */);
   }
   // DETTE 1:1 décomp restante (event_object_movement.c:1715-1726) :
   //   - Player slot re-spawn graphique délégué à notre archi (InitPlayerAvatar) ; ici on porte

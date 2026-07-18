@@ -70,6 +70,9 @@ import {
   DestroyPlayerAvatar,
   SetPlayerVisibility,
   GetPlayerFacingDirection,
+  SetPlayerAvatarTransitionFlags,
+  PreloadObjectEventGraphics,
+  GetPlayerAvatarGraphicsIdByStateId,
   DIR_NONE,
   DIR_NORTH,
   DIR_SOUTH,
@@ -174,6 +177,7 @@ import {
   Overworld_PlaySpecialMapMusic, TransitionMapMusic,
   TryFadeOutOldMapMusic, BGMusicStopped, SetWarpDestinationFromMapName,
   ApplyCurrentWarp, Overworld_GetMapHeaderByGroupAndId,
+  GetInitialPlayerAvatarState, ResetInitialPlayerAvatarState,
 } from '../../src/overworld';
 import { MAP_CONSTANTS } from '../../include/constants/map_groups';
 import { OBJ_PALSLOT_COUNT } from '../../include/event_object_movement';
@@ -1132,6 +1136,18 @@ export class TestOverworldScene extends Phaser.Scene {
     // Determine spawn coords (= -1 fallback to map center for boot testing).
     const sx = spawnX >= 0 ? spawnX : Math.floor(header.mapLayout.width / 2);
     const sy = spawnY >= 0 ? spawnY : Math.floor(header.mapLayout.height / 2);
+    // FIX (Bug 2a) — état surf/underwater préservé au retour combat/menu. Sur le chemin
+    // returnToField, gObjectEvents[slot joueur].graphicsId PORTE l'état persisté (surf/underwater)
+    // survivant au combat (gObjectEvents non-reset ici). Notre InitPlayerAvatar (spécifique port :
+    // recharge la feuille NORMAL réservée + snapshot du sprite joueur — le décomp générique n'a pas
+    // ce chemin) va CLOBBERER ce graphicsId en 'Brendan'/'May'. On le snapshot ICI pour le repasser
+    // à SpawnObjectEventsOnReturnToField (infra) qui re-dérive l'état via SetPlayerAvatarExtraState
+    // Transition (1:1 SetPlayerAvatarObjectEventIdAndObjectId → PlayerAvatarTransition_Surfing recrée
+    // le blob). Le décomp ne réinitialise pas l'object event sur ce chemin (SpawnObjectEventOnReturn
+    // ToField réutilise le persisté) ; préserver le graphicsId (source de la re-dérivation) = même net.
+    const persistedPlayerGfxId = returnToField
+      ? gObjectEvents[gPlayerAvatar.objectEventId]?.graphicsId
+      : undefined;
     // Phase 4.6 : destroy player sprite avant re-init pour éviter leak OAM.
     DestroyPlayerAvatar(this.rt);
     // Bug fix session 122 : 'MALE' était hardcodé → joueur toujours Brendan
@@ -1142,6 +1158,34 @@ export class TestOverworldScene extends Phaser.Scene {
     // 1:1 décomp field_player_avatar.c : lit `gSaveBlock2Ptr->playerGender`.
     const playerGender: 'MALE' | 'FEMALE' = gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE';
     await InitPlayerAvatar(sx, sy, spawnDir, playerGender, this.rt);
+
+    // FIX 2 (Bug 2b/3b) — 1:1 décomp `InitObjectEventsLocal` (overworld.c:2172-2174) :
+    //   player = GetInitialPlayerAvatarState();
+    //   SetPlayerAvatarTransitionFlags(player->transitionFlags);
+    //   ResetInitialPlayerAvatarState();
+    // Dérive l'état MONTÉ à l'arrivée (UNDERWATER si map sous-marine ; SURFING si la tuile sous le
+    // joueur est de l'eau surfable ; vélo préservé via StoreInitialPlayerAvatarState avant un dive)
+    // et l'applique via la machine à transitions (PlayerAvatarTransition_Surfing recrée le blob).
+    // Chemin returnToField=FALSE uniquement (warp/boot/resume) → refresh en surf reste en surf,
+    // plongée → underwater, émersion → surf. Le retour combat/menu (returnToField=true) préserve
+    // l'état PERSISTÉ à part (FIX 1). La direction est déjà ajustée harness-side (GetAdjustedInitial
+    // Direction dans executeWarp) → on ne câble QUE transitionFlags ici.
+    if (!returnToField) {
+      const initialState = GetInitialPlayerAvatarState();
+      // state = position du bit du flag = index 1:1 de DoPlayerAvatarTransition (NORMAL=0, MACH_BIKE=1,
+      // ACRO_BIKE=2, SURFING=3, UNDERWATER=4). >0 = état monté → précharger son gfx. Le gfx NORMAL est
+      // déjà en VRAM (feuille réservée d'InitPlayerAvatar) → pas de préchargement pour l'état à pied.
+      const state = Math.log2(initialState.transitionFlags) | 0;
+      if (state > 0) {
+        // ADAPTATION port : PNGs fetch async → au refresh (cache _npcPngCache vide) il faut précharger
+        // AVANT la transition, sinon ObjectEventSetGraphicsId rate le PNG surf/underwater (sprite marchant
+        // sur l'eau). Le décomp a la ROM sync → pas ce besoin. .catch = Règle 3 (hurle si le fetch échoue).
+        await PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(state))
+          .catch((e) => console.error('[loadAndInitMap] preload gfx état monté (surf/underwater)', e));
+      }
+      SetPlayerAvatarTransitionFlags(initialState.transitionFlags);
+      ResetInitialPlayerAvatarState();
+    }
 
     // [M3-C3.2] 1:1 décomp `SetCameraToTrackPlayer()` (overworld.c:2187-2191) —
     // appelé APRÈS InitObjectEventsLocal (= InitPlayerAvatar), AVANT ResetFieldCamera
@@ -1387,7 +1431,9 @@ export class TestOverworldScene extends Phaser.Scene {
       // currentCoords). Équivalent du ResetSpriteData décomp, scoped aux NPCs
       // (player géré par DestroyPlayerAvatar, sprites combat par battle cleanup).
       destroyAllNpcSprites(this.rt);
-      await SpawnObjectEventsOnReturnToField(this.rt);
+      // FIX (Bug 2a) : passe le graphicsId PERSISTÉ (surf/underwater) snapshotté avant
+      // InitPlayerAvatar (qui l'a clobberé) → re-dérivation 1:1 de l'état monté du joueur.
+      await SpawnObjectEventsOnReturnToField(this.rt, persistedPlayerGfxId);
     }
 
     // 1:1 décomp PALSLOT : réserve [0, OBJ_PALSLOT_COUNT=12) pour les object events (qui ont

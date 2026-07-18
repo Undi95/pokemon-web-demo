@@ -12,8 +12,12 @@ import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import {
   gMapHeader, getCachedMapHeader, SetGMapHeader,
   InitBattlePyramidMap, InitTrainerHillMap, InitMapFromSavedGame,
+  MAP_OFFSET, MapGridGetMetatileBehaviorAt,
   type MapConnection, type WarpEvent, type MapHeader,
 } from './fieldmap';
+// MetatileBehavior_IsSurfableWaterOrUnderwater : prédicat FEUILLE (metatile_behavior.ts, aucune
+// arête vers overworld → pas de cycle, vérifié). Lu par GetAdjustedInitialTransitionFlags (FIX 2).
+import { MetatileBehavior_IsSurfableWaterOrUnderwater } from './metatile_behavior';
 import {
   getRuntime, LoadOam, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack,
   WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ,
@@ -777,6 +781,7 @@ const MC = MAP_CONSTANTS;
 const PLAYER_AVATAR_FLAG_MACH_BIKE = 1 << 1;
 const PLAYER_AVATAR_FLAG_ACRO_BIKE = 1 << 2;
 const PLAYER_AVATAR_FLAG_SURFING = 1 << 3;
+const PLAYER_AVATAR_FLAG_UNDERWATER = 1 << 4;  // FIX 2 : lu par Store/GetAdjustedInitialTransitionFlags.
 function TestPlayerAvatarFlags(flags: number): boolean {
   const f = (globalThis as Record<string, unknown>).__TestPlayerAvatarFlags as
     ((fl: number) => number | boolean) | undefined;
@@ -1444,6 +1449,68 @@ const sInitialPlayerAvatarState: { direction: number; transitionFlags: number } 
 export function ResetInitialPlayerAvatarState(): void {
   sInitialPlayerAvatarState.direction = DIR_SOUTH;
   sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_ON_FOOT;
+}
+
+/** 1:1 STRICT décomp `void StoreInitialPlayerAvatarState(void)` (overworld.c:883-896).
+ *  Mémorise l'état (direction + transitionFlags monté) du joueur AVANT un warp (dive) →
+ *  GetInitialPlayerAvatarState le ré-applique à l'arrivée (préserve surf↔underwater plongée/émersion). */
+export function StoreInitialPlayerAvatarState(): void {
+  sInitialPlayerAvatarState.direction = GetPlayerFacingDirection();
+  if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE))
+    sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_MACH_BIKE;
+  else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_ACRO_BIKE))
+    sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_ACRO_BIKE;
+  else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
+    sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_SURFING;
+  else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_UNDERWATER))
+    sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_UNDERWATER;
+  else
+    sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_ON_FOOT;
+}
+
+/** 1:1 STRICT décomp `static u16 GetCenterScreenMetatileBehavior(void)` (overworld.c:951-954) :
+ *    return MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr->pos.x + MAP_OFFSET, ...y + MAP_OFFSET);
+ *  (MapGridGetMetatileBehaviorAt du port prend des coords INTERNAL = LOGICAL + MAP_OFFSET.) */
+function GetCenterScreenMetatileBehavior(): number {
+  return MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
+}
+
+/** 1:1 STRICT décomp `static u8 GetAdjustedInitialTransitionFlags(struct InitialPlayerAvatarState *,
+ *  u16 metatileBehavior, u8 mapType)` (overworld.c:910-926). Détermine l'état monté à l'arrivée :
+ *  UNDERWATER si map sous-marine ; SURFING si la tuile sous le joueur est de l'eau surfable ;
+ *  vélo préservé si autorisé ; sinon ON_FOOT. `mapType` = STRING du header port (gMapHeader.mapType). */
+function GetAdjustedInitialTransitionFlags(
+  playerStruct: { direction: number; transitionFlags: number },
+  metatileBehavior: number, mapType: string | number | undefined,
+): number {
+  // 1:1 `if (mapType != MAP_TYPE_INDOOR && FlagGet(FLAG_SYS_CRUISE_MODE))` (mapType port = string).
+  if ((mapType !== 'MAP_TYPE_INDOOR' && mapType !== MAP_TYPE_INDOOR) && FlagGet('FLAG_SYS_CRUISE_MODE'))
+    return PLAYER_AVATAR_FLAG_ON_FOOT;
+  else if (mapType === 'MAP_TYPE_UNDERWATER' || mapType === MAP_TYPE_UNDERWATER)
+    return PLAYER_AVATAR_FLAG_UNDERWATER;
+  else if (MetatileBehavior_IsSurfableWaterOrUnderwater(metatileBehavior) === true)
+    return PLAYER_AVATAR_FLAG_SURFING;
+  else if (Overworld_IsBikingAllowed() !== true)
+    return PLAYER_AVATAR_FLAG_ON_FOOT;
+  else if (playerStruct.transitionFlags === PLAYER_AVATAR_FLAG_MACH_BIKE)
+    return PLAYER_AVATAR_FLAG_MACH_BIKE;
+  else if (playerStruct.transitionFlags !== PLAYER_AVATAR_FLAG_ACRO_BIKE)
+    return PLAYER_AVATAR_FLAG_ON_FOOT;
+  else
+    return PLAYER_AVATAR_FLAG_ACRO_BIKE;
+}
+
+/** 1:1 STRICT décomp `static struct InitialPlayerAvatarState *GetInitialPlayerAvatarState(void)`
+ *  (overworld.c:899-908). Renvoie l'état à appliquer à l'arrivée (via SetPlayerAvatarTransitionFlags).
+ *  Le port calcule `transitionFlags` 1:1 ; la direction (GetAdjustedInitialDirection : nombreux
+ *  MetatileBehavior_Is*Warp) n'est PAS re-dérivée ici — le harness passe déjà la direction de spawn
+ *  du warp à InitPlayerAvatar → dette documentée (n'affecte pas l'état monté = le bug traité). */
+export function GetInitialPlayerAvatarState(): { direction: number; transitionFlags: number } {
+  const mapType = gMapHeader?.mapType;  // 1:1 GetCurrentMapType() ; le port lit le string du header courant.
+  const metatileBehavior = GetCenterScreenMetatileBehavior();
+  const transitionFlags = GetAdjustedInitialTransitionFlags(sInitialPlayerAvatarState, metatileBehavior, mapType);
+  sInitialPlayerAvatarState.transitionFlags = transitionFlags;
+  return sInitialPlayerAvatarState;
 }
 
 /** 1:1 décomp `static void ResetSafariZoneFlag_(void)` (overworld.c:1425-1428) :

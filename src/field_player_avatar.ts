@@ -1920,13 +1920,26 @@ const sPlayerAvatarGfxToStateFlag: Record<'MALE' | 'FEMALE', ReadonlyArray<{ gra
  *  Cherche le flag d'état pour un graphicsId ; DÉFAUT `PLAYER_AVATAR_FLAG_ON_FOOT` si pas trouvé
  *  (= notre slot joueur a un gfx aliasé non-numérique → tombe sur le défaut = correct à pied). */
 function GetPlayerAvatarStateTransitionByGraphicsId(graphicsId: number | string, gender: 'MALE' | 'FEMALE'): number {
-  // !< notre `ObjectEvent.graphicsId` du slot joueur est une STRING aliasée ('Brendan'/'May'),
-  // pas le u8 numérique du décomp → la comparaison numérique échoue volontairement → on tombe
-  // sur le défaut ON_FOOT (1:1 décomp pour un gfx non-listé). Câblé pour les vrais gfx étape 5.
   const table = sPlayerAvatarGfxToStateFlag[gender];
+  // Comparaison numérique 1:1 décomp (u8) — utile si un appelant passe le vrai id numérique.
   for (let i = 0; i < table.length; i++) {
     if (table[i].graphicsId === graphicsId)
       return table[i].playerFlag;
+  }
+  // FIX (Bug 2a) — le slot joueur du port stocke graphicsId comme le NOM STRING du constant décomp
+  // (ex. 'OBJ_EVENT_GFX_BRENDAN_SURFING', posé par ObjectEventSetGraphicsId lors d'une transition
+  // surf/underwater/vélo), alors que la table décomp indexe par u8 → la comparaison numérique
+  // ci-dessus MANQUE toujours (string ≠ number) et tombait sur ON_FOOT. On retrouve donc l'état
+  // via `sPlayerAvatarGfxIds` (table STRING PARALLÈLE, index = STATE) pour les 5 états montés
+  // (NORMAL..UNDERWATER, parallèles à `table`). Sans ce mapping, SetPlayerAvatarExtraStateTransition
+  // au retour combat/menu ne re-dérivait JAMAIS SURFING/UNDERWATER → surf perdu (blob non recréé).
+  // Le gfx NORMAL du port ('Brendan'/'May', non listé) tombe correctement sur le défaut ON_FOOT.
+  if (typeof graphicsId === 'string') {
+    const names = sPlayerAvatarGfxIds[gender];
+    for (let i = 0; i < table.length; i++) {
+      if (names[i] === graphicsId)
+        return table[i].playerFlag;
+    }
   }
   return PLAYER_AVATAR_FLAG_ON_FOOT;
 }

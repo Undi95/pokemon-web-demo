@@ -1502,12 +1502,14 @@ const sBattleTransitionTable_Wild: Record<number, [number, number]> = {
   [TRANSITION_TYPE_WATER]:  [_B_TRANSITION_BSH.B_TRANSITION_WAVE,           _B_TRANSITION_BSH.B_TRANSITION_RIPPLE],
 };
 
-/** E1 wire : `GetFlashLevel()` (field_weather / overworld) — niveau d'obscurité Flash
- *  (grottes sans Flash). Exposé global best-effort ; défaut 0 (= pas de flash, 1:1 hors
- *  grotte). field-weather pas toujours câblé en voie L → défaut sûr. */
+/** 1:1 décomp `GetFlashLevel()` (overworld.c:988) : `return gSaveBlock1Ptr->flashLevel`.
+ *  FIX (Bug 5) : lecture DIRECTE de la source de vérité `gSaveBlock1Ptr.flashLevel` (posée par
+ *  SetDefaultFlashLevel/SetFlashLevel au map load) au lieu de `globalThis.GetFlashLevel` — ce
+ *  pont n'était PAS toujours armé en voie L (field_screen_effect pas chargé) → fallback 0 → une
+ *  grotte à Flash ratait la transition FLASH et tombait en NORMAL (WHITE_BARS_FADE blanche).
+ *  `gSaveBlock1Ptr` est toujours disponible (importé ci-dessus, singleton) → plus de fallback. */
 function _GetFlashLevel(): number {
-  const fn = (globalThis as { GetFlashLevel?: () => number }).GetFlashLevel;
-  return fn ? (fn() | 0) : 0;
+  return gSaveBlock1Ptr.flashLevel & 0xF;
 }
 
 /** 1:1 décomp `GetBattleTransitionTypeByMap()` (battle_setup.c:696-719). */
@@ -1518,11 +1520,27 @@ export function GetBattleTransitionTypeByMap(): number {
   if (_GetFlashLevel()) return TRANSITION_TYPE_FLASH;
   if (_MB_IsSurfableWaterOrUnderwater_BSH(tileBehavior)) return TRANSITION_TYPE_WATER;
 
-  switch (_getMapType()) {
-    case MAP_TYPE_UNDERGROUND: return TRANSITION_TYPE_CAVE;
-    case MAP_TYPE_UNDERWATER:  return TRANSITION_TYPE_WATER;
-    default:                   return TRANSITION_TYPE_NORMAL;
+  const mapType = _getMapType();
+  let result: number;
+  switch (mapType) {
+    case MAP_TYPE_UNDERGROUND: result = TRANSITION_TYPE_CAVE;   break;
+    case MAP_TYPE_UNDERWATER:  result = TRANSITION_TYPE_WATER;  break;
+    default:                   result = TRANSITION_TYPE_NORMAL; break;
   }
+  // FIX (Bug 5) — garde HURLANTE : NORMAL (→ WHITE_BARS_FADE blanche) alors que le header courant
+  // est une grotte/souterrain/sous-marin = le mapType a été mal résolu (header stale/non chargé au
+  // moment de l'encounter, ou string non reconnue → fallback MAP_TYPE_TOWN de `_getMapType`). On le
+  // signale au lead avec toutes les valeurs pour re-diagnostiquer si la transition re-blanchit.
+  if (result === TRANSITION_TYPE_NORMAL) {
+    const rawMt = (globalThis as { gMapHeader?: { mapType?: number | string } }).gMapHeader?.mapType;
+    if (rawMt === 'MAP_TYPE_UNDERGROUND' || rawMt === MAP_TYPE_UNDERGROUND
+      || rawMt === 'MAP_TYPE_UNDERWATER' || rawMt === MAP_TYPE_UNDERWATER) {
+      console.error('[battle_setup] GetBattleTransitionTypeByMap=NORMAL (transition blanche) alors que '
+        + 'gMapHeader.mapType=' + String(rawMt) + ' (grotte/sous-marin) — mapType résolu=' + mapType
+        + ', flashLevel=' + _GetFlashLevel() + ', tileBehavior=0x' + tileBehavior.toString(16));
+    }
+  }
+  return result;
 }
 
 /** 1:1 décomp `GetSumOfPlayerPartyLevel(numMons)` (battle_setup.c:721-738). Somme
