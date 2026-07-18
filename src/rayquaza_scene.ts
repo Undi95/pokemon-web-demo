@@ -29,7 +29,7 @@
 
 import {
   getRuntime, assetCache, SpriteCallbackDummy, FindTaskIdByFunc,
-  LoadCompressedSpriteSheet, EnableInterrupts, InitSpriteAffineAnim, ResetTasks,
+  LoadCompressedSpriteSheet, LoadSpritePalette, EnableInterrupts, InitSpriteAffineAnim, ResetTasks,
   BlendPalettes, CpuFill16, LoadOam, ProcessSpriteCopyRequests,
   ResetPaletteFade, TransferPlttBuffer, RunTasks,
 } from '../harness/runtime/decomp-globals';
@@ -82,10 +82,24 @@ function StartSpriteAnim(sprite: DecompSprite, animNum: number): void {
 }
 import { CreateTask, DestroyTask, gTasks } from './task';
 import {
-  ChangeBgX, ChangeBgY, ClearScheduledBgCopiesToVram, GetBgY, InitBgsFromTemplates,
+  ChangeBgX, ChangeBgY, ClearScheduledBgCopiesToVram, GetBgTilemapBuffer, GetBgY, InitBgsFromTemplates,
   ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetTempTileDataBuffers,
-  ResetVramOamAndBgCntRegs, ScheduleBgCopyTilemapToVram, SetBgAffine, SetBgTilemapBuffer, ShowBg,
+  ResetVramOamAndBgCntRegs, ScheduleBgCopyTilemapToVram, SetBgAffine,
+  SetBgTilemapBuffer as _SetBgTilemapBuffer, ShowBg,
 } from './window';
+
+// ─── SetBgTilemapBuffer : ALIAS buffer↔vue VRAM (adaptation moteur CENTRALE) ──────────
+// Le compositor lit la VUE VRAM persistante `GetBgTilemapBuffer(bg)`, PAS le buffer WRAM
+// détaché passé ici (window.ts:1474-1481 : `SetBgTilemapBuffer` = no-op copie ; « conditions/
+// credits n'affichent pas leur buffer tant qu'il n'est pas re-câblé »). On re-pointe donc le
+// slot `sRayScene.tilemapBuffers[bg]` VERS la vue du moteur, pour que les LZDecompressWram/
+// CpuFastFill16/CpuFastCopy suivants écrivent le tilemap RÉELLEMENT lu à l'écran.
+// Précédent 1:1 : easy_chat.ts:796-804 (alias sScreenControl.bgXTilemapBuffer = GetBgTilemapBuffer).
+// (Tous les call-sites de la scène passent `tilemapBuffers[bg]` avec bg == index → alias direct.)
+function SetBgTilemapBuffer(bg: number, buffer: TilemapBuffer): void {
+  _SetBgTilemapBuffer(bg, buffer);
+  if (sRayScene) sRayScene.tilemapBuffers[bg] = GetBgTilemapBuffer(bg);
+}
 import { DecompressAndCopyTileDataToVram, FreeTempTileDataBuffersIfPossible } from './pokenav_main_menu';
 
 // ─── Constantes décomp non encore consolidées dans include/ (inlinées, citées) ───
@@ -138,11 +152,13 @@ function CpuFastFill16(value: number, dest: Uint16Array, sizeBytes: number): voi
 function CpuFastCopy(src: Uint16Array, dest: Uint16Array, sizeBytes: number): void {
   dest.set(src.subarray(0, Math.min(src.length, sizeBytes >> 1)));
 }
-/** 1:1 `LoadCompressedSpritePalette(&pal)` — palette sprite taguée, résolue via assetCache (clé). */
+/** 1:1 `LoadCompressedSpritePalette(&pal)` — palette sprite taguée. Nos assets sont préchargés
+ *  DÉCOMPRESSÉS (PNG PLTE → assetCache par clé string `pal.data`), donc la variante « Compressed »
+ *  ≡ LoadSpritePalette, qui résout la clé et charge la palette dans le slot OBJ alloué au tag.
+ *  (Précédent identique pour des assets préchargés : item_menu.ts:460, money.ts:210,
+ *   battle_gfx_sfx_util.ts:225 — décomp `LoadCompressedSpritePalette` → `LoadSpritePalette`.) */
 function LoadCompressedSpritePalette(pal: { data: string; tag: number }): void {
-  const r = getRuntime() as unknown as { LoadCompressedSpritePalette?: (p: unknown) => void };
-  if (typeof r.LoadCompressedSpritePalette === 'function') r.LoadCompressedSpritePalette(pal);
-  // sinon : inerte (palette liée au câblage — assetCache déjà peuplé par le préchargeur).
+  LoadSpritePalette(pal);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -459,6 +475,10 @@ export function DoRayquazaScene(animId: number, endEarly: boolean, exitCallback:
 
 /** 1:1 `static void CB2_InitRayquazaScene(void)` (c:1296). */
 function CB2_InitRayquazaScene(): void {
+  // GATE assets async (adaptation fetch — hors 1:1, pattern hall_of_fame CB2_DoHallOfFameScreen:296).
+  // Le décomp lit la ROM sync ; nous fetchons les PNG/.bin/.pal → on spin ce CB2 (re-entré chaque
+  // frame) jusqu'à ce que le préchargement soit réglé (chargé OU échoué → jamais de gel).
+  if (!_ensureRayAssets()) return;
   SetVBlankHBlankCallbacksToNull();
   ClearScheduledBgCopiesToVram();
   ScanlineEffect_Stop();
@@ -1678,6 +1698,11 @@ function Task_RayChasesAwayAnim(taskId: number): void {
   data[0] /* tState */ = 0;
   data[1] /* tTimer */ = 0;
   gTasks[taskId].func = (t: { taskId: number }) => Task_HandleRayChasesAway(t.taskId);
+  // funcRef : nos tasks tournent via un wrapper anonyme (t)=>fn(t.taskId), donc
+  // `task.func === Task_HandleRayChasesAway` est TOUJOURS faux. FindTaskIdByFunc (decomp-globals)
+  // retombe alors sur le tag `task.funcRef` — on le pose ici (précédent evolution_scene.ts
+  // _setTaskFunc:167-171). Lu par SpriteCB_ChasesAway_Rayquaza:frame 352 → FindTaskIdByFunc(Task_HandleRayChasesAway).
+  (gTasks[taskId] as unknown as { funcRef?: unknown }).funcRef = Task_HandleRayChasesAway;
   data[2] /* tBgTaskId */ = CreateTask((t: { taskId: number }) => Task_ChasesAway_AnimateBg(t.taskId), 0);
   gTasks[data[2] /* tBgTaskId */].data[0] = 0;
   gTasks[data[2] /* tBgTaskId */].data[1] = 0;
@@ -2062,6 +2087,20 @@ function Task_ChasesAway_AnimateRing(taskId: number): void {
 let _rayAssetsRequested = false;
 let _rayAssetsSettled = false;
 
+/** GATE assets du CB2 (adaptation fetch async — pattern hall_of_fame._ensureHofAssets:1072) :
+ *  true quand le préchargement est réglé (chargé OU échoué → jamais de gel). Filet de sécurité :
+ *  si le préchargement n'a pas été lancé (voie dev __rayTest sans passer par le special), le lance. */
+function _ensureRayAssets(): boolean {
+  if (!_rayAssetsRequested)
+    preloadRayquazaSceneAssets().catch((e) => console.error('[rayquaza_scene] preload (gate)', e));
+  return _rayAssetsSettled;
+}
+
+// Sonde dev (harness, hors 1:1) : état courant de la cinématique pour labelliser/pauser les
+// captures (dev.pauseAt). Lit sRayScene au call → animId (0..6) + endEarly + assets réglés.
+(globalThis as { __rayInfo?: () => unknown }).__rayInfo = () =>
+  sRayScene ? { animId: sRayScene.animId, endEarly: sRayScene.endEarly, settled: _rayAssetsSettled } : { animId: null, settled: _rayAssetsSettled };
+
 /**
  * Précharge TOUS les assets de la scène Rayquaza vers l'assetCache + lie les vars de fond.
  * À lancer AVANT le CB2 (au câblage de Script_DoRayquazaScene), `.catch` HURLANT — jamais
@@ -2130,7 +2169,14 @@ export async function preloadRayquazaSceneAssets(): Promise<void> {
       // ── Scene 2 : TakesFlight ──
       (async () => { gRaySceneTakesFlight_Bg_Gfx = await tiles('gRaySceneTakesFlight_Bg_Gfx', `${BASE}/scene_2/bg.png`, 4); })(),
       (async () => { gRaySceneTakesFlight_Bg_Tilemap = await tmap('gRaySceneTakesFlight_Bg_Tilemap', `${BASE}/scene_2/bg.bin`); })(),
-      (async () => { gRaySceneTakesFlight_Rayquaza_Gfx = await tiles('gRaySceneTakesFlight_Rayquaza_Gfx', `${BASE}/scene_2/rayquaza.png`, 8); })(),
+      // rayquaza.png scene_2 : PNG 8bpp mais BG2 TakesFlight = paletteMode 0 (4bpp, rayquaza_scene.c:790).
+      // Les index du PNG sont TOUS 0..15 (vérifié : nibble haut = 0), donc 4bpp est le bon bit-depth
+      // (32 o/tuile, aligné sur le mode BG) — l'ancien chargement 8bpp désalignait tout (garbage).
+      // DETTE NOTÉE (« fold d'index rayquaza.png ») : le tilemap scene_2/rayquaza.bin référence des
+      // tuiles jusqu'à 938 (>240 tuiles du gfx) avec des palette-banks étalées 0..14 → la vue « over
+      // the shoulder » ne compose pas proprement (blocs noirs) ; rendu partiel (fragments verts de
+      // Rayquaza). Rendu 1:1 = re-transcription du layout tuile/bank + palette-cycling (hors périmètre).
+      (async () => { gRaySceneTakesFlight_Rayquaza_Gfx = await tiles('gRaySceneTakesFlight_Rayquaza_Gfx', `${BASE}/scene_2/rayquaza.png`, 4); })(),
       (async () => { gRaySceneTakesFlight_Rayquaza_Tilemap = await tmap('gRaySceneTakesFlight_Rayquaza_Tilemap', `${BASE}/scene_2/rayquaza.bin`); })(),
       palPng('gRaySceneTakesFlight_Rayquaza_Pal', `${BASE}/scene_2/rayquaza.png`),
       tiles('gRaySceneTakesFlight_Smoke_Gfx', `${BASE}/scene_2/smoke.png`, 4),
@@ -2175,6 +2221,5 @@ export async function preloadRayquazaSceneAssets(): Promise<void> {
   } finally {
     _rayAssetsSettled = true;
   }
-  void _rayAssetsRequested; void _rayAssetsSettled; // gate assets (au câblage du CB2)
 }
 

@@ -1318,7 +1318,42 @@ registerSpecial('MauvilleGymDeactivatePuzzle', MauvilleGymDeactivatePuzzle);
 // Fortree (badge 6) : init du puzzle de portes tournantes (rotating_gate.ts, 1:1 rotating_gate.c).
 registerSpecial('RotatingGate_InitPuzzle', RotatingGate_InitPuzzle);
 registerSpecial('RotatingGate_InitPuzzleAndGraphics', RotatingGate_InitPuzzleAndGraphics);
-registerSpecial('Script_DoRayquazaScene', () => { /* no-op */ });
+/** 1:1 décomp `void Script_DoRayquazaScene(void)` (field_specials.c:3795) :
+ *  ```c
+ *  if (!gSpecialVar_0x8004) DoRayquazaScene(0, TRUE,  CB2_ReturnToFieldContinueScriptPlayMapMusic);
+ *  else                     DoRayquazaScene(1, FALSE, CB2_ReturnToFieldContinueScriptPlayMapMusic);
+ *  ```
+ *  Cinématique Rayquaza (climax Sootopolis). VAR_0x8004=FALSE → duo-fight COURT (endEarly, joué
+ *  à l'arrivée du joueur) ; =1 → cinématique COMPLÈTE (duo→envol→descente→charge→chasse).
+ *
+ *  Adaptations moteur :
+ *   - rayquaza_scene importé en DYNAMIQUE (specials-registry est central dans le graphe → une arête
+ *     statique risque un cycle/TDZ ; précédents nombreux, lignes 408-517 de ce fichier).
+ *   - préchargeur assets lancé AVANT DoRayquazaScene (= avant son SetMainCallback2), gate
+ *     `_rayAssetsSettled` dans CB2_InitRayquazaScene (fetch async ≠ ROM sync).
+ *   - exitCallback = CB2_ReturnToFieldContinueScript_Manual : substitut repo du variant
+ *     `PlayMapMusic` (la ré-attaque de la musique de map = dette tracée ; précédent safari_zone.ts:159). */
+function _launchRayquazaScene(animId: number, endEarly: boolean): void {
+  void (async () => {
+    try {
+      const ray = await import('../../rayquaza_scene');
+      // Kick off le préchargement AVANT SetMainCallback2 (garde hurlante ; gate dans le CB2).
+      ray.preloadRayquazaSceneAssets().catch((e) => console.error('[rayquaza] preload', e));
+      const { CB2_ReturnToFieldContinueScript_Manual } = await import('../../overworld');
+      ray.DoRayquazaScene(animId, endEarly, CB2_ReturnToFieldContinueScript_Manual);
+    } catch (e) { console.error('[rayquaza] launch', e); }
+  })();
+}
+registerSpecial('Script_DoRayquazaScene', () => {
+  const arrives = (VarGet('VAR_0x8004') ?? 0) !== 0;
+  _launchRayquazaScene(arrives ? 1 : 0, !arrives); // (0,TRUE) fight court | (1,FALSE) cinématique complète
+});
+// Pont dev (harness, hors 1:1) : joue la cinématique SANS le script Sootopolis.
+//   window.__rayTest(animId=1, endEarly=false)  — boot ?debug, console.
+//   animId : 0=duo-fight-pre 1=duo-fight 2=takes-flight 3=descends 4=charges 5=chases-away.
+// Retour overworld via le même CB2 → valide aussi la reprise field.
+(globalThis as { __rayTest?: (n?: number, e?: boolean) => void }).__rayTest =
+  (n = 1, e = false) => _launchRayquazaScene(n, e);
 /** 1:1 décomp `ShowFieldMessageStringVar4` (field_specials.c:890-893) :
  *  ```c
  *  void ShowFieldMessageStringVar4(void) {
