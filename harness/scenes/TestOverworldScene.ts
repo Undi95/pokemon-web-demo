@@ -937,6 +937,16 @@ export class TestOverworldScene extends Phaser.Scene {
         const bg0MapStart = bg0Cfg.mapBaseIndex * 2048;
         const vram = self.rt.gba.vram;
         for (let i = 0; i < 2048; i++) vram[bg0MapStart + i] = 0;
+        // Invariante moteur « tile 0 = vide réservé » (précédent : garble dresseur
+        // `8c820d7a9`) : la fly map charge sa carte 8bpp au charBase 2 DÈS l'offset 0
+        // → le tile 0 (celui que le tilemap BG0 tout-0 ci-dessus répète plein écran)
+        // devient un morceau OPAQUE de carte → colonnes verticales sur tout l'écran
+        // pendant le fade-in du retour (bug user 2026-07-18, frame gelée dev.pause :
+        // char2Tile0NonZero=32/32, tilemap BG0 0/1024). Sur GBA l'invariante tient
+        // par convention des tilesets GF (tile 0 vide) ; notre pipeline PNG la casse
+        // → on la RESTAURE ici, sous le noir, avant le fade-in.
+        const bg0CharStart = bg0Cfg.charBaseIndex * 0x4000;
+        for (let i = 0; i < 32; i++) vram[bg0CharStart + i] = 0;
         // Re-set VBlankCallback (= option menu / bag / battle ont posé un autre
         // VBlank, voire NULL). 1:1 décomp `SetFieldVBlankCallback` appelé par
         // `CB2_ReturnToFieldLocal`. ⚠️ DOIT être le MÊME `_fieldVBlankCB` que le

@@ -55,7 +55,7 @@ import type { DecompRuntime, DecompSprite } from '../harness/runtime/decomp-runt
 import { OBJ_PLTT_ID, BG_PLTT_ID,
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS } from '../harness/runtime/decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix, AllocOamMatrix, CalcCenterToCornerVec, StartSpriteAnim } from './sprite';
+import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag, FreeSpritePaletteByTag, DestroySprite, FreeOamMatrix, CalcCenterToCornerVec, StartSpriteAnim } from './sprite';
 import { UpdateSpritePaletteWithWeather, FadeScreen, FADE_TO_BLACK, IsWeatherNotFadingIn } from './field_weather';
 import { FadeInFromBlack } from './field_screen_effect';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadIndexedPngRawIndices, extractPngPlte } from '../harness/gba/png-loader';
@@ -88,7 +88,7 @@ import { FieldEffectActiveListContains } from './field_effect';
 import { DestroyTask } from './task';
 import { FindTaskIdByFunc, getRuntime, MultiplyInvertedPaletteRGBComponents, IsFanfareTaskInactive,
   PlaySE, PlayFanfare, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite,
-  LoadPalette, PlayCryInternal, CRY_PRIORITY_NORMAL, FreeSpriteTilesByTag } from '../harness/runtime/decomp-globals';
+  LoadPalette, PlayCryInternal, CRY_PRIORITY_NORMAL, FreeSpriteTilesByTag, InitSpriteAffineAnim } from '../harness/runtime/decomp-globals';
 import { CalculatePlayerPartyCount, gPlayerParty, GetMonData,
   MON_DATA_SPECIES, MON_DATA_OT_ID, MON_DATA_PERSONALITY } from './engine/battle/party-storage';
 import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
@@ -4300,7 +4300,15 @@ registerAffineAnimTable('sAffineAnims_FlyBird', {
 /** 1:1 `CreateFlyBirdSprite` (field_effect.c:3299) — "leave ball" anim par défaut. */
 function CreateFlyBirdSprite(): number {
   const rt = getRuntime();
-  if (!rt || _flyBirdTileStart < 0) return MAX_SPRITES;
+  if (!rt || _flyBirdTileStart < 0) {
+    // Règle 3 : un raté d'asset HURLE — sans sprite, GetFlyBirdAnimCompleted(MAX_SPRITES)
+    // rend 1 → tous les states du fly-out/fly-in défilent aux timers = warp en ~2s sans oiseau.
+    console.error('[fly bird] CreateFlyBirdSprite SKIP — asset oiseau absent', {
+      rt: !!rt, tileStart: _flyBirdTileStart, ready: _flyBirdReady,
+      tileTag: IndexOfSpriteTileTag(TAG_FLY_BIRD), palTag: IndexOfSpritePaletteTag(TAG_FLY_BIRD),
+    });
+    return MAX_SPRITES;
+  }
   // Palette : résoudre le bank AU CREATE (le warp/map-load rebat les banks via FreeAllSpritePalettes
   // → _flyBirdPaletteBank stale = oiseau ROSE à l'arrivée selon la map). 1:1 le décomp pose la
   // palette du template ici (oam.paletteNum au create), pas via une valeur module figée.
@@ -4315,7 +4323,10 @@ function CreateFlyBirdSprite(): number {
     paletteMode: 0, affineMode: 0, subpriority: 1,
   });
   const sprite = rt.gSprites[spriteId];
-  if (!sprite) return MAX_SPRITES;
+  if (!sprite) {
+    console.error('[fly bird] CreateFlyBirdSprite SKIP — CreateSpriteAtOam n\'a pas rendu de sprite', { spriteId });
+    return MAX_SPRITES;
+  }
   sprite.affineAnimsTableName = 'sAffineAnims_FlyBird';
   sprite.callback = SpriteCB_FlyBirdLeaveBall;
   return spriteId;
@@ -4350,15 +4361,15 @@ function SetFlyBirdPlayerSpriteId(birdSpriteId: number, playerSpriteId: number):
 function SpriteCB_FlyBirdLeaveBall(sprite: DecompSprite, _rt: DecompRuntime): void {
   if (sprite.data[7] === 0) {  // sAnimCompleted
     if (sprite.data[0] === 0) {
-      // 1:1 field_effect.c:3357-3360 : oam.affineMode = ST_OAM_AFFINE_DOUBLE + InitSpriteAffineAnim
-      // (alloue la matrice) + StartSpriteAffineAnim(0). Le SCALE est piloté par l'OAM CANONIQUE
-      // (rt.gba.oam[oamIndex]) : poser sprite.affineMode seul ne propage PAS (le ticker/renderer lisent
-      // oam.affineMode/matrixNum) → sonde : xScale figé 256, aucun scale. Cf. battle_anim_mons.ts:448-450.
-      const _m = AllocOamMatrix();
-      sprite.affineMode = 3;
-      if (_m > 0) sprite.matrixNum = _m;
-      const _oam = _rt.gba.oam[sprite.oamIndex];
-      if (_oam) { _oam.affineMode = 3; if (_m > 0) _oam.affineParamIndex = _m; }
+      // 1:1 field_effect.c:3357-3360 : oam.affineMode = ST_OAM_AFFINE_DOUBLE + affineAnims +
+      // InitSpriteAffineAnim + StartSpriteAffineAnim(0). InitSpriteAffineAnim (decomp-globals:2503)
+      // alloue la matrice ET recalcule centerToCornerVec avec l'affineMode COURANT (DOUBLE → vec ×2
+      // = -32,-32, 1:1 sprite.c CalcCenterToCornerVec) — l'ancienne alloc manuelle AllocOamMatrix
+      // laissait le vec du create (-16,-16) → oiseau rendu +16px à droite/bas de la Ball pendant
+      // toute la phase affine (bug vu en jeu). L'OAM suit via syncSpritesToOam (item 6).
+      sprite.affineMode = 3;  // ST_OAM_AFFINE_DOUBLE
+      sprite.affineAnimsTableName = 'sAffineAnims_FlyBird';
+      InitSpriteAffineAnim(sprite);
       StartSpriteAffineAnim(sprite, 0);
       sprite.x = 0x76; sprite.y = -0x30;
       sprite.data[0]++;
@@ -4371,9 +4382,7 @@ function SpriteCB_FlyBirdLeaveBall(sprite: DecompSprite, _rt: DecompRuntime): vo
     if (sprite.data[2] < 0x800) sprite.data[2] += 0x60;
     if (sprite.data[1] > 0x81) {
       sprite.data[7]++;  // sAnimCompleted
-      sprite.affineMode = 0;
-      const _oam = _rt.gba.oam[sprite.oamIndex];
-      if (_oam) _oam.affineMode = 0;
+      sprite.affineMode = 0;  // ST_OAM_AFFINE_OFF — l'OAM suit via syncSpritesToOam (item 6)
       FreeOamMatrix(sprite.matrixNum);
       const v = CalcCenterToCornerVec(0, 2, 0);
       sprite.centerToCornerVecX = v.centerToCornerVecX;
@@ -4403,13 +4412,12 @@ function SpriteCB_FlyBirdSwoopDown(sprite: DecompSprite, rt: DecompRuntime): voi
 function SpriteCB_FlyBirdReturnToBall(sprite: DecompSprite, _rt: DecompRuntime): void {
   if (sprite.data[7] === 0) {
     if (sprite.data[0] === 0) {
-      // 1:1 field_effect.c:3410-3413 : oam.affineMode = DOUBLE + InitSpriteAffineAnim + StartSpriteAffineAnim(1)
-      // (rétrécir avant d'entrer dans la ball). OAM canonique obligatoire (cf. LeaveBall ci-dessus).
-      const _m = AllocOamMatrix();
-      sprite.affineMode = 3;
-      if (_m > 0) sprite.matrixNum = _m;
-      const _oam = _rt.gba.oam[sprite.oamIndex];
-      if (_oam) { _oam.affineMode = 3; if (_m > 0) _oam.affineParamIndex = _m; }
+      // 1:1 field_effect.c:3410-3413 : oam.affineMode = DOUBLE + affineAnims + InitSpriteAffineAnim
+      // + StartSpriteAffineAnim(1) (rétrécir avant d'entrer dans la Ball). InitSpriteAffineAnim
+      // recalcule centerToCornerVec en mode DOUBLE (vec ×2) — cf. LeaveBall ci-dessus.
+      sprite.affineMode = 3;  // ST_OAM_AFFINE_DOUBLE
+      sprite.affineAnimsTableName = 'sAffineAnims_FlyBird';
+      InitSpriteAffineAnim(sprite);
       StartSpriteAffineAnim(sprite, 1);
       sprite.x = 0x5e; sprite.y = -0x20;
       sprite.data[0]++;
@@ -4427,9 +4435,7 @@ function SpriteCB_FlyBirdReturnToBall(sprite: DecompSprite, _rt: DecompRuntime):
     if (sprite.data[2] < 0x100) sprite.data[2] = 0x100;
     if (sprite.data[3] >= 60) {
       sprite.data[7]++;
-      sprite.affineMode = 0;
-      const _oam = _rt.gba.oam[sprite.oamIndex];
-      if (_oam) _oam.affineMode = 0;
+      sprite.affineMode = 0;  // ST_OAM_AFFINE_OFF — l'OAM suit via syncSpritesToOam (item 6)
       FreeOamMatrix(sprite.matrixNum);
       sprite.invisible = true;
     }

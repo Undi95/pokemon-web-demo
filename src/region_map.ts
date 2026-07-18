@@ -2221,8 +2221,13 @@ function TryCreateRedOutlineFlyDestIcons(): void {
 }
 
 /** 1:1 `static void SpriteCB_FlyDestIcon(struct Sprite *sprite)` (region_map.c:1914) —
- *  flicker de l'icône sous le curseur. */
+ *  flicker de l'icône sous le curseur. Garde nulle (adaptation mémoire-sûre) : à la
+ *  frame de sortie, CB_ExitFlyMap libère sFlyMap PUIS CB2_FlyMap:AnimateSprites tourne
+ *  encore — le décomp lit le pointeur dangling sans conséquence (heap C intact), en JS
+ *  c'est un TypeError qui avorte tickFixed. Les icônes meurent au ResetSpriteData du
+ *  retour field, comme sur GBA. */
 function SpriteCB_FlyDestIcon(sprite: DecompSprite): void {
+  if (!sFlyMap) return;
   if (sFlyMap.regionMap.mapSecId === sprite.data[0] /* sIconMapSec */) {
     if (++sprite.data[1] /* sFlickerTimer */ > 16) {
       sprite.data[1] = 0;
