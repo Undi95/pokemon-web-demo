@@ -125,6 +125,20 @@ export function setRedrawWholeMapViewHook(fn: () => void): void {
   _redrawWholeMapViewHook = fn;
 }
 
+// ─── DEVTOOLS debug maps (hors 1:1 ; jamais armé en prod) ────────────────────
+// Point d'accroche MINIMAL pour les cartes de test devtools (MAP_DEBUG_*). Le
+// registre vit côté harness (harness/devtools/debug-maps.ts) et n'écrit RIEN
+// dans public/decomp/em (données du jeu intactes) : il fabrique un MapHeader en
+// mémoire à partir des tilesets EXISTANTS (loadTileset). Le provider n'est armé
+// que si le harness appelle setDebugMapProvider (installDebugMaps) — en prod il
+// reste null et ce chemin est un no-op total. `var` hoisté = même anti-TDZ que
+// les hooks ci-dessus (le harness peut l'armer tôt).
+// eslint-disable-next-line no-var
+var _debugMapProvider: ((mapId: string) => Promise<MapHeader | null>) | null = null;
+export function setDebugMapProvider(fn: ((mapId: string) => Promise<MapHeader | null>) | null): void {
+  _debugMapProvider = fn;
+}
+
 // ─── Constants 1:1 décomp include/fieldmap.h ────────────────────────────────
 
 export const NUM_TILES_IN_PRIMARY = 512;
@@ -573,6 +587,13 @@ function _resolveBerryOrSightId(raw: string | undefined): number {
 export async function loadMapHeader(mapId: string): Promise<MapHeader> {
   const cached = mapHeaderCache.get(mapId);
   if (cached) return cached;
+
+  // DEVTOOLS debug maps : MAP_DEBUG_* servi par le registre harness (aucun fetch
+  // dans public/decomp/em). No-op en prod (provider jamais armé). Cf. setDebugMapProvider.
+  if (_debugMapProvider && mapId.startsWith('MAP_DEBUG_')) {
+    const provided = await _debugMapProvider(mapId);
+    if (provided) { mapHeaderCache.set(mapId, provided); return provided; }
+  }
 
   // Résout MAP_LITTLEROOT_TOWN → LittlerootTown (= filename).
   const idsTable = await fetch(`${BASE}/map-ids.json`).then(r => r.json()) as Record<string, string>;

@@ -105,6 +105,9 @@ import { SetFieldEffectRuntime } from '../../src/field_effect';
 import { decideBootMode, preloadBootData } from '../boot/boot-mode';
 import { installInputHandlers, setHeldKeysOverride } from '../runtime/input-handler';
 import { installEngineDevtools } from '../devtools/engine-devtools';
+// DEVTOOLS : 3 cartes de test (MAP_DEBUG_1/2/3) pour exercer toutes les CS sans
+// traverser Hoenn. Arme un provider dans le map-loader (no-op en prod). dev.debugMap(1|2|3).
+import { installDebugMaps } from '../devtools/debug-maps';
 import {
   loadMapScripts,
   ScriptContext_RunScript,
@@ -207,7 +210,7 @@ import { preloadAshEffect } from '../../src/field_effect_helpers';
 import { preloadSurfBlobEffect } from '../../src/field_effect_helpers';
 import { preloadDisguiseEffects } from '../../src/field_effect_helpers';
 import { preloadShadowEffect } from '../../src/field_effect_helpers';
-import { preloadPokecenterHealEffect, preloadFieldMoveShowMonEffect } from '../../src/field_effect_helpers';
+import { preloadPokecenterHealEffect, preloadHallOfFameRecordEffect, preloadFieldMoveShowMonEffect } from '../../src/field_effect_helpers';
 import { FieldCallback_FlyIntoMap } from '../../src/field_effect_helpers';
 import { PlaySE } from '../runtime/decomp-globals';
 import {
@@ -386,6 +389,10 @@ export class TestOverworldScene extends Phaser.Scene {
       setHeldKeys: (mask) => setHeldKeysOverride(this.rt, mask),
       sceneName: 'TestOverworldScene',
     });
+
+    // DEVTOOLS debug-maps : arme le provider MAP_DEBUG_* (harness/devtools/debug-maps.ts)
+    // + expose dev.debugMap(1|2|3). Aucune donnée de jeu touchée.
+    installDebugMaps();
 
     // Real keyboard → rt.gMain.heldKeys via handler global partagé.
     // Cf. src/engine/input-handler.ts (= 1:1 décomp gMain.heldKeys canonical).
@@ -1481,6 +1488,10 @@ export class TestOverworldScene extends Phaser.Scene {
     // game/field_effect_helpers.ts). Déclenché par `dofieldeffect FLDEFF_POKECENTER_HEAL` du
     // script nurse → débloque le soin (waitfieldeffect ne gèle plus).
     await preloadPokecenterHealEffect(this.rt);
+    // Hall of Fame record (pokéballs montent + 5 moniteurs muraux clignotent) : assets moniteurs +
+    // réutilise pokeball_glow. Déclenché par `dofieldeffect 62` du script EverGrandeCity_HallOfFame
+    // → débloque le Panthéon (waitfieldeffect 62 ne gèle plus AVANT GameClear).
+    await preloadHallOfFameRecordEffect(this.rt);
     // Field Move Show Mon (anim partagée des CS : bannière de stries + le mon glisse + cri) :
     // assets streaks OUTDOORS seuls. Déclenché par `FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT)`
     // depuis Surf/Cut/Fly/Strength/Waterfall/Dive (ces effets l'attendaient dans la liste active).
