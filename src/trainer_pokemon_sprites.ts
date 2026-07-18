@@ -81,6 +81,19 @@ export function _registerMonPicSubstrate(species: string, tileData: Uint8Array, 
   _monPicSubstrate.set(species, { tileData, palette });
 }
 
+// ─── Substrat TRAINER-pic sync (= ROM `gTrainerFrontPicTable`/`gTrainerFrontPicPaletteTable`) ──
+// Parallèle strict au substrat mon : le décomp `CreatePicSprite(..., isTrainer=TRUE)` décompresse
+// `gTrainerFrontPicTable[picId]` (sync ROM). Nous fetchons le PNG async → substrat pré-rempli
+// AVANT `CreateTrainerPicSprite` (sync, 1:1). Clé = enumName 'TRAINER_PIC_X' (= l'index décomp).
+const _trainerPicSubstrate = new Map<string, MonPicSubstrate>();
+
+/** Pré-remplit le substrat trainer-pic (= ROM `DecompressPic` isTrainer) pour `picId`. Appelé par
+ *  le caller (preload async) AVANT `CreateTrainerPicSprite` (sync). `tileData` = front pic dresseur
+ *  4bpp décompressé (64×64 = 2048 octets), `palette` = 16 couleurs RGB15. */
+export function _registerTrainerPicSubstrate(picId: string, tileData: Uint8Array, palette: Uint16Array): void {
+  _trainerPicSubstrate.set(picId, { tileData, palette });
+}
+
 // ─── ResetAllPicSprites (1:1 décomp c:50-58) ────────────────────────────────
 /**
  * bool16 ResetAllPicSprites(void) {
@@ -262,10 +275,14 @@ export function FreeAndDestroyTrainerPicSprite(spriteId: number): number {
  */
 function CreatePicSprite(
   species: number | string, _otId: number, _personality: number, _isFrontPic: boolean,
-  x: number, y: number, paletteSlot: number, paletteTag: number, _isTrainer: boolean, _ignoreDeoxys: boolean,
+  x: number, y: number, paletteSlot: number, paletteTag: number, isTrainer: boolean, _ignoreDeoxys: boolean,
 ): number {
   const rt: DecompRuntime = getRuntime();
-  const key = typeof species === 'number' ? (reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE') : species;
+  // 1:1 décomp : `species` indexe gMonFrontPicTable (mon) OU gTrainerFrontPicTable (dresseur) selon
+  // isTrainer → clé enumName préfixée 'SPECIES_' ou 'TRAINER_PIC_'.
+  const key = typeof species === 'number'
+    ? (reverseDecompConstant(species, isTrainer ? 'TRAINER_PIC_' : 'SPECIES_') ?? (isTrainer ? 'TRAINER_PIC_BRENDAN' : 'SPECIES_NONE'))
+    : species;
 
   // 1:1 décomp c:172-178 : find free sSpritePics slot.
   let i = 0;
@@ -274,7 +291,7 @@ function CreatePicSprite(
 
   // 1:1 décomp DecompressPic (substrat sync). Absent = pic pas encore fetché → 0xFFFF (le caller
   // gère l'échec comme la ROM gère un decompress KO : return 0xFFFF, cf. c:180-184).
-  const sub = _monPicSubstrate.get(key);
+  const sub = (isTrainer ? _trainerPicSubstrate : _monPicSubstrate).get(key);
   if (!sub) {
     console.warn(`[trainer_pokemon_sprites] CreatePicSprite: no substrate for ${key} (preload manquant)`);
     return 0xFFFF;
@@ -334,5 +351,17 @@ export function CreateMonPicSprite_HandleDeoxys(
   return CreateMonPicSprite(species, otId, personality, isFrontPic, x, y, paletteSlot, paletteTag, false);
 }
 
-// NOTE mirror : CreateTrainerPicSprite / CreateTrainerCard* (voie window blit) restent à porter
-// quand un écran les utilisera (substrat trainer-pic non câblé). Squelette 1:1 conservé ci-dessus.
+/** 1:1 décomp `u16 CreateTrainerPicSprite(u16 species, bool8 isFrontPic, s16 x, s16 y,
+ *  u8 paletteSlot, u16 paletteTag)` (trainer_pokemon_sprites.c:355-358). `species` = index
+ *  gTrainerFrontPicTable (= clé enumName 'TRAINER_PIC_X', ou l'id numérique décomp). Substrat
+ *  trainer-pic pré-rempli par le caller (preload async) AVANT cet appel. Consommateur : Hall of
+ *  Fame (Task_Hof_DisplayPlayer). */
+export function CreateTrainerPicSprite(
+  species: number | string, isFrontPic: boolean,
+  x: number, y: number, paletteSlot: number, paletteTag: number,
+): number {
+  return CreatePicSprite(species, 0, 0, isFrontPic, x, y, paletteSlot, paletteTag, true, false);
+}
+
+// NOTE mirror : CreateTrainerCard* (voie window blit) restent à porter quand un écran les
+// utilisera (substrat window-blit non câblé). Squelette 1:1 conservé ci-dessus.

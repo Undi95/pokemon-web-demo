@@ -51,8 +51,8 @@
 - [x] SetU32 (T-A 4491dad2) @ L1049-1053
 - [x] SetPtr (T-A 4491dad2) @ L1054-1058
 - [x] SetMapVarsToTrainer (T-A 4491dad2) @ L1094-1102
-- [x] ConfigureTwoTrainersBattle (T-C) @ L1202-1208 — porté 1:1 structurel (battle_setup.ts ; caller trainer_see = dette, position {opcodes,idx} = trainerScript+1)
-- [x] SetUpTwoTrainersBattle (T-C) @ L1209-1214 — porté (EventScript_StartTrainerApproach transpilé idx 0 ; run réel via contexte NPC trainer_see = dette)
+- [x] ConfigureTwoTrainersBattle (T-C) @ L1202-1208 — porté 1:1 structurel (battle_setup.ts ; caller trainer_see RÉSOLU : trainer_see.ts vivant + TryPrepareSecondApproachingTrainer câblé battle_setup.ts:1189, position {opcodes,idx} = trainerScript+1)
+- [x] SetUpTwoTrainersBattle (T-C) @ L1209-1214 — porté (EventScript_StartTrainerApproach transpilé idx 0 ; run réel via contexte NPC — caller trainer_see RÉSOLU, cf. TryPrepareSecondApproachingTrainer)
 - [x] GetTrainerFlagFromScriptPointer (T-C) @ L1215-1223 — porté 1:1 structurel (args[1] de l'opcode trainerbattle = TrainerBattleLoadArg16(data+2))
 - [x] SetBattledTrainerFlag (T-A 4491dad2) @ L1252-1256
 - [x] HasTrainerBeenFought (T-A 4491dad2) @ L1257-1261

@@ -191,7 +191,9 @@ let sUnkVar = 0;
 /** 1:1 (credits.c:84) */
 let sSavedTaskId = 0;
 
-/** 1:1 (credits.c:85) */
+/** 1:1 (credits.c:85). RAPATRIÉ dans hall_of_fame.ts (lot L) : GameClear écrit la valeur
+ *  autoritative via SetHasHallOfFameRecords (miroir globalThis.__gHasHallOfFameRecords). Ce
+ *  miroir local reste comme fallback ; le skip-B (CB2_Credits) lit le pont. */
 export let gHasHallOfFameRecords = false;
 
 /** 1:1 (credits.c:86) */
@@ -221,17 +223,21 @@ const sBackgroundTemplates = [
   },
 ];
 
-/** 1:1 (credits.c:134) */
-const sWindowTemplates = {
-  bg: {
+/** 1:1 (credits.c:134). ⚠ FIX artefact transpileur : `sWindowTemplates[]` est un ARRAY 1:1
+ *  (décomp), pas un objet — le transpileur avait aplati les 2 éléments en propriétés (bug
+ *  « arrays dim 1 »). InitWindows itère dessus → doit être un array. */
+const sWindowTemplates = [
+  {
     bg: 0,
     tilemapLeft: 0,
     tilemapTop: 9,
     width: DISPLAY_TILE_WIDTH,
     height: 12,
     paletteNum: 8,
-    baseBlock: 1 },
-  tilemapLeft: DUMMY_WIN_TEMPLATE };
+    baseBlock: 1,
+  },
+  DUMMY_WIN_TEMPLATE,
+];
 
 /** 1:1 (credits.c:147) */
 const sMonSpritePos: number[][] = [
@@ -410,7 +416,7 @@ function VBlankCB_Credits(): void {
 function CB2_Credits(): void {
   RunTasks();
   AnimateSprites();
-  if ((JOY_HELD(B_BUTTON)) && gHasHallOfFameRecords && gTasks[sSavedTaskId].func == Task_CreditsMain)
+  if ((JOY_HELD(B_BUTTON)) && (globalThis.__gHasHallOfFameRecords ?? gHasHallOfFameRecords) && gTasks[sSavedTaskId].func == Task_CreditsMain)
   {
     // Speed up credits
     VBlankCB_Credits();

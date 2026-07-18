@@ -2134,7 +2134,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'TryHideBattleTowerReporter', 'TryInitBattleTowerAwardManObjectEvent',
   'TryJoinLinkGroup', 'TryLoseFansFromPlayTime',
   'TryLoseFansFromPlayTimeAfterLinkBattle',
-  // 'TryPrepareSecondApproachingTrainer' — porté (=0, trainer_see dette) game/battle_setup.ts.
+  // 'TryPrepareSecondApproachingTrainer' — porté 1:1 trainer_see.c:666 (battle_setup.ts:1189, handler complet via pont globalThis __trainerSee).
   // 'TryPutNameRaterShowOnTheAir' — porté 1:1 tv.ts (transpilé), handler ci-haut.
   'TryPutTrainerFanClubOnAir', 'TryPutTreasureInvestigatorsOnAir',
   'TryRecordMixLinkup', 'TrySetBattleTowerLinkType',

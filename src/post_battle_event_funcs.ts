@@ -20,21 +20,21 @@ import { GetRibbonCount } from './tv';
 import { GetGameStat, SetGameStat, IncrementGameStat } from './field_player_avatar';
 import { SetContinueGameWarpStatus } from './load_save';
 import { SetContinueGameWarpToHealLocation, DoWhiteOut } from './overworld';
-import { CB2_DoHallOfFameScreen } from './hall_of_fame';
+import { CB2_DoHallOfFameScreen, SetHasHallOfFameRecords, preloadHallOfFameAssets } from './hall_of_fame';
 import { getRuntime, MALE } from '../harness/runtime/decomp-globals';
 
-/** 1:1 EWRAM `gHasHallOfFameRecords` (credits.c:85) — hébergé ici tant que
- *  credits.c n'est pas porté (P4) : GameClear est le seul écrivain. */
-export let gHasHallOfFameRecords = false;
+/** 1:1 EWRAM `gHasHallOfFameRecords` (credits.c:85) — RAPATRIÉ dans hall_of_fame.ts (lot L).
+ *  Réexport-pont pour les lecteurs historiques : GameClear écrit via `SetHasHallOfFameRecords`. */
+export { gHasHallOfFameRecords } from './hall_of_fame';
 
 /** 1:1 décomp `int GameClear(void)` (post_battle_event_funcs.c:12-90). */
 export function GameClear(): number {
   HealPlayerParty();
 
   if (FlagGet('FLAG_SYS_GAME_CLEAR')) {
-    gHasHallOfFameRecords = true;
+    SetHasHallOfFameRecords(true);
   } else {
-    gHasHallOfFameRecords = false;
+    SetHasHallOfFameRecords(false);
     FlagSet('FLAG_SYS_GAME_CLEAR');
   }
 
@@ -85,6 +85,10 @@ export function GameClear(): number {
     }
   }
 
+  // 1:1 décomp c:88 : SetMainCallback2(CB2_DoHallOfFameScreen). Le vrai écran HOF est asynchrone
+  // côté assets (fetch PNG) → on lance le préchargement ICI (à GameClear), .catch hurlant, JAMAIS
+  // dans le CB2 synchrone (piège FREEZE) ; le CB2 GATE jusqu'à ce que le préchargement soit réglé.
+  preloadHallOfFameAssets().catch((e) => console.error('[post_battle_event_funcs] preloadHallOfFameAssets', e));
   getRuntime()?.SetMainCallback2(CB2_DoHallOfFameScreen);
   return 0;
 }
