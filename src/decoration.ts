@@ -35,9 +35,12 @@
  *     (convention `CreateTask((t)=>fn(t.taskId))`).
  */
 
-import { gSaveBlock1Ptr } from './engine/save/save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { getString } from '../harness/runtime/decomp-strings';
-import { DECOR_NONE } from '../include/constants/decorations';
+import {
+  DECOR_NONE, DECOR_STAND, DECOR_SLIDE, DECOR_SOLID_BOARD, DECOR_SAND_ORNAMENT,
+  DECOR_SILVER_SHIELD, DECOR_GOLD_SHIELD, DECOR_REGISTEEL_DOLL,
+} from '../include/constants/decorations';
 import { DECOR_MAX_SECRET_BASE, DECOR_MAX_PLAYERS_HOUSE } from '../include/constants/global';
 import { NUMBER_OF_MON_TYPES } from '../include/constants/pokemon';
 import {
@@ -81,32 +84,71 @@ import {
 } from './string_util';
 import { STR_CONV_MODE_RIGHT_ALIGN } from '../include/string_util';
 import { GetMaxWidthInMenuTable } from './international_string_util';
-import { gTasks, DestroyTask } from './task';
+import { gTasks, DestroyTask, CreateTask } from './task';
 import { TASK_NONE } from '../include/task';
 import { BG_PLTT_ID, gPaletteFade } from './palette';
 import { LoadPalette, JOY_NEW } from '../harness/runtime/decomp-globals';
 import { PlaySE } from './sound';
-import { SE_SELECT } from '../include/constants/songs';
+import { SE_SELECT, SE_FAILURE } from '../include/constants/songs';
 import { ScriptContext_SetupScript, LockPlayerFieldControls } from './script';
 import { MENU_NOTHING_CHOSEN, MENU_B_PRESSED } from '../include/menu';
-import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
+import { A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT } from '../include/gba/io_reg';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
+// ─── VAGUE 2 (PLACEMENT) — imports moteur (chacun avec précédent au call-site) ────
+import { gFieldCamera, DrawWholeMapView } from './field_camera';
+import {
+  gMapHeader, MapGridGetMetatileIdAt, MapGridGetMetatileBehaviorAt, GetMetatileAttributesById,
+  MapGridSetMetatileIdAt, MapGridSetMetatileEntryAt,
+  NUM_TILES_IN_PRIMARY, NUM_TILES_PER_METATILE, MAP_OFFSET,
+  MAPGRID_ELEVATION_SHIFT, MAPGRID_IMPASSABLE,
+  METATILE_ATTR_LAYER_SHIFT, METATILE_LAYER_TYPE_NORMAL,
+  UNPACK_BEHAVIOR,
+} from './fieldmap';
+import { CreateObjectGraphicsSprite, GetObjectEventIdByPosition } from './event_object_movement';
+import {
+  gSprites, CreateSprite, DestroySprite, LoadSpritePalette, FreeSpritePaletteByTag, LoadSpriteSheet,
+  gDummySpriteAffineAnimTable, TILE_SIZE_4BPP, PLTT_SIZE_4BPP, TAG_NONE,
+} from './sprite';
+import { FadeScreen, IsWeatherNotFadingIn, FADE_TO_BLACK } from './field_weather';
+import { FadeInFromBlack } from './field_screen_effect';
+import { PlayerGetDestCoords } from './field_player_avatar';
+import { SetWarpDestination, WarpIntoMap, CB2_ReturnToField_Manual } from './overworld';
+import { SetMainCallback2 } from './main';
+import { TryPutSecretBaseVisitOnAir } from './tv';
+import {
+  MetatileBehavior_IsSecretBaseImpassable, MetatileBehavior_IsSecretBaseNorthWall,
+  MetatileBehavior_IsSecretBaseTrainerSpot, MetatileBehavior_IsSecretBaseHole,
+  MetatileBehavior_IsNormal, MetatileBehavior_HoldsLargeDecoration, MetatileBehavior_HoldsSmallDecoration,
+} from './metatile_behavior';
+import { JOY_HELD, SpriteCallbackDummy, getRuntime } from '../harness/runtime/decomp-globals';
+import { BG_TILE_H_FLIP, BG_TILE_V_FLIP } from '../harness/runtime/decomp-helpers';
+import { OBJECT_EVENTS_COUNT, MALE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../include/constants/global';
+import { OBJ_EVENT_GFX_BRENDAN_DECORATING, OBJ_EVENT_GFX_MAY_DECORATING } from '../include/constants/event_objects';
+import { METATILE_SecretBase_SandOrnament_BrokenBase } from '../include/constants/metatile_labels';
+import type { Decoration } from './data/decoration/header';
 
 // ─── 1:1 décomp `typedef void (*TaskFunc)(u8 taskId)` (task.h) ────────────────
 type TaskFunc = (taskId: number) => void;
 
 // ─── 1:1 décomp #defines task data (decoration.c:46-56) ──────────────────────
-// Le MENU ne référence que ces 2 index ; les autres (tCursorX=0, tCursorY=1,
-// tInitialX=3, tInitialY=4, tDecorWidth=5, tDecorHeight=6, tButton=10,
-// tDecorationItemsMenuCommand=12) appartiennent au PLACEMENT (VAGUE 2).
-const tDecorationMenuCommand = 11; // data[11]
-const tMenuTaskId = 13;            // data[13]
+const tCursorX = 0;                     // data[0]
+const tCursorY = 1;                     // data[1]
+const tState = 2;                       // data[2]
+const tInitialX = 3;                    // data[3]
+const tInitialY = 4;                    // data[4]
+const tDecorWidth = 5;                  // data[5]
+const tDecorHeight = 6;                 // data[6]
+const tButton = 10;                     // data[10]
+const tDecorationMenuCommand = 11;      // data[11]
+const tDecorationItemsMenuCommand = 12; // data[12]
+const tMenuTaskId = 13;                 // data[13]
 
 // ─── 1:1 décomp #defines (decoration.c:58-63) ───────────────────────────────
 const DECOR_MENU_PLACE = 0;
 const DECOR_MENU_TOSS = 1;
 const DECOR_MENU_TRADE = 2;
-// DECOR_ITEMS_MENU_PLACE / DECOR_ITEMS_MENU_PUT_AWAY (decoration.c:62-63) = VAGUE 2.
+const DECOR_ITEMS_MENU_PLACE = 0;    // decoration.c:62
+const DECOR_ITEMS_MENU_PUT_AWAY = 1; // decoration.c:63
 
 // ─── 1:1 décomp `enum Windows` (decoration.c:98-105) ─────────────────────────
 const WINDOW_MAIN_MENU = 0;
@@ -385,10 +427,11 @@ function DecorationMenuAction_PutAway(taskId: number): void {
     StringExpandPlaceholders(gStringVar4, getString('gText_NoDecorationsInUse'));
     DisplayItemMessageOnField(taskId, gStringVar4, (t) => ReturnToDecorationActionsAfterInvalidSelection(t.taskId));
   } else {
-    // 1:1 :655-659 — bascule vers le flux PUT-AWAY (caméra/placement sur la map) =
-    // VAGUE 2 (Task_ContinuePuttingAwayDecorations non porté). Garde-fou HURLANT : on
-    // NE touche PAS à l'écran (pas de RemoveDecorationWindow/FadeScreen) → menu reste sain.
-    console.error('[decoration] DecorationMenuAction_PutAway → Task_ContinuePuttingAwayDecorations (placement) : vague 2 non portée');
+    // 1:1 :655-659 — bascule vers le flux PUT-AWAY (caméra/rearrangement sur la map) =
+    // VAGUE 3 (Task_ContinuePuttingAwayDecorations + AttemptMarkDecorUnderCursorForRemoval
+    // non portés — decoration.c:2178-2718). Garde-fou HURLANT : on NE touche PAS à l'écran
+    // (pas de RemoveDecorationWindow/FadeScreen) → menu reste sain.
+    console.error('[decoration] DecorationMenuAction_PutAway → Task_ContinuePuttingAwayDecorations (put-away) : vague 3 non portée');
   }
 }
 
@@ -909,8 +952,10 @@ function DecorationItemsMenuAction_AttemptPlace(taskId: number): void {
     DisplayItemMessageOnField(taskId, gStringVar4, (t) => ReturnToDecorationItemsAfterInvalidSelection(t.taskId));
   } else if (IsSelectedDecorInThePC() === true) {
     if (HasDecorationSpace() === true) {
-      // 1:1 :1336-1338 — lance le placement caméra (Task_PlaceDecoration) = VAGUE 2.
-      console.error('[decoration] DecorationItemsMenuAction_AttemptPlace → Task_PlaceDecoration (placement) : vague 2 non portée');
+      // 1:1 :1336-1338 — lance le placement caméra (Task_PlaceDecoration) — VAGUE 2 câblée.
+      FadeScreen(FADE_TO_BLACK, 0);
+      gTasks[taskId].data[tState] = 0;
+      gTasks[taskId].func = (t) => Task_PlaceDecoration(t.taskId);
     } else {
       ConvertIntToDecimalStringN(gStringVar1, sDecorationContext.size, STR_CONV_MODE_RIGHT_ALIGN, 2);
       if (sDecorationContext.isPlayerRoom === false) {
@@ -998,6 +1043,1170 @@ function BlitMenuInfoIcon(_windowId: number, _iconId: number, _x: number, _y: nu
   if (!sWarnedMenuInfoIcon) {
     console.error('[decoration] BlitMenuInfoIcon (menu.c:2098) : feuille menu-info-icons non portée en module partagé — icônes « en usage » masquées (cosmétique)');
     sWarnedMenuInfoIcon = true;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  VAGUE 2 — LE PLACEMENT SUR LA MAP (decoration.c:1178-2176 + curseur partagé)
+//  Transcription 1:1. Le flux PUT-AWAY / rearrangement (:2178-2718) = VAGUE 3 :
+//  quand une fonction vague-2 y branche → garde-fou HURLANT + retour sain.
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ─── 1:1 décomp #defines (decoration.c:42-44) ───────────────────────────────
+const PLACE_DECORATION_SELECTOR_TAG = 0xbe5;
+const PLACE_DECORATION_PLAYER_TAG = 0x008;
+
+// ─── 1:1 décomp enums non exportés par le port (valeurs = include/decoration.h:4-28,
+//  constants/decorations.h:125, global.fieldmap.h:20, constants/maps.h:28). Définis
+//  localement, précédent vague 1 (MENU_INFO_ICON_*, DECOR_MENU_* locaux). ───────────
+const DECORPERM_SOLID_FLOOR = 0;   // decoration.h:9
+const DECORPERM_PASS_FLOOR = 1;    // decoration.h:10
+const DECORPERM_BEHIND_FLOOR = 2;  // decoration.h:11
+const DECORPERM_NA_WALL = 3;       // decoration.h:12
+const DECORPERM_SPRITE = 4;        // decoration.h:13
+const DECORSHAPE_1x1 = 0;          // decoration.h:18
+const DECORSHAPE_2x1 = 1;          // decoration.h:19
+const DECORSHAPE_3x1 = 2;          // decoration.h:20 (unused)
+const DECORSHAPE_4x2 = 3;          // decoration.h:21
+const DECORSHAPE_2x2 = 4;          // decoration.h:22
+const DECORSHAPE_1x2 = 5;          // decoration.h:23
+const DECORSHAPE_1x3 = 6;          // decoration.h:24 (unused)
+const DECORSHAPE_2x4 = 7;          // decoration.h:25
+const DECORSHAPE_3x3 = 8;          // decoration.h:26
+const DECORSHAPE_3x2 = 9;          // decoration.h:27
+const NUM_DECORATIONS = DECOR_REGISTEEL_DOLL; // constants/decorations.h:125
+const ELEVATION_INVALID = 0xFFFF;  // global.fieldmap.h:20
+const WARP_ID_NONE = -1;           // constants/maps.h:28
+
+// 1:1 OamData enum (sprite.h) — tous 0 ; défini local (précédent : port éparpille
+// ST_OAM_* entre include/sprite.ts et harness/decomp-helpers.ts).
+const ST_OAM_AFFINE_OFF = 0;
+const ST_OAM_OBJ_NORMAL = 0;
+const ST_OAM_4BPP = 0;
+
+// 1:1 `JOY_HELD(DPAD_ANY)` — DPAD_ANY = OR des 4 directions (io_reg n'exporte que
+// DPAD_ANY_EXPR ; défini local, 1:1 io_reg.h).
+const DPAD_ANY = DPAD_RIGHT | DPAD_LEFT | DPAD_UP | DPAD_DOWN;
+
+// ─── 1:1 décomp EWRAM PLACEMENT (decoration.c:120-126) ───────────────────────
+// (sDecorRearrangementDataBuffer:127 / sCurDecorSelectedInRearrangement:128 = VAGUE 3.)
+
+/** 1:1 `struct PlaceDecorationGraphicsDataBuffer` (decoration.c:74-80).
+ *  `decoration` = `const struct Decoration *` → l'objet Decoration (ou null pour le NULL C). */
+interface PlaceDecorationGraphicsDataBuffer {
+  decoration: Decoration | null;
+  tiles: Uint16Array;  // u16 tiles[0x40]
+  image: Uint8Array;   // u8 image[0x800]
+  palette: Uint16Array;// u16 palette[16]
+}
+const sPlaceDecorationGraphicsDataBuffer: PlaceDecorationGraphicsDataBuffer = {
+  decoration: null,
+  tiles: new Uint16Array(0x40),
+  image: new Uint8Array(0x800),
+  palette: new Uint16Array(16),
+};
+let sCurDecorMapX = 0;                 // decoration.c:121 (u16)
+let sCurDecorMapY = 0;                 // decoration.c:122 (u16)
+let sDecor_CameraSpriteObjectIdx1 = 0; // decoration.c:123 (u8)
+let sDecor_CameraSpriteObjectIdx2 = 0; // decoration.c:124 (u8)
+let sDecorationLastDirectionMoved = 0; // decoration.c:125 (u8)
+
+/** 1:1 `struct OamData sDecorSelectorOam` (decoration.c:126). Objet mutable (écrit par
+ *  SetDecorSelectionBoxOamAttributes) ; consommé comme `oam` par les SpriteTemplate (any). */
+const sDecorSelectorOam = {
+  y: 0, affineMode: 0, objMode: 0, mosaic: false, bpp: 0,
+  shape: 0, x: 0, matrixNum: 0, size: 0, tileNum: 0, priority: 0, paletteNum: 0,
+};
+
+// ─── 1:1 décomp `sDecorTilemaps[]` + tables associées (data/decoration/tilemaps.h) ──
+const sDecorTilemap_1x1_Tiles = [0x00, 0x01, 0x02, 0x03];
+const sDecorTilemap_3x1_Tiles = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d];
+const sDecorTilemap_2x2_Tiles = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f];
+const sDecorTilemap_1x3_Tiles = [0x00, 0x01, 0x04, 0x05, 0x08, 0x09, 0x0c, 0x0d, 0x10, 0x11, 0x14, 0x15];
+const sDecorTilemap_2x1_Tiles = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07];
+const sDecorTilemap_4x2_Tiles = [
+  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+  0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+];
+const sDecorTilemap_3x3_Tiles = [
+  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+  0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d,
+  0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d,
+];
+const sDecorTilemap_3x2_Tiles = [
+  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+  0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d,
+];
+const sDecorTilemap_1x1_Y = [0x00, 0x00, 0x00, 0x00];
+const sDecorTilemap_2x1_Y = [0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x01];
+const sDecorTilemap_3x1_Y = [0x00, 0x00, 0x01, 0x01, 0x02, 0x02, 0x00, 0x00, 0x01, 0x01, 0x02, 0x02];
+const sDecorTilemap_4x2_Y = [
+  0x00, 0x00, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x00, 0x00, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03,
+  0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07, 0x07, 0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07, 0x07,
+];
+const sDecorTilemap_2x2_Y = [0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x02, 0x02, 0x03, 0x03];
+const sDecorTilemap_1x2_Y = [0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01];
+const sDecorTilemap_1x3_Y = [0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02];
+const sDecorTilemap_2x4_Y = [
+  0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x02, 0x02, 0x03, 0x03,
+  0x04, 0x04, 0x05, 0x05, 0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07, 0x07, 0x06, 0x06, 0x07, 0x07,
+];
+const sDecorTilemap_3x3_Y = [
+  0x00, 0x00, 0x01, 0x01, 0x02, 0x02, 0x00, 0x00, 0x01, 0x01, 0x02, 0x02,
+  0x03, 0x03, 0x04, 0x04, 0x05, 0x05, 0x03, 0x03, 0x04, 0x04, 0x05, 0x05,
+  0x06, 0x06, 0x07, 0x07, 0x08, 0x08, 0x06, 0x06, 0x07, 0x07, 0x08, 0x08,
+];
+const sDecorTilemap_3x2_Y = [
+  0x00, 0x00, 0x01, 0x01, 0x02, 0x02, 0x00, 0x00, 0x01, 0x01, 0x02, 0x02,
+  0x03, 0x03, 0x04, 0x04, 0x05, 0x05, 0x03, 0x03, 0x04, 0x04, 0x05, 0x05,
+];
+const sDecorTilemap_1x1_X = [0x04, 0x05, 0x06, 0x07];
+const sDecorTilemap_2x1_X = [0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07];
+const sDecorTilemap_3x1_X = [0x04, 0x05, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x06, 0x07];
+const sDecorTilemap_4x2_X = [
+  0x04, 0x05, 0x04, 0x05, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x06, 0x07, 0x06, 0x07,
+  0x04, 0x05, 0x04, 0x05, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x06, 0x07, 0x06, 0x07,
+];
+const sDecorTilemap_2x2_X = [0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07];
+const sDecorTilemap_1x2_X = [0x04, 0x05, 0x06, 0x07, 0x04, 0x05, 0x06, 0x07];
+const sDecorTilemap_1x3_X = [0x04, 0x05, 0x06, 0x07, 0x04, 0x05, 0x06, 0x07, 0x04, 0x05, 0x06, 0x07];
+const sDecorTilemap_2x4_X = [
+  0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07,
+  0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07,
+];
+const sDecorTilemap_3x3_X = [
+  0x04, 0x05, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x06, 0x07,
+  0x04, 0x05, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x06, 0x07,
+  0x04, 0x05, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x06, 0x07,
+];
+const sDecorTilemap_3x2_X = [
+  0x04, 0x05, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x06, 0x07,
+  0x04, 0x05, 0x04, 0x05, 0x04, 0x05, 0x06, 0x07, 0x06, 0x07, 0x06, 0x07,
+];
+
+/** 1:1 `DECORSIZE(width, height) = width*height*4` (tilemaps.h:174). */
+const DECORSIZE = (width: number, height: number): number => width * height * 4;
+
+/** 1:1 `sDecorTilemaps[]` (tilemaps.h:176-241), indexé par DECORSHAPE. */
+interface DecorTilemap { tiles: number[]; y: number[]; x: number[]; size: number; }
+const sDecorTilemaps: readonly DecorTilemap[] = [
+  /* [DECORSHAPE_1x1] */ { tiles: sDecorTilemap_1x1_Tiles, y: sDecorTilemap_1x1_Y, x: sDecorTilemap_1x1_X, size: DECORSIZE(1, 1) },
+  /* [DECORSHAPE_2x1] */ { tiles: sDecorTilemap_2x1_Tiles, y: sDecorTilemap_2x1_Y, x: sDecorTilemap_2x1_X, size: DECORSIZE(2, 1) },
+  /* [DECORSHAPE_3x1] */ { tiles: sDecorTilemap_3x1_Tiles, y: sDecorTilemap_3x1_Y, x: sDecorTilemap_3x1_X, size: DECORSIZE(3, 1) },
+  /* [DECORSHAPE_4x2] */ { tiles: sDecorTilemap_4x2_Tiles, y: sDecorTilemap_4x2_Y, x: sDecorTilemap_4x2_X, size: DECORSIZE(4, 2) },
+  /* [DECORSHAPE_2x2] */ { tiles: sDecorTilemap_2x2_Tiles, y: sDecorTilemap_2x2_Y, x: sDecorTilemap_2x2_X, size: DECORSIZE(2, 2) },
+  /* [DECORSHAPE_1x2] */ { tiles: sDecorTilemap_2x1_Tiles, y: sDecorTilemap_1x2_Y, x: sDecorTilemap_1x2_X, size: DECORSIZE(1, 2) },
+  /* [DECORSHAPE_1x3] */ { tiles: sDecorTilemap_1x3_Tiles, y: sDecorTilemap_1x3_Y, x: sDecorTilemap_1x3_X, size: DECORSIZE(1, 3) },
+  /* [DECORSHAPE_2x4] */ { tiles: sDecorTilemap_4x2_Tiles, y: sDecorTilemap_2x4_Y, x: sDecorTilemap_2x4_X, size: DECORSIZE(2, 4) },
+  /* [DECORSHAPE_3x3] */ { tiles: sDecorTilemap_3x3_Tiles, y: sDecorTilemap_3x3_Y, x: sDecorTilemap_3x3_X, size: DECORSIZE(3, 3) },
+  /* [DECORSHAPE_3x2] */ { tiles: sDecorTilemap_3x2_Tiles, y: sDecorTilemap_3x2_Y, x: sDecorTilemap_3x2_X, size: DECORSIZE(3, 2) },
+];
+
+/** 1:1 `sDecorationMovementInfo[]` (decoration.c:325-342), indexé par DECORSHAPE.
+ *  `shape`/`size` = SPRITE_SHAPE/SPRITE_SIZE(dim) résolus (gba/types.h:117-118, table OAM
+ *  GBA) : macros compile-time → valeurs inlinées avec la dim en commentaire (1:1). */
+const sDecorationMovementInfo: readonly { shape: number; size: number; cameraX: number; cameraY: number }[] = [
+  /* [DECORSHAPE_1x1] */ { shape: 0, size: 1, cameraX: 120, cameraY: 78 }, // SPRITE_SHAPE/SIZE(16x16)
+  /* [DECORSHAPE_2x1] */ { shape: 1, size: 2, cameraX: 128, cameraY: 78 }, // (32x16)
+  /* [DECORSHAPE_3x1] */ { shape: 1, size: 3, cameraX: 144, cameraY: 86 }, // (64x32)
+  /* [DECORSHAPE_4x2] */ { shape: 1, size: 3, cameraX: 144, cameraY: 70 }, // (64x32)
+  /* [DECORSHAPE_2x2] */ { shape: 0, size: 2, cameraX: 128, cameraY: 70 }, // (32x32)
+  /* [DECORSHAPE_1x2] */ { shape: 2, size: 2, cameraX: 120, cameraY: 70 }, // (16x32)
+  /* [DECORSHAPE_1x3] */ { shape: 2, size: 3, cameraX: 128, cameraY: 86 }, // (32x64)
+  /* [DECORSHAPE_2x4] */ { shape: 2, size: 3, cameraX: 128, cameraY: 54 }, // (32x64)
+  /* [DECORSHAPE_3x3] */ { shape: 0, size: 3, cameraX: 144, cameraY: 70 }, // (64x64)
+  /* [DECORSHAPE_3x2] */ { shape: 1, size: 3, cameraX: 144, cameraY: 70 }, // (64x32)
+];
+
+/** 1:1 `sDecorSelectorAnimCmd0`/`sDecorSelectorAnimCmds` (decoration.c:344-350). 1 frame
+ *  statique (ANIMCMD_FRAME(0,0) + END) → `anims` équivalent = pas d'animation (le sprite
+ *  affiche la frame 0). Représenté null-compatible (SpriteTemplate.anims du port). */
+const sDecorSelectorAnimCmds: ReadonlyArray<ReadonlyArray<unknown>> = [[{ type: 'frame', imageValue: 0, duration: 0 }, { type: 'end' }]];
+
+/** 1:1 `sDecorSelectorSpriteFrameImages` (decoration.c:352-356). data → &image[]. */
+const sDecorSelectorSpriteFrameImages = { data: sPlaceDecorationGraphicsDataBuffer.image, size: 0x800 };
+
+/** 1:1 `sDecorationSelectorSpriteTemplate` (decoration.c:358-367). `images` = tableau de 1
+ *  (le port veut `ReadonlyArray<SpriteFrameImage>` là où le C passe `&frameImages`). */
+const sDecorationSelectorSpriteTemplate = {
+  tileTag: TAG_NONE,
+  paletteTag: PLACE_DECORATION_SELECTOR_TAG,
+  oam: sDecorSelectorOam,
+  anims: sDecorSelectorAnimCmds,
+  images: [sDecorSelectorSpriteFrameImages],
+  affineAnims: gDummySpriteAffineAnimTable,
+  callback: SpriteCallbackDummy,
+};
+
+/** 1:1 `sDecorWhilePlacingSpriteTemplate` (decoration.c:369-378). images = NULL (voie sheet). */
+const sDecorWhilePlacingSpriteTemplate = {
+  tileTag: 0x0000,
+  paletteTag: 0x0000,
+  oam: sDecorSelectorOam,
+  anims: sDecorSelectorAnimCmds,
+  images: null,
+  affineAnims: gDummySpriteAffineAnimTable,
+  callback: SpriteCallbackDummy,
+};
+
+/** 1:1 `sSpritePal_PlaceDecoration` (decoration.c:380-384). data → &palette[]. */
+const sSpritePal_PlaceDecoration = { data: sPlaceDecorationGraphicsDataBuffer.palette, tag: PLACE_DECORATION_SELECTOR_TAG };
+
+/** 1:1 `sPlaceDecorationYesNoFunctions` (decoration.c:386-390). */
+const sPlaceDecorationYesNoFunctions: YesNoFuncTable = {
+  yesFunc: (t) => PlaceDecoration(t.taskId),
+  noFunc: (t) => ContinueDecorating(t.taskId),
+};
+
+/** 1:1 `sCancelDecoratingYesNoFunctions` (decoration.c:392-396). */
+const sCancelDecoratingYesNoFunctions: YesNoFuncTable = {
+  yesFunc: (t) => CancelDecorating(t.taskId),
+  noFunc: (t) => ContinueDecorating(t.taskId),
+};
+
+/** 1:1 `sPlacePutAwayYesNoFunctions[]` (decoration.c:398-408). Appelé DIRECTEMENT par
+ *  Task_SelectLocation avec un `u8 taskId` (≠ DoYesNoFuncWithChoice) → funcs = TaskFunc.
+ *  [1] (put-away) = VAGUE 3 (garde-fous). */
+const sPlacePutAwayYesNoFunctions: readonly { yesFunc: TaskFunc; noFunc: TaskFunc }[] = [
+  { yesFunc: AttemptPlaceDecoration, noFunc: AttemptCancelPlaceDecoration },
+  { yesFunc: AttemptPutAwayDecoration, noFunc: AttemptCancelPutAwayDecoration },
+];
+
+/** 1:1 `sDecorationStandElevations[]` (decoration.c:410-414). */
+const sDecorationStandElevations: readonly number[] = [4, 4, 4, 4, 0, 3, 3, 0];
+
+/** 1:1 `sDecorationSlideElevation[]` (decoration.c:416-422). */
+const sDecorationSlideElevation: readonly number[] = [4, 4, 4, 4, 0, 4, 3, 0];
+
+/** 1:1 `sDecorShapeSizes[]` (decoration.c:424-435), indexé par DECORSHAPE. */
+const sDecorShapeSizes: readonly number[] = [4, 8, 16, 32, 16, 8, 16, 32, 64, 32];
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  GARDE-FOUS D'ASSETS NON PORTÉS (vague 2) — précédent BlitMenuInfoIcon (:997).
+//  Chacun HURLE 1× ; le flux 1:1 tourne INERTE (blanc) sans crash tant que l'asset
+//  n'est pas porté. JAMAIS de contournement silencieux (Règle 3).
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** `gDecorations[].tiles` = `const u16 *` (tiles.h). Dans le port c'est encore un STUB
+ *  `string` (clé 'DecorGfx_*', data/decoration/header.ts:234) : le port de tiles.h (643 l.
+ *  de u16 arrays) est un chantier asset distinct. Sans lui, TOUT le rendu map/gfx du
+ *  placement est INERTE. Getter HURLANT (1×) → tableau de 0 (les boucles 1:1 tournent
+ *  sans NaN/crash ; aucune vraie tuile posée). Quand tiles.h sera porté :
+ *  `return gDecorations[decoration].tiles as unknown as number[]`. */
+const sMissingDecorTiles: number[] = new Array(0x40).fill(0);
+let sWarnedDecorTilesMissing = false;
+function GetDecorTiles(decoration: number): number[] {
+  if (!sWarnedDecorTilesMissing) {
+    console.error('[decoration] gDecorations[].tiles (tiles.h u16 arrays) = STUB string (data/decoration/header.ts:234) — rendu map/gfx du placement INERTE tant que tiles.h non porté');
+    sWarnedDecorTilesMissing = true;
+  }
+  void decoration;
+  return sMissingDecorTiles;
+}
+
+/** `gTilesetPointer_SecretBase(RedCave)` = `const struct Tileset *` (tilesets.h) — les
+ *  pointeurs bruts tiles/palettes/metatiles de la base secrète ne sont PAS exposés par le
+ *  système de tilesets du port. Modélisés null (= le pointeur C). Les helpers gfx-buffer
+ *  (CopyTile/CopyPalette/GetMetatile) HURLENT (1×) et laissent le buffer VIDE. */
+interface SecretBaseTilesetPtr { tiles: Uint8Array; palettes: Uint16Array; metatiles: Uint16Array; }
+const gTilesetPointer_SecretBase = null as SecretBaseTilesetPtr | null;
+const gTilesetPointer_SecretBaseRedCave = null as SecretBaseTilesetPtr | null;
+let sWarnedSecretBaseTileset = false;
+function WarnSecretBaseTilesetMissing(): void {
+  if (!sWarnedSecretBaseTileset) {
+    console.error('[decoration] gTilesetPointer_SecretBase(RedCave) : tilesets bruts base secrète non exposés par le port — buffers gfx du sélecteur laissés VIDES (INERTE)');
+    sWarnedSecretBaseTileset = true;
+  }
+}
+
+/** ADAPTATION : `sprite->oam.priority` du décomp vit dans `rt.gba.oam[oamIndex]` (le port
+ *  APLATIT `struct Sprite` — DecompSprite n'a pas de champ `.oam`). Précédent
+ *  naming_screen.ts:1786 / party_menu.ts:1736 (`rt.gba.oam[spr.oamIndex].priority`). */
+function SetDecorSpriteOamPriority(spriteId: number, priority: number): void {
+  const rt = getRuntime();
+  const spr = rt.gSprites[spriteId];
+  if (spr) rt.gba.oam[spr.oamIndex].priority = priority;
+}
+
+/** 1:1 décomp `static void SetInitialPositions(u8 taskId)` (decoration.c:1178-1183).
+ *  `PlayerGetDestCoords(&tCursorX, &tCursorY)` → le port RENVOIE `{x,y}` (adaptation, même
+ *  esprit que ListMenuGetScrollAndRow vague 1). */
+function SetInitialPositions(taskId: number): void {
+  gTasks[taskId].data[tInitialX] = gSaveBlock1Ptr.pos.x;
+  gTasks[taskId].data[tInitialY] = gSaveBlock1Ptr.pos.y;
+  const dest = PlayerGetDestCoords();
+  gTasks[taskId].data[tCursorX] = dest.x;
+  gTasks[taskId].data[tCursorY] = dest.y;
+}
+
+/** 1:1 décomp `static void WarpToInitialPosition(u8 taskId)` (decoration.c:1185-1190). */
+function WarpToInitialPosition(taskId: number): void {
+  DrawWholeMapView();
+  SetWarpDestination(gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE, gTasks[taskId].data[tInitialX], gTasks[taskId].data[tInitialY]);
+  WarpIntoMap();
+}
+
+/** 1:1 décomp `static u16 GetDecorationElevation(u8 decoration, u8 tileIndex)` (decoration.c:1192-1206). */
+function GetDecorationElevation(decoration: number, tileIndex: number): number {
+  let elevation = ELEVATION_INVALID;
+  switch (decoration) {
+    case DECOR_STAND:
+      elevation = sDecorationStandElevations[tileIndex] << MAPGRID_ELEVATION_SHIFT;
+      return elevation;
+    case DECOR_SLIDE:
+      elevation = sDecorationSlideElevation[tileIndex] << MAPGRID_ELEVATION_SHIFT;
+      return elevation;
+    default:
+      return elevation;
+  }
+}
+
+/** 1:1 décomp `static void ShowDecorationOnMap_(u16 mapX, u16 mapY, u8 decWidth, u8 decHeight, u16 decoration)` (decoration.c:1208-1243).
+ *  `gDecorations[decoration].tiles[k]` → `GetDecorTiles(decoration)[k]` (STUB tiles.h). */
+function ShowDecorationOnMap_(mapX: number, mapY: number, decWidth: number, decHeight: number, decoration: number): void {
+  let i: number, j: number;
+  let x: number, y: number;
+  let attributes: number;
+  let impassableFlag: number;
+  let overlapsWall: number;
+  let elevation: number;
+  const decor = gDecorations[decoration];
+  const tiles = GetDecorTiles(decoration);
+
+  for (j = 0; j < decHeight; j++) {
+    y = mapY - decHeight + 1 + j;
+    for (i = 0; i < decWidth; i++) {
+      x = mapX + i;
+      attributes = GetMetatileAttributesById(NUM_TILES_IN_PRIMARY + tiles[j * decWidth + i]);
+      if (MetatileBehavior_IsSecretBaseImpassable(UNPACK_BEHAVIOR(attributes)) === true
+        || (decor.permission !== DECORPERM_PASS_FLOOR && (attributes >> METATILE_ATTR_LAYER_SHIFT) !== METATILE_LAYER_TYPE_NORMAL))
+        impassableFlag = MAPGRID_IMPASSABLE;
+      else
+        impassableFlag = 0;
+
+      // Choose the metatile that has the wall background instead of the floor if overlapping a wall.
+      if (decor.permission !== DECORPERM_NA_WALL && MetatileBehavior_IsSecretBaseNorthWall(MapGridGetMetatileBehaviorAt(x, y)) === true)
+        overlapsWall = 1;
+      else
+        overlapsWall = 0;
+
+      elevation = GetDecorationElevation(decor.id, j * decWidth + i);
+      if (elevation !== ELEVATION_INVALID)
+        MapGridSetMetatileEntryAt(x, y, (tiles[j * decWidth + i] + (NUM_TILES_IN_PRIMARY | overlapsWall)) | impassableFlag | elevation);
+      else
+        MapGridSetMetatileIdAt(x, y, (tiles[j * decWidth + i] + (NUM_TILES_IN_PRIMARY | overlapsWall)) | impassableFlag);
+    }
+  }
+}
+
+/** 1:1 décomp `void ShowDecorationOnMap(u16 mapX, u16 mapY, u16 decoration)` (decoration.c:1245-1280). */
+export function ShowDecorationOnMap(mapX: number, mapY: number, decoration: number): void {
+  switch (gDecorations[decoration].shape) {
+    case DECORSHAPE_1x1: ShowDecorationOnMap_(mapX, mapY, 1, 1, decoration); break;
+    case DECORSHAPE_2x1: ShowDecorationOnMap_(mapX, mapY, 2, 1, decoration); break;
+    case DECORSHAPE_3x1: ShowDecorationOnMap_(mapX, mapY, 3, 1, decoration); break; // unused
+    case DECORSHAPE_4x2: ShowDecorationOnMap_(mapX, mapY, 4, 2, decoration); break;
+    case DECORSHAPE_2x2: ShowDecorationOnMap_(mapX, mapY, 2, 2, decoration); break;
+    case DECORSHAPE_1x2: ShowDecorationOnMap_(mapX, mapY, 1, 2, decoration); break;
+    case DECORSHAPE_1x3: ShowDecorationOnMap_(mapX, mapY, 1, 3, decoration); break; // unused
+    case DECORSHAPE_2x4: ShowDecorationOnMap_(mapX, mapY, 2, 4, decoration); break;
+    case DECORSHAPE_3x3: ShowDecorationOnMap_(mapX, mapY, 3, 3, decoration); break;
+    case DECORSHAPE_3x2: ShowDecorationOnMap_(mapX, mapY, 3, 2, decoration); break;
+  }
+}
+
+/** 1:1 décomp `void SetDecoration(void)` (decoration.c:1282-1311) — special object-event
+ *  (SecretBase_EventScript_SetDecoration). GARDE-FOU : dépend d'infra NON portée 1:1 —
+ *  gSpecialVar_0x8004..8007/Result (port = VarSet/VarGet par id, pas de globals),
+ *  VarSet(VAR_OBJ_GFX_ID_0+...), TrySpawnObjectEvent (signature port divergente),
+ *  TryMoveObjectEventToMapCoords, TryOverrideObjectEventTemplateCoords (non porté),
+ *  + sPlaceDecorationGraphicsDataBuffer.decoration->tiles[0] (tiles.h STUB). HURLE 1×. */
+let sWarnedSetDecoration = false;
+export function SetDecoration(): void {
+  if (!sWarnedSetDecoration) {
+    console.error('[decoration] SetDecoration (decoration.c:1282) : spawn object-event + specials + tiles.h non portés 1:1 — placement des décorations SPRITE différé');
+    sWarnedSetDecoration = true;
+  }
+}
+
+/** 1:1 décomp `static void Task_PlaceDecoration(u8 taskId)` (decoration.c:1361-1389). */
+function Task_PlaceDecoration(taskId: number): void {
+  switch (gTasks[taskId].data[tState]) {
+    case 0:
+      if (!gPaletteFade.active) {
+        SetInitialPositions(taskId);
+        gTasks[taskId].data[tState] = 1;
+      }
+      break;
+    case 1:
+      gPaletteFade.bufferTransferDisabled = true;
+      ConfigureCameraObjectForPlacingDecoration(sPlaceDecorationGraphicsDataBuffer, gCurDecorationItems[gCurDecorationIndex]);
+      SetUpDecorationShape(taskId);
+      SetUpPlacingDecorationPlayerAvatar(taskId, sPlaceDecorationGraphicsDataBuffer);
+      FadeInFromBlack();
+      gPaletteFade.bufferTransferDisabled = false;
+      gTasks[taskId].data[tState] = 2;
+      break;
+    case 2:
+      if (IsWeatherNotFadingIn() === true) {
+        gTasks[taskId].data[tDecorationItemsMenuCommand] = DECOR_ITEMS_MENU_PLACE;
+        ContinueDecorating(taskId);
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `static void ConfigureCameraObjectForPlacingDecoration(struct PlaceDecorationGraphicsDataBuffer *data, u8 decor)` (decoration.c:1391-1399). */
+function ConfigureCameraObjectForPlacingDecoration(data: PlaceDecorationGraphicsDataBuffer, decor: number): void {
+  sDecor_CameraSpriteObjectIdx1 = gSprites[gFieldCamera.spriteId]!.data[0];
+  gFieldCamera.spriteId = gpu_pal_decompress_alloc_tag_and_upload(data, decor);
+  SetDecorSpriteOamPriority(gFieldCamera.spriteId, 1);
+  gSprites[gFieldCamera.spriteId]!.callback = InitializePuttingAwayCursorSprite;
+  gSprites[gFieldCamera.spriteId]!.x = sDecorationMovementInfo[data.decoration!.shape].cameraX;
+  gSprites[gFieldCamera.spriteId]!.y = sDecorationMovementInfo[data.decoration!.shape].cameraY;
+}
+
+/** 1:1 décomp `static void SetUpPlacingDecorationPlayerAvatar(u8 taskId, struct PlaceDecorationGraphicsDataBuffer *data)` (decoration.c:1401-1417). */
+function SetUpPlacingDecorationPlayerAvatar(taskId: number, data: PlaceDecorationGraphicsDataBuffer): void {
+  let x: number;
+
+  x = ((16 * (gTasks[taskId].data[tDecorWidth] & 0xff) + sDecorationMovementInfo[data.decoration!.shape].cameraX - 8 * ((gTasks[taskId].data[tDecorWidth] & 0xff) - 1)) & 0xff);
+  if (data.decoration!.shape === DECORSHAPE_3x1 || data.decoration!.shape === DECORSHAPE_3x3 || data.decoration!.shape === DECORSHAPE_3x2)
+    x -= 8;
+
+  if (gSaveBlock2Ptr.playerGender === MALE)
+    sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_BRENDAN_DECORATING, SpriteCallbackDummy, x, 72, 0);
+  else
+    sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_MAY_DECORATING, SpriteCallbackDummy, x, 72, 0);
+
+  SetDecorSpriteOamPriority(sDecor_CameraSpriteObjectIdx2, 1);
+  DestroySprite(gSprites[sDecor_CameraSpriteObjectIdx1]);
+  sDecor_CameraSpriteObjectIdx1 = gFieldCamera.spriteId;
+}
+
+/** 1:1 décomp `static void SetUpDecorationShape(u8 taskId)` (decoration.c:1419-1465). */
+function SetUpDecorationShape(taskId: number): void {
+  switch (gDecorations[gCurDecorationItems[gCurDecorationIndex]].shape) {
+    case DECORSHAPE_1x1: gTasks[taskId].data[tDecorWidth] = 1; gTasks[taskId].data[tDecorHeight] = 1; break;
+    case DECORSHAPE_2x1: gTasks[taskId].data[tDecorWidth] = 2; gTasks[taskId].data[tDecorHeight] = 1; break;
+    case DECORSHAPE_3x1: gTasks[taskId].data[tDecorWidth] = 3; gTasks[taskId].data[tDecorHeight] = 1; break;
+    case DECORSHAPE_4x2: gTasks[taskId].data[tDecorWidth] = 4; gTasks[taskId].data[tDecorHeight] = 2; break;
+    case DECORSHAPE_2x2: gTasks[taskId].data[tDecorWidth] = 2; gTasks[taskId].data[tDecorHeight] = 2; break;
+    case DECORSHAPE_1x2: gTasks[taskId].data[tDecorWidth] = 1; gTasks[taskId].data[tDecorHeight] = 2; break;
+    case DECORSHAPE_1x3: gTasks[taskId].data[tDecorWidth] = 1; gTasks[taskId].data[tDecorHeight] = 3; gTasks[taskId].data[tCursorY]++; break;
+    case DECORSHAPE_2x4: gTasks[taskId].data[tDecorWidth] = 2; gTasks[taskId].data[tDecorHeight] = 4; break;
+    case DECORSHAPE_3x3: gTasks[taskId].data[tDecorWidth] = 3; gTasks[taskId].data[tDecorHeight] = 3; break;
+    case DECORSHAPE_3x2: gTasks[taskId].data[tDecorWidth] = 3; gTasks[taskId].data[tDecorHeight] = 2; break;
+  }
+}
+
+/** 1:1 décomp `static void AttemptPlaceDecoration(u8 taskId)` (decoration.c:1467-1474). */
+function AttemptPlaceDecoration(taskId: number): void {
+  gTasks[taskId].data[tButton] = 0;
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.data[7] = 1;
+  gSprites[sDecor_CameraSpriteObjectIdx2]!.data[7] = 1;
+  ResetCursorMovement();
+  AttemptPlaceDecoration_(taskId);
+}
+
+/** 1:1 décomp `static void AttemptCancelPlaceDecoration(u8 taskId)` (decoration.c:1476-1484). */
+function AttemptCancelPlaceDecoration(taskId: number): void {
+  gTasks[taskId].data[tButton] = 0;
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.data[7] = 1;
+  gSprites[sDecor_CameraSpriteObjectIdx2]!.data[7] = 1;
+  ResetCursorMovement();
+  StringExpandPlaceholders(gStringVar4, getString('gText_CancelDecorating'));
+  DisplayItemMessageOnField(taskId, gStringVar4, (t) => CancelDecoratingPrompt(t.taskId));
+}
+
+/** 1:1 décomp `static bool8 IsSecretBaseTrainerSpot(u8 behaviorAt, u16 layerType)` (decoration.c:1486-1491). */
+function IsSecretBaseTrainerSpot(behaviorAt: number, layerType: number): boolean {
+  if (!(MetatileBehavior_IsSecretBaseTrainerSpot(behaviorAt) === true && layerType === METATILE_LAYER_TYPE_NORMAL))
+    return false;
+  return true;
+}
+
+/** 1:1 décomp `static bool8 IsntInitialPosition(u8 taskId, s16 x, s16 y, u16 layerType)` (decoration.c:1493-1501).
+ *  Can't place decoration where the player was standing when they interacted with the PC. */
+function IsntInitialPosition(taskId: number, x: number, y: number, layerType: number): boolean {
+  if (x === gTasks[taskId].data[tInitialX] + MAP_OFFSET
+    && y === gTasks[taskId].data[tInitialY] + MAP_OFFSET
+    && layerType !== METATILE_LAYER_TYPE_NORMAL)
+    return false;
+  return true;
+}
+
+/** 1:1 décomp `static bool8 IsFloorOrBoardAndHole(u16 behaviorAt, const struct Decoration *decoration)` (decoration.c:1503-1515). */
+function IsFloorOrBoardAndHole(behaviorAt: number, decoration: Decoration): boolean {
+  if (MetatileBehavior_IsSecretBaseTrainerSpot(behaviorAt) !== true) {
+    if (decoration.id === DECOR_SOLID_BOARD && MetatileBehavior_IsSecretBaseHole(behaviorAt) === true)
+      return true;
+
+    if (MetatileBehavior_IsNormal(behaviorAt))
+      return true;
+  }
+
+  return false;
+}
+
+/** 1:1 décomp `GetLayerType(tileId)` (decoration.c:1517-1526, branche non-BUGFIX = celle
+ *  compilée par défaut) : `GetMetatileAttributesById(tileId) & METATILE_ATTR_LAYER_MASK`.
+ *  L'extraction est incomplète (voir commentaire décomp) mais GF ne compare qu'à 0. */
+function GetLayerType(tileId: number): number {
+  return GetMetatileAttributesById(tileId) & 0xF000; // METATILE_ATTR_LAYER_MASK
+}
+
+/** 1:1 décomp `static bool8 CanPlaceDecoration(u8 taskId, const struct Decoration *decoration)` (decoration.c:1528-1640).
+ *  `decoration->tiles[k]` → `GetDecorTiles(decoration.id)[k]` (STUB tiles.h). */
+function CanPlaceDecoration(taskId: number, decoration: Decoration): boolean {
+  let i: number;
+  let j: number;
+  let behaviorAt: number;
+  let layerType: number;
+  let mapY: number;
+  let mapX: number;
+  let curY: number;
+  let curX: number;
+  const tiles = GetDecorTiles(decoration.id);
+  mapY = gTasks[taskId].data[tDecorHeight];
+  mapX = gTasks[taskId].data[tDecorWidth];
+
+  switch (decoration.permission) {
+    case DECORPERM_SOLID_FLOOR:
+    case DECORPERM_PASS_FLOOR:
+      for (i = 0; i < mapY; i++) {
+        curY = gTasks[taskId].data[tCursorY] - i;
+        for (j = 0; j < mapX; j++) {
+          curX = gTasks[taskId].data[tCursorX] + j;
+          behaviorAt = MapGridGetMetatileBehaviorAt(curX, curY);
+          layerType = GetLayerType(NUM_TILES_IN_PRIMARY + tiles[(mapY - 1 - i) * mapX + j]);
+          if (!IsFloorOrBoardAndHole(behaviorAt, decoration))
+            return false;
+
+          if (!IsntInitialPosition(taskId, curX, curY, layerType))
+            return false;
+
+          behaviorAt = GetObjectEventIdByPosition(curX, curY, 0);
+          if (behaviorAt !== 0 && behaviorAt !== OBJECT_EVENTS_COUNT)
+            return false;
+        }
+      }
+      break;
+    case DECORPERM_BEHIND_FLOOR:
+      for (i = 0; i < mapY - 1; i++) {
+        curY = gTasks[taskId].data[tCursorY] - i;
+        for (j = 0; j < mapX; j++) {
+          curX = gTasks[taskId].data[tCursorX] + j;
+          behaviorAt = MapGridGetMetatileBehaviorAt(curX, curY);
+          layerType = GetLayerType(NUM_TILES_IN_PRIMARY + tiles[(mapY - 1 - i) * mapX + j]);
+          if (!MetatileBehavior_IsNormal(behaviorAt) && !IsSecretBaseTrainerSpot(behaviorAt, layerType))
+            return false;
+
+          if (!IsntInitialPosition(taskId, curX, curY, layerType))
+            return false;
+
+          if (GetObjectEventIdByPosition(curX, curY, 0) !== OBJECT_EVENTS_COUNT)
+            return false;
+        }
+      }
+
+      curY = gTasks[taskId].data[tCursorY] - mapY + 1;
+      for (j = 0; j < mapX; j++) {
+        curX = gTasks[taskId].data[tCursorX] + j;
+        behaviorAt = MapGridGetMetatileBehaviorAt(curX, curY);
+        layerType = GetLayerType(NUM_TILES_IN_PRIMARY + tiles[j]);
+        if (!MetatileBehavior_IsNormal(behaviorAt) && !MetatileBehavior_IsSecretBaseNorthWall(behaviorAt))
+          return false;
+
+        if (!IsntInitialPosition(taskId, curX, curY, layerType))
+          return false;
+
+        behaviorAt = GetObjectEventIdByPosition(curX, curY, 0);
+        if (behaviorAt !== 0 && behaviorAt !== OBJECT_EVENTS_COUNT)
+          return false;
+      }
+      break;
+    case DECORPERM_NA_WALL:
+      for (i = 0; i < mapY; i++) {
+        curY = gTasks[taskId].data[tCursorY] - i;
+        for (j = 0; j < mapX; j++) {
+          curX = gTasks[taskId].data[tCursorX] + j;
+          if (!MetatileBehavior_IsSecretBaseNorthWall(MapGridGetMetatileBehaviorAt(curX, curY)))
+            return false;
+
+          if (MapGridGetMetatileIdAt(curX, curY + 1) === METATILE_SecretBase_SandOrnament_BrokenBase)
+            return false;
+        }
+      }
+      break;
+    case DECORPERM_SPRITE:
+      curY = gTasks[taskId].data[tCursorY];
+      for (j = 0; j < mapX; j++) {
+        curX = gTasks[taskId].data[tCursorX] + j;
+        behaviorAt = MapGridGetMetatileBehaviorAt(curX, curY);
+        if (decoration.shape === DECORSHAPE_1x2) {
+          if (!MetatileBehavior_HoldsLargeDecoration(behaviorAt))
+            return false;
+        } else if (!MetatileBehavior_HoldsSmallDecoration(behaviorAt)) {
+          if (!MetatileBehavior_HoldsLargeDecoration(behaviorAt))
+            return false;
+        }
+
+        if (GetObjectEventIdByPosition(curX, curY, 0) !== OBJECT_EVENTS_COUNT)
+          return false;
+      }
+      break;
+  }
+  return true;
+}
+
+/** 1:1 décomp `static void AttemptPlaceDecoration_(u8 taskId)` (decoration.c:1642-1655). */
+function AttemptPlaceDecoration_(taskId: number): void {
+  if (CanPlaceDecoration(taskId, gDecorations[gCurDecorationItems[gCurDecorationIndex]]) === true) {
+    StringExpandPlaceholders(gStringVar4, getString('gText_PlaceItHere'));
+    DisplayItemMessageOnField(taskId, gStringVar4, (t) => PlaceDecorationPrompt(t.taskId));
+  } else {
+    PlaySE(SE_FAILURE);
+    StringExpandPlaceholders(gStringVar4, getString('gText_CantBePlacedHere'));
+    DisplayItemMessageOnField(taskId, gStringVar4, (t) => CantPlaceDecorationPrompt(t.taskId));
+  }
+}
+
+/** 1:1 décomp `static void PlaceDecorationPrompt(u8 taskId)` (decoration.c:1657-1661). */
+function PlaceDecorationPrompt(taskId: number): void {
+  DisplayYesNoMenuDefaultYes();
+  DoYesNoFuncWithChoice(taskId, sPlaceDecorationYesNoFunctions);
+}
+
+/** 1:1 décomp `static void PlaceDecoration(u8 taskId)` (decoration.c:1663-1683). */
+function PlaceDecoration(taskId: number): void {
+  ClearDialogWindowAndFrame(0, false);
+  PlaceDecoration_(taskId);
+  if (gDecorations[gCurDecorationItems[gCurDecorationIndex]].permission !== DECORPERM_SPRITE) {
+    ShowDecorationOnMap(gTasks[taskId].data[tCursorX], gTasks[taskId].data[tCursorY], gCurDecorationItems[gCurDecorationIndex]);
+  } else {
+    sCurDecorMapX = gTasks[taskId].data[tCursorX] - MAP_OFFSET;
+    sCurDecorMapY = gTasks[taskId].data[tCursorY] - MAP_OFFSET;
+    ScriptContext_SetupScript('SecretBase_EventScript_SetDecoration');
+  }
+
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.y += 2;
+  // 1:1 `gMapHeader.regionMapSectionId == MAPSEC_SECRET_BASE` — le port stocke la section
+  // comme NOM (string), précédent pokedex_area_screen.ts:203 (`!== 'MAPSEC_NONE'`).
+  if (gMapHeader!.regionMapSectionId === 'MAPSEC_SECRET_BASE')
+    TryPutSecretBaseVisitOnAir();
+
+  CancelDecorating_(taskId);
+}
+
+/** 1:1 décomp `static void PlaceDecoration_(u8 taskId)` (decoration.c:1685-1721). */
+function PlaceDecoration_(taskId: number): void {
+  let i: number;
+
+  for (i = 0; i < sDecorationContext.size; i++) {
+    if (sDecorationContext.items[i] === DECOR_NONE) {
+      sDecorationContext.items[i] = gCurDecorationItems[gCurDecorationIndex];
+      sDecorationContext.pos[i] = ((gTasks[taskId].data[tCursorX] - MAP_OFFSET) << 4) + (gTasks[taskId].data[tCursorY] - MAP_OFFSET);
+      break;
+    }
+  }
+
+  if (!sDecorationContext.isPlayerRoom) {
+    for (i = 0; i < DECOR_MAX_SECRET_BASE; i++) {
+      if (sSecretBaseItemsIndicesBuffer[i] === DECOR_NONE) {
+        sSecretBaseItemsIndicesBuffer[i] = gCurDecorationIndex + 1;
+        break;
+      }
+    }
+  } else {
+    for (i = 0; i < DECOR_MAX_PLAYERS_HOUSE; i++) {
+      if (sPlayerRoomItemsIndicesBuffer[i] === DECOR_NONE) {
+        sPlayerRoomItemsIndicesBuffer[i] = gCurDecorationIndex + 1;
+        break;
+      }
+    }
+  }
+}
+
+/** 1:1 décomp `static void CancelDecoratingPrompt(u8 taskId)` (decoration.c:1723-1727). */
+function CancelDecoratingPrompt(taskId: number): void {
+  DisplayYesNoMenuDefaultYes();
+  DoYesNoFuncWithChoice(taskId, sCancelDecoratingYesNoFunctions);
+}
+
+/** 1:1 décomp `static void CancelDecorating(u8 taskId)` (decoration.c:1729-1733). */
+function CancelDecorating(taskId: number): void {
+  ClearDialogWindowAndFrame(0, false);
+  CancelDecorating_(taskId);
+}
+
+/** 1:1 décomp `static void CancelDecorating_(u8 taskId)` (decoration.c:1735-1740). */
+function CancelDecorating_(taskId: number): void {
+  FadeScreen(FADE_TO_BLACK, 0);
+  gTasks[taskId].data[tState] = 0;
+  gTasks[taskId].func = (t) => c1_overworld_prev_quest(t.taskId);
+}
+
+/** 1:1 décomp `static void c1_overworld_prev_quest(u8 taskId)` (decoration.c:1742-1762).
+ *  `gFieldCallback = ...` → globalThis (précédent overworld.ts:1429) ; `SetMainCallback2(
+ *  CB2_ReturnToField)` → CB2_ReturnToField_Manual (variante « _Manual » + discriminant
+ *  harness du port). */
+function c1_overworld_prev_quest(taskId: number): void {
+  switch (gTasks[taskId].data[tState]) {
+    case 0:
+      LockPlayerFieldControls();
+      if (!gPaletteFade.active) {
+        WarpToInitialPosition(taskId);
+        gTasks[taskId].data[tState] = 1;
+      }
+      break;
+    case 1:
+      FreePlayerSpritePalette();
+      FreeSpritePaletteByTag(PLACE_DECORATION_SELECTOR_TAG);
+      (globalThis as Record<string, unknown>).gFieldCallback = FieldCB_InitDecorationItemsWindow;
+      SetMainCallback2(CB2_ReturnToField_Manual);
+      DestroyTask(taskId);
+      break;
+  }
+}
+
+/** 1:1 décomp `static void Task_InitDecorationItemsWindow(u8 taskId)` (decoration.c:1764-1786).
+ *  `HideSecretBaseDecorationSprites` (secret_base.c) non porté → garde-fou. */
+function Task_InitDecorationItemsWindow(taskId: number): void {
+  switch (gTasks[taskId].data[tState]) {
+    case 0:
+      HideSecretBaseDecorationSprites();
+      gTasks[taskId].data[tState]++;
+      break;
+    case 1:
+      ScriptContext_SetupScript('SecretBase_EventScript_InitDecorations');
+      gTasks[taskId].data[tState]++;
+      break;
+    case 2:
+      LockPlayerFieldControls();
+      gTasks[taskId].data[tState]++;
+      break;
+    case 3:
+      if (IsWeatherNotFadingIn() === true)
+        gTasks[taskId].func = (t) => HandleDecorationItemsMenuInput(t.taskId);
+      break;
+  }
+}
+
+/** 1:1 décomp `static void FieldCB_InitDecorationItemsWindow(void)` (decoration.c:1788-1797). */
+function FieldCB_InitDecorationItemsWindow(): void {
+  let taskId: number;
+
+  LockPlayerFieldControls();
+  FadeInFromBlack();
+  taskId = CreateTask((t: DecompTask) => Task_InitDecorationItemsWindow(t.taskId), 8);
+  AddDecorationItemsWindow(taskId);
+  gTasks[taskId].data[tState] = 0;
+}
+
+/** 1:1 décomp `static bool8 ApplyCursorMovement_IsInvalid(u8 taskId)` (decoration.c:1799-1827). */
+function ApplyCursorMovement_IsInvalid(taskId: number): boolean {
+  const data = gTasks[taskId].data;
+  if (sDecorationLastDirectionMoved === DIR_SOUTH && data[tCursorY] - data[tDecorHeight] - 6 < 0) {
+    data[tCursorY]++;
+    return false;
+  }
+
+  if (sDecorationLastDirectionMoved === DIR_NORTH && data[tCursorY] - 7 >= gMapHeader!.mapLayout!.height) {
+    data[tCursorY]--;
+    return false;
+  }
+
+  if (sDecorationLastDirectionMoved === DIR_WEST && data[tCursorX] - 7 < 0) {
+    data[tCursorX]++;
+    return false;
+  }
+
+  if (sDecorationLastDirectionMoved === DIR_EAST && data[tCursorX] + data[tDecorWidth] - 8 >= gMapHeader!.mapLayout!.width) {
+    data[tCursorX]--;
+    return false;
+  }
+
+  return true;
+}
+
+/** 1:1 décomp `static bool8 IsHoldingDirection(void)` (decoration.c:1829-1836). */
+function IsHoldingDirection(): boolean {
+  const heldKeys = JOY_HELD(DPAD_ANY);
+  if (heldKeys !== DPAD_UP && heldKeys !== DPAD_DOWN && heldKeys !== DPAD_LEFT && heldKeys !== DPAD_RIGHT)
+    return false;
+
+  return true;
+}
+
+/** 1:1 décomp `static void ResetCursorMovement(void)` (decoration.c:1838-1843). */
+function ResetCursorMovement(): void {
+  sDecorationLastDirectionMoved = 0;
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.data[2] = 0;
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.data[3] = 0;
+}
+
+/** 1:1 décomp `static void Task_SelectLocation(u8 taskId)` (decoration.c:1845-1912).
+ *  Curseur PARTAGÉ placement + put-away : `sPlacePutAwayYesNoFunctions[cmd]` appelé avec
+ *  le `taskId` brut (u8). */
+function Task_SelectLocation(taskId: number): void {
+  const data = gTasks[taskId].data;
+  if (!gSprites[sDecor_CameraSpriteObjectIdx1]!.data[4]) {
+    if (data[tButton] === A_BUTTON) {
+      sPlacePutAwayYesNoFunctions[data[tDecorationItemsMenuCommand]].yesFunc(taskId);
+      return;
+    }
+
+    if (data[tButton] === B_BUTTON) {
+      sPlacePutAwayYesNoFunctions[data[tDecorationItemsMenuCommand]].noFunc(taskId);
+      return;
+    }
+
+    if ((JOY_HELD(DPAD_ANY)) === DPAD_UP) {
+      sDecorationLastDirectionMoved = DIR_SOUTH;
+      gSprites[sDecor_CameraSpriteObjectIdx1]!.data[2] = 0;
+      gSprites[sDecor_CameraSpriteObjectIdx1]!.data[3] = -2;
+      data[tCursorY]--;
+    }
+
+    if ((JOY_HELD(DPAD_ANY)) === DPAD_DOWN) {
+      sDecorationLastDirectionMoved = DIR_NORTH;
+      gSprites[sDecor_CameraSpriteObjectIdx1]!.data[2] = 0;
+      gSprites[sDecor_CameraSpriteObjectIdx1]!.data[3] = 2;
+      data[tCursorY]++;
+    }
+
+    if ((JOY_HELD(DPAD_ANY)) === DPAD_LEFT) {
+      sDecorationLastDirectionMoved = DIR_WEST;
+      gSprites[sDecor_CameraSpriteObjectIdx1]!.data[2] = -2;
+      gSprites[sDecor_CameraSpriteObjectIdx1]!.data[3] = 0;
+      data[tCursorX]--;
+    }
+
+    if ((JOY_HELD(DPAD_ANY)) === DPAD_RIGHT) {
+      sDecorationLastDirectionMoved = DIR_EAST;
+      gSprites[sDecor_CameraSpriteObjectIdx1]!.data[2] = 2;
+      gSprites[sDecor_CameraSpriteObjectIdx1]!.data[3] = 0;
+      data[tCursorX]++;
+    }
+
+    if (!IsHoldingDirection() || !ApplyCursorMovement_IsInvalid(taskId))
+      ResetCursorMovement();
+  }
+
+  if (sDecorationLastDirectionMoved) {
+    gSprites[sDecor_CameraSpriteObjectIdx1]!.data[4]++;
+    gSprites[sDecor_CameraSpriteObjectIdx1]!.data[4] &= 7;
+  }
+
+  if (!data[tButton]) {
+    if (JOY_NEW(A_BUTTON))
+      data[tButton] = A_BUTTON;
+
+    if (JOY_NEW(B_BUTTON))
+      data[tButton] = B_BUTTON;
+  }
+}
+
+/** 1:1 décomp `static void ContinueDecorating(u8 taskId)` (decoration.c:1914-1920). */
+function ContinueDecorating(taskId: number): void {
+  ClearDialogWindowAndFrame(0, true);
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.data[7] = 0;
+  gTasks[taskId].data[tButton] = 0;
+  gTasks[taskId].func = (t) => Task_SelectLocation(t.taskId);
+}
+
+/** 1:1 décomp `static void CantPlaceDecorationPrompt(u8 taskId)` (decoration.c:1922-1926). */
+function CantPlaceDecorationPrompt(taskId: number): void {
+  if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))
+    ContinueDecorating(taskId);
+}
+
+/** 1:1 décomp `static void ClearPlaceDecorationGraphicsDataBuffer(struct PlaceDecorationGraphicsDataBuffer *data)` (decoration.c:1928-1931).
+ *  `CpuFill16(0, data, sizeof(*data))` → zéro tous les champs (précédent .fill(0), battle_transition.ts:1276). */
+function ClearPlaceDecorationGraphicsDataBuffer(data: PlaceDecorationGraphicsDataBuffer): void {
+  data.decoration = null;
+  data.tiles.fill(0);
+  data.image.fill(0);
+  data.palette.fill(0);
+}
+
+/** 1:1 décomp `static void CopyPalette(u16 *dest, u16 pal)` (decoration.c:1933-1936). */
+function CopyPalette(dest: Uint16Array, pal: number): void {
+  const ts = gTilesetPointer_SecretBase;
+  if (ts === null) { WarnSecretBaseTilesetMissing(); return; }
+  // CpuFastCopy(&palettes[pal*16], dest, PLTT_SIZE_4BPP=32B=16 u16)
+  for (let i = 0; i < PLTT_SIZE_4BPP / 2; i++) dest[i] = ts.palettes[pal * 16 + i];
+}
+
+/** 1:1 décomp `static void CopyTile(u8 *dest, u16 tile)` (decoration.c:1938-1979). */
+function CopyTile(dest: Uint8Array, tile: number): void {
+  const ts = gTilesetPointer_SecretBase;
+  if (ts === null) { WarnSecretBaseTilesetMissing(); return; }
+  const buffer = new Uint8Array(TILE_SIZE_4BPP); // u8 ALIGNED(4) buffer[TILE_SIZE_4BPP]
+  let mode: number;
+  let i: number;
+
+  mode = tile >> 10;
+  if (tile !== 0)
+    tile &= 0x03FF;
+
+  // CpuFastCopy(&tiles[tile*TILE_SIZE_4BPP], buffer, TILE_SIZE_4BPP)
+  for (i = 0; i < TILE_SIZE_4BPP; i++) buffer[i] = ts.tiles[tile * TILE_SIZE_4BPP + i];
+  switch (mode) {
+    case 0:
+      for (i = 0; i < TILE_SIZE_4BPP; i++) dest[i] = buffer[i]; // CpuFastCopy(buffer, dest, TILE_SIZE_4BPP)
+      break;
+    case BG_TILE_H_FLIP(0) >> 10:
+      for (i = 0; i < 8; i++) {
+        dest[4 * i + 0] = (buffer[4 * (i + 1) - 1] >> 4) + ((buffer[4 * (i + 1) - 1] & 0x0F) << 4);
+        dest[4 * i + 1] = (buffer[4 * (i + 1) - 2] >> 4) + ((buffer[4 * (i + 1) - 2] & 0x0F) << 4);
+        dest[4 * i + 2] = (buffer[4 * (i + 1) - 3] >> 4) + ((buffer[4 * (i + 1) - 3] & 0x0F) << 4);
+        dest[4 * i + 3] = (buffer[4 * (i + 1) - 4] >> 4) + ((buffer[4 * (i + 1) - 4] & 0x0F) << 4);
+      }
+      break;
+    case BG_TILE_V_FLIP(0) >> 10:
+      for (i = 0; i < 8; i++) {
+        dest[4 * i + 0] = buffer[4 * (7 - i) + 0];
+        dest[4 * i + 1] = buffer[4 * (7 - i) + 1];
+        dest[4 * i + 2] = buffer[4 * (7 - i) + 2];
+        dest[4 * i + 3] = buffer[4 * (7 - i) + 3];
+      }
+      break;
+    case BG_TILE_H_FLIP(BG_TILE_V_FLIP(0)) >> 10:
+      for (i = 0; i < 32; i++) {
+        dest[i] = (buffer[31 - i] >> 4) + ((buffer[31 - i] & 0x0F) << 4);
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `static void SetDecorSelectionBoxTiles(struct PlaceDecorationGraphicsDataBuffer *data)` (decoration.c:1981-1986). */
+function SetDecorSelectionBoxTiles(data: PlaceDecorationGraphicsDataBuffer): void {
+  let i: number;
+  for (i = 0; i < 64; i++)
+    CopyTile(data.image.subarray(i * TILE_SIZE_4BPP), data.tiles[i]);
+}
+
+/** 1:1 décomp `static u16 GetMetatile(u16 tile)` (decoration.c:1988-1991). */
+function GetMetatile(tile: number): number {
+  const ts = gTilesetPointer_SecretBaseRedCave;
+  if (ts === null) { WarnSecretBaseTilesetMissing(); return 0; }
+  return ts.metatiles[tile] & 0xFFF;
+}
+
+/** 1:1 décomp `static void SetDecorSelectionMetatiles(struct PlaceDecorationGraphicsDataBuffer *data)` (decoration.c:1993-2003). */
+function SetDecorSelectionMetatiles(data: PlaceDecorationGraphicsDataBuffer): void {
+  let i: number;
+  let shape: number;
+  const decTiles = GetDecorTiles(data.decoration!.id);
+
+  shape = data.decoration!.shape;
+  for (i = 0; i < sDecorTilemaps[shape].size; i++) {
+    data.tiles[sDecorTilemaps[shape].tiles[i]] = GetMetatile(decTiles[sDecorTilemaps[shape].y[i]] * NUM_TILES_PER_METATILE + sDecorTilemaps[shape].x[i]);
+  }
+}
+
+/** 1:1 décomp `static void SetDecorSelectionBoxOamAttributes(u8 decorShape)` (decoration.c:2005-2019). */
+function SetDecorSelectionBoxOamAttributes(decorShape: number): void {
+  sDecorSelectorOam.y = 0;
+  sDecorSelectorOam.affineMode = ST_OAM_AFFINE_OFF;
+  sDecorSelectorOam.objMode = ST_OAM_OBJ_NORMAL;
+  sDecorSelectorOam.mosaic = false;
+  sDecorSelectorOam.bpp = ST_OAM_4BPP;
+  sDecorSelectorOam.shape = sDecorationMovementInfo[decorShape].shape;
+  sDecorSelectorOam.x = 0;
+  sDecorSelectorOam.matrixNum = 0;
+  sDecorSelectorOam.size = sDecorationMovementInfo[decorShape].size;
+  sDecorSelectorOam.tileNum = 0;
+  sDecorSelectorOam.priority = 0;
+  sDecorSelectorOam.paletteNum = 0;
+}
+
+/** 1:1 décomp `static void InitializePuttingAwayCursorSprite(struct Sprite *sprite)` (decoration.c:2021-2030). */
+function InitializePuttingAwayCursorSprite(sprite: any): void {
+  sprite.data[2] = 0;
+  sprite.data[3] = 0;
+  sprite.data[4] = 0;
+  sprite.data[5] = 0;
+  sprite.data[6] = 0;
+  sprite.data[7] = 0;
+  sprite.callback = InitializePuttingAwayCursorSprite2;
+}
+
+/** 1:1 décomp `static void InitializePuttingAwayCursorSprite2(struct Sprite *sprite)` (decoration.c:2032-2048). */
+function InitializePuttingAwayCursorSprite2(sprite: any): void {
+  if (sprite.data[7] === 0) {
+    if (sprite.data[6] < 15)
+      sprite.invisible = 0;
+    else
+      sprite.invisible = 1;
+
+    sprite.data[6]++;
+    sprite.data[6] &= 0x1F;
+  } else {
+    sprite.invisible = false;
+  }
+}
+
+/** 1:1 décomp `static u8 gpu_pal_decompress_alloc_tag_and_upload(struct PlaceDecorationGraphicsDataBuffer *data, u8 decor)` (decoration.c:2050-2064).
+ *  L'index palette lit `RedCave->metatiles[tiles[0]*8+7] >> 12` (tileset non porté → garde). */
+function gpu_pal_decompress_alloc_tag_and_upload(data: PlaceDecorationGraphicsDataBuffer, decor: number): number {
+  ClearPlaceDecorationGraphicsDataBuffer(data);
+  data.decoration = gDecorations[decor];
+  if (data.decoration.permission === DECORPERM_SPRITE)
+    return CreateObjectGraphicsSprite(GetDecorTiles(data.decoration.id)[0], SpriteCallbackDummy, 0, 0, 1);
+
+  FreeSpritePaletteByTag(PLACE_DECORATION_SELECTOR_TAG);
+  SetDecorSelectionMetatiles(data);
+  SetDecorSelectionBoxOamAttributes(data.decoration.shape);
+  SetDecorSelectionBoxTiles(data);
+  // CopyPalette(data->palette, ((u16 *)RedCave->metatiles)[(tiles[0]*NUM_TILES_PER_METATILE)+7] >> 12)
+  let palIndex = 0;
+  const rc = gTilesetPointer_SecretBaseRedCave;
+  if (rc !== null) palIndex = rc.metatiles[(GetDecorTiles(data.decoration.id)[0] * NUM_TILES_PER_METATILE) + 7] >> 12;
+  else WarnSecretBaseTilesetMissing();
+  CopyPalette(data.palette, palIndex);
+  LoadSpritePalette(sSpritePal_PlaceDecoration);
+  return CreateSprite(sDecorationSelectorSpriteTemplate, 0, 0, 0);
+}
+
+/** 1:1 décomp `static u8 AddDecorationIconObjectFromIconTable(u16 tilesTag, u16 paletteTag, u8 decor)` (decoration.c:2066-2093).
+ *  GARDE-FOU : dépend de `LZDecompressWram` (decompress.c) + des buffers temporaires item-icon
+ *  (`AllocItemIconTemporaryBuffers`/`gItemIconDecompressionBuffer`/`gItemIcon4x4Buffer`/…) +
+ *  `gDecorIconTable` (data/decoration/icon.h) — NON portés. HURLE 1× → MAX_SPRITES (échec). */
+let sWarnedIconTable = false;
+function AddDecorationIconObjectFromIconTable(tilesTag: number, paletteTag: number, decor: number): number {
+  void tilesTag; void paletteTag; void decor;
+  if (!sWarnedIconTable) {
+    console.error('[decoration] AddDecorationIconObjectFromIconTable (decoration.c:2066) : LZDecompressWram + buffers temp item-icon + gDecorIconTable (icon.h) non portés — icônes déco différées');
+    sWarnedIconTable = true;
+  }
+  return MAX_SPRITES;
+}
+
+/** 1:1 décomp `static const u32 *GetDecorationIconPicOrPalette(u16 decor, u8 mode)` (decoration.c:2095-2101).
+ *  GARDE-FOU : `gDecorIconTable` (data/decoration/icon.h) non porté. */
+function GetDecorationIconPicOrPalette(decor: number, mode: number): Uint8Array | null {
+  if (decor > NUM_DECORATIONS)
+    decor = DECOR_NONE;
+  void mode;
+  if (!sWarnedIconTable) {
+    console.error('[decoration] gDecorIconTable (data/decoration/icon.h) non porté — GetDecorationIconPicOrPalette null');
+    sWarnedIconTable = true;
+  }
+  return null;
+}
+
+/** 1:1 décomp `static u8 AddDecorationIconObjectFromObjectEvent(u16 tilesTag, u16 paletteTag, u8 decor)` (decoration.c:2103-2137). */
+function AddDecorationIconObjectFromObjectEvent(tilesTag: number, paletteTag: number, decor: number): number {
+  let spriteId: number;
+  const sheet: { data: Uint8Array; size: number; tag: number } = { data: sPlaceDecorationGraphicsDataBuffer.image, size: 0, tag: 0 };
+  const palette: { data: Uint16Array; tag: number } = { data: sPlaceDecorationGraphicsDataBuffer.palette, tag: 0 };
+  let template: any;
+
+  ClearPlaceDecorationGraphicsDataBuffer(sPlaceDecorationGraphicsDataBuffer);
+  sPlaceDecorationGraphicsDataBuffer.decoration = gDecorations[decor];
+  if (sPlaceDecorationGraphicsDataBuffer.decoration.permission !== DECORPERM_SPRITE) {
+    SetDecorSelectionMetatiles(sPlaceDecorationGraphicsDataBuffer);
+    SetDecorSelectionBoxOamAttributes(sPlaceDecorationGraphicsDataBuffer.decoration.shape);
+    SetDecorSelectionBoxTiles(sPlaceDecorationGraphicsDataBuffer);
+    // CopyPalette(palette, ((u16 *)RedCave->metatiles)[(tiles[0]*NUM_TILES_PER_METATILE)+7] >> 12)
+    let palIndex = 0;
+    const rc = gTilesetPointer_SecretBaseRedCave;
+    if (rc !== null) palIndex = rc.metatiles[(GetDecorTiles(sPlaceDecorationGraphicsDataBuffer.decoration.id)[0] * NUM_TILES_PER_METATILE) + 7] >> 12;
+    else WarnSecretBaseTilesetMissing();
+    CopyPalette(sPlaceDecorationGraphicsDataBuffer.palette, palIndex);
+    sheet.data = sPlaceDecorationGraphicsDataBuffer.image;
+    sheet.size = sDecorShapeSizes[sPlaceDecorationGraphicsDataBuffer.decoration.shape] * TILE_SIZE_4BPP;
+    sheet.tag = tilesTag;
+    LoadSpriteSheet(sheet);
+    palette.data = sPlaceDecorationGraphicsDataBuffer.palette;
+    palette.tag = paletteTag;
+    LoadSpritePalette(palette);
+    template = { ...sDecorWhilePlacingSpriteTemplate };
+    template.tileTag = tilesTag;
+    template.paletteTag = paletteTag;
+    spriteId = CreateSprite(template, 0, 0, 0);
+  } else {
+    spriteId = CreateObjectGraphicsSprite(GetDecorTiles(sPlaceDecorationGraphicsDataBuffer.decoration.id)[0], SpriteCallbackDummy, 0, 0, 1);
+  }
+  return spriteId;
+}
+
+/** 1:1 décomp `u8 AddDecorationIconObject(u8 decor, s16 x, s16 y, u8 priority, u16 tilesTag, u16 paletteTag)` (decoration.c:2139-2176).
+ *  `gDecorIconTable[decor][0] == NULL` → via GetDecorationIconPicOrPalette-style garde (icon.h
+ *  non porté → traité comme NULL → voie FromObjectEvent, gfx-buffer garde-fouée). */
+export function AddDecorationIconObject(decor: number, x: number, y: number, priority: number, tilesTag: number, paletteTag: number): number {
+  let spriteId: number;
+
+  if (decor > NUM_DECORATIONS) {
+    spriteId = AddDecorationIconObjectFromIconTable(tilesTag, paletteTag, DECOR_NONE);
+    if (spriteId === MAX_SPRITES)
+      return MAX_SPRITES;
+
+    gSprites[spriteId]!.x2 = x + 4;
+    gSprites[spriteId]!.y2 = y + 4;
+  } else if (DecorIconTableEntryIsNull(decor)) {
+    spriteId = AddDecorationIconObjectFromObjectEvent(tilesTag, paletteTag, decor);
+    if (spriteId === MAX_SPRITES)
+      return MAX_SPRITES;
+
+    gSprites[spriteId]!.x2 = x;
+    if (decor === DECOR_SILVER_SHIELD || decor === DECOR_GOLD_SHIELD)
+      gSprites[spriteId]!.y2 = y - 4;
+    else
+      gSprites[spriteId]!.y2 = y;
+  } else {
+    spriteId = AddDecorationIconObjectFromIconTable(tilesTag, paletteTag, decor);
+    if (spriteId === MAX_SPRITES)
+      return MAX_SPRITES;
+
+    gSprites[spriteId]!.x2 = x + 4;
+    gSprites[spriteId]!.y2 = y + 4;
+  }
+
+  SetDecorSpriteOamPriority(spriteId, priority);
+  return spriteId;
+}
+
+/** `gDecorIconTable[decor][0] == NULL` — icon.h non porté → toutes les entrées traitées NULL
+ *  (voie object-event). HURLE via GetDecorationIconPicOrPalette. */
+function DecorIconTableEntryIsNull(decor: number): boolean {
+  void GetDecorationIconPicOrPalette(decor, 0); // hurle 1× (icon.h non porté)
+  return true;
+}
+
+// ─── VAGUE 3 (put-away / rearrangement) — garde-fous référencés par du code vague 2 ──
+
+/** VAGUE 3 : `MAX_SPRITES` — sprite.h:36 (item_icon MAX_SPRITES=64) ; défini local (le port
+ *  disperse la constante). */
+const MAX_SPRITES = 64;
+
+/** VAGUE 3 (decoration.c:2367) — référencé par sPlacePutAwayYesNoFunctions[1]. Garde-fou. */
+function AttemptPutAwayDecoration(taskId: number): void {
+  void taskId;
+  console.error('[decoration] AttemptPutAwayDecoration (decoration.c:2367) : flux put-away/rearrangement = vague 3 non portée');
+}
+
+/** VAGUE 3 (decoration.c:2374) — référencé par sPlacePutAwayYesNoFunctions[1]. Garde-fou. */
+function AttemptCancelPutAwayDecoration(taskId: number): void {
+  void taskId;
+  console.error('[decoration] AttemptCancelPutAwayDecoration (decoration.c:2374) : flux put-away/rearrangement = vague 3 non portée');
+}
+
+/** 1:1 décomp `static void FreePlayerSpritePalette(void)` (decoration.c:2714-2717). Appelé par
+ *  c1_overworld_prev_quest (vague 2) ET Task_StopPuttingAwayDecorations (vague 3). */
+function FreePlayerSpritePalette(): void {
+  FreeSpritePaletteByTag(PLACE_DECORATION_PLAYER_TAG);
+}
+
+/** `HideSecretBaseDecorationSprites` (secret_base.c) — non porté → garde-fou (retour placement). */
+let sWarnedHideSbDecorSprites = false;
+function HideSecretBaseDecorationSprites(): void {
+  if (!sWarnedHideSbDecorSprites) {
+    console.error('[decoration] HideSecretBaseDecorationSprites (secret_base.c) : non porté — retour placement (Task_InitDecorationItemsWindow) INERTE');
+    sWarnedHideSbDecorSprites = true;
   }
 }
 
