@@ -78,6 +78,13 @@ import { gBattleMons, gBattleScripting, gBattleStruct } from './engine/battle/st
 // lisent la PARTY à l'index encodé dans le buffer (src[+2]), PAS gBattleMons (le mon annoncé
 // peut ne pas encore être au combat, ex. STRINGID_ENEMYABOUTTOSWITCHPKMN).
 import { gPlayerParty, gEnemyParty, GetMonData, gTrainers } from './pokemon';
+// Message flavor X-items (bloc UseStatIncreaseItem en fin de fichier) — feuilles pures.
+import {
+  ITEM0_X_ATTACK, ITEM0_DIRE_HIT, ITEM1_X_DEFEND, ITEM1_X_SPEED,
+  ITEM2_X_SPATK, ITEM2_X_ACCURACY, ITEM3_GUARD_SPEC,
+} from '../include/constants/item_effects';
+import { ITEM_ENIGMA_BERRY } from '../include/constants/items';
+import { getItemEffectBytes } from './data/pokemon/item_effects';
 import { GetTrainerClassNameGenderSpecific } from './international_string_util';
 import { MON_DATA_NICKNAME } from '../include/pokemon';
 import { BATTLE_TYPE_DOUBLE, BATTLE_TYPE_LINK, BATTLE_TYPE_TRAINER, BATTLE_TYPE_MULTI, BATTLE_TYPE_LEGENDARY, BATTLE_TYPE_WALLY_TUTORIAL, BATTLE_TYPE_TWO_OPPONENTS, BATTLE_TYPE_INGAME_PARTNER, BATTLE_TYPE_TOWER_LINK_MULTI, BATTLE_TYPE_RECORDED, BATTLE_TYPE_RECORDED_LINK } from './engine/battle/constants';
@@ -2295,3 +2302,92 @@ const sTextOnWindowsInfo_Normal: Record<number, BattleWindowText> = {
 export function getBattleTextOnWindowsInfo(winId: number): BattleWindowText {
   return sTextOnWindowsInfo_Normal[winId];
 }
+
+// ═══ Message flavor X-items (dette fine Bag LOT 5 soldée) ════════════════════
+// 1:1 pokemon.c:2087 (sStatsToRaise) + :5425 (BufferStatRoseMessage) + :5433
+// (UseStatIncreaseItem). RELOCALISÉES ici (foyer C = pokemon.c) — adaptation
+// anti-cycle documentée : battle_message importe pokemon (:80) → pokemon ne
+// peut pas nous importer ; TOUTES les briques (gBattleTextBuff1/2, encodeTemplate,
+// BattleStringExpandPlaceholders, STAT_NAMES_FR, gDisplayedStringBattle) sont
+// privées à CE module. Consommé par item_use.ts via le pont __UseStatIncreaseItem
+// (contrat posé au Bag LOT 5, item_use.ts:607). Précédent relocalisation :
+// text.ts:1238 (« AddTextPrinterParameterized2/3/4 relocalisés menu.ts »).
+
+/** 1:1 décomp `static const u8 sStatsToRaise[]` (pokemon.c:2087) :
+ *  STAT_ATK, STAT_ATK, STAT_SPEED, STAT_DEF, STAT_SPATK, STAT_ACC. */
+const sStatsToRaise: readonly number[] = [1, 1, 3, 2, 4, 6];
+
+/** msgData minimal pour l'expansion hors-flux-IPC : le C pose les GLOBALS
+ *  (gBattlerTarget = gBattlerInMenuId) avant d'expandre ; notre expandeur lit
+ *  le msgData passé → même effet net, sans muter l'état combat. */
+function _menuMsgData(battlerInMenuId: number): BattleMsgData {
+  return {
+    battlerAttacker: battlerInMenuId, battlerTarget: battlerInMenuId,
+    scrActive: battlerInMenuId, currentMove: 0, originallyUsedMove: 0,
+    lastItem: 0, lastAbility: 0,
+  } as unknown as BattleMsgData;
+}
+
+function _battlerInMenuId(): number {
+  const bs = (globalThis as { __battleState?: { gBattlerInMenuId?: number } }).__battleState;
+  return bs?.gBattlerInMenuId ?? 0;
+}
+
+/** 1:1 décomp `static void BufferStatRoseMessage(s32 statIdx)` (pokemon.c:5425) :
+ *  buff1 = gStatNamesTable[sStatsToRaise[statIdx]] ; buff2 = gText_StatRose ;
+ *  expand gText_DefendersStatRose → gDisplayedStringBattle. */
+function BufferStatRoseMessage(statIdx: number): void {
+  const menuId = _battlerInMenuId();
+  // StringCopy(gBattleTextBuff1, gStatNamesTable[...]) — STAT_NAMES_FR = la table FR (:631).
+  gBattleTextBuff1.fill(0);
+  StringCopy_(gBattleTextBuff1, encodeChars(STAT_NAMES_FR[sStatsToRaise[statIdx]] ?? '?'));
+  // StringCopy(gBattleTextBuff2, gText_StatRose).
+  gBattleTextBuff2.fill(0);
+  StringCopy_(gBattleTextBuff2, encodeTemplate(getString('gText_StatRose'), B_TXT_NAME_TO_CODE));
+  // BattleStringExpandPlaceholdersToDisplayedString(gText_DefendersStatRose).
+  const tmpl = encodeTemplate(getString('gText_DefendersStatRose'), B_TXT_NAME_TO_CODE);
+  BattleStringExpandPlaceholders(tmpl, gDisplayedStringBattle, _menuMsgData(menuId));
+}
+
+/** 1:1 décomp `u8 *UseStatIncreaseItem(u16 itemId)` (pokemon.c:5433) — construit
+ *  le(s) message(s) flavor du X-item utilisé (l'EFFET est déjà appliqué par
+ *  ItemUseInBattle_StatIncrease) et rend gDisplayedStringBattle.
+ *  Écart LINK documenté : la branche ITEM_ENIGMA_BERRY lit gEnigmaBerries[] (link)
+ *  ou gSaveBlock1Ptr->enigmaBerry (e-reader) — hors solo, garde hurlante +
+ *  fallback table standard. */
+export function UseStatIncreaseItem(itemId: number): Uint8Array {
+  let itemEffect: Uint8Array | number[] | null;
+  if (itemId === ITEM_ENIGMA_BERRY) {
+    console.error('[battle_message] UseStatIncreaseItem(ENIGMA_BERRY) : gEnigmaBerries = LINK/e-reader non porté — fallback table standard');
+    itemEffect = getItemEffectBytes(itemId);
+  } else {
+    itemEffect = getItemEffectBytes(itemId); // ≡ gItemEffectTable[itemId - ITEM_POTION]
+  }
+  if (!itemEffect) { gDisplayedStringBattle[0] = EOS; return gDisplayedStringBattle; }
+  // gPotentialItemEffectBattler = gBattlerInMenuId — consommé par les item-effects
+  // link/AI ; posé sur le state si le champ existe (miroir du global).
+  const bs = (globalThis as { __battleState?: { gPotentialItemEffectBattler?: number } }).__battleState;
+  if (bs) bs.gPotentialItemEffectBattler = _battlerInMenuId();
+  // 1:1 : bits par octet — ITEM0_X_ATTACK=0x0F(mask hi? non : X_ATTACK bits 0-3)…
+  // Les masques exacts viennent d'include/constants/item_effects (mêmes noms).
+  for (let i = 0; i < 3; i++) {
+    if (itemEffect[i] & (i === 0 ? ITEM0_X_ATTACK : i === 1 ? ITEM1_X_SPEED : ITEM2_X_SPATK))
+      BufferStatRoseMessage(i * 2);
+    if (itemEffect[i] & (i === 0 ? ITEM0_DIRE_HIT : i === 1 ? ITEM1_X_DEFEND : ITEM2_X_ACCURACY)) {
+      if (i !== 0) {
+        BufferStatRoseMessage(i * 2 + 1);
+      } else {
+        // gBattlerAttacker = gBattlerInMenuId ; expand gText_PkmnGettingPumped.
+        const tmpl = encodeTemplate(getString('gText_PkmnGettingPumped'), B_TXT_NAME_TO_CODE);
+        BattleStringExpandPlaceholders(tmpl, gDisplayedStringBattle, _menuMsgData(_battlerInMenuId()));
+      }
+    }
+  }
+  if (itemEffect[3] & ITEM3_GUARD_SPEC) {
+    const tmpl = encodeTemplate(getString('gText_PkmnShroudedInMist'), B_TXT_NAME_TO_CODE);
+    BattleStringExpandPlaceholders(tmpl, gDisplayedStringBattle, _menuMsgData(_battlerInMenuId()));
+  }
+  return gDisplayedStringBattle;
+}
+// Pont contrat Bag LOT 5 (item_use.ts:607 le consomme).
+(globalThis as Record<string, unknown>).__UseStatIncreaseItem = UseStatIncreaseItem;
