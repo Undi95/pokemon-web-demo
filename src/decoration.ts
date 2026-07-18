@@ -129,6 +129,10 @@ import { OBJECT_EVENTS_COUNT, MALE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, OB
 import { OBJ_EVENT_GFX_BRENDAN_DECORATING, OBJ_EVENT_GFX_MAY_DECORATING } from '../include/constants/event_objects';
 import { METATILE_SecretBase_SandOrnament_BrokenBase } from '../include/constants/metatile_labels';
 import type { Decoration } from './data/decoration/header';
+// 1:1 décomp : decoration.c appelle HideSecretBaseDecorationSprites (secret_base.c).
+// Cycle decoration ↔ secret_base INTRINSÈQUE au décomp (les 2 .c s'appellent) ;
+// sûr : usage runtime-only (jamais à l'init), pas de TDZ.
+import { HideSecretBaseDecorationSprites } from './secret_base';
 
 // ─── 1:1 décomp `typedef void (*TaskFunc)(u8 taskId)` (task.h) ────────────────
 type TaskFunc = (taskId: number) => void;
@@ -2729,14 +2733,8 @@ function FreePlayerSpritePalette(): void {
   FreeSpritePaletteByTag(PLACE_DECORATION_PLAYER_TAG);
 }
 
-/** `HideSecretBaseDecorationSprites` (secret_base.c) — non porté → garde-fou (retour placement/put-away). */
-let sWarnedHideSbDecorSprites = false;
-function HideSecretBaseDecorationSprites(): void {
-  if (!sWarnedHideSbDecorSprites) {
-    console.error('[decoration] HideSecretBaseDecorationSprites (secret_base.c) : non porté — retour (Task_InitDecorationItemsWindow / Task_ReinitializeDecorationMenuHandler) INERTE');
-    sWarnedHideSbDecorSprites = true;
-  }
-}
+// `HideSecretBaseDecorationSprites` (secret_base.c) — CÂBLÉ 1:1 : importé de
+// './secret_base' (ex-garde-fou console.error remplacé par l'import réel).
 
 // ═════════════════════════════════════════════════════════════════════════════
 //  PONT scrcmd PRÉ-EXISTANT (NON-1:1) — dette à réconcilier avec decoration_inventory.ts
