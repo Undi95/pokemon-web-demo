@@ -795,13 +795,22 @@ export async function preloadCreditsAssets(): Promise<void> {
     { symbol: 'gIntroCopyright_Pal', url: '/decomp/em/intro/copyright.png', type: 'palfromgfx' },
   ];
 
+  // Symboles ayant une entrée EXPLICITE dans `assets` (pal/palfromgfx dédiée). Le handler gfx4
+  // auto-dérive sinon une palette depuis le PLTE du PNG (≤ 16 couleurs) — FAUX pour un BG
+  // MULTI-BANQUES comme sCloudsBg dont la vraie palette est un .pal 48 couleurs (3 banques 0/1/2).
+  // Sans ce garde, l'auto-dérive 16-couleurs PRÉEMPTE l'entrée `sCloudsBg_Pal` explicite (course +
+  // check idempotent `has`) → banques 1 et 2 jamais chargées → CIEL NOIR en scène vélo du générique.
+  const explicitSymbols = new Set(assets.map((a) => a.symbol));
+
   await Promise.all(assets.map(async ({ symbol, url, type }) => {
     if (assetCache.has(symbol)) return;  // idempotent (grass/trees/bicycle déjà en cache via Scene 2)
     try {
       if (type === 'gfx4') {
         assetCache.set(symbol, await loadTileBin(url, 4));
         const palSymbol = symbol.replace(/_Gfx$/, '_Pal');
-        if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
+        // Auto-dérive la palette du PNG SEULEMENT si aucune entrée _Pal explicite (pal/palfromgfx)
+        // n'existe : celle-ci est autoritaire (ex. sCloudsBg_Pal = clouds_bg.pal 48 couleurs).
+        if (palSymbol !== symbol && !explicitSymbols.has(palSymbol) && !assetCache.has(palSymbol)) {
           const png = await loadIndexedPngStrict(url, 4);
           assetCache.set(palSymbol, png.palette);
         }

@@ -150,11 +150,14 @@ export function CreateMonPicSprite_Affine(
   }
 
   // 1:1 décomp c:254-258 : découpe framePics en MAX_MON_PIC_FRAMES images de MON_PIC_SIZE.
-  // Notre substrat = la frame 0 (front pic). CreateSprite (voie inline) utilise images[0].size
-  // pour AllocSpriteTiles → on alloue exactement MON_PIC_SIZE/32 = 64 tiles (= 1 frame 64×64).
-  const frameSize = Math.min(MON_PIC_SIZE, framePics.length);
+  // Le substrat porte AUTANT de frames que la pic front décompressée (anim_front = 2 frames :
+  // idle + respiration ; front.png = 1 frame). CreateSprite (voie inline) alloue images[0].size/32
+  // tiles OBJ VRAM et les charge CONTIGUËS → DoMonFrontSpriteAnimation bascule oam.tileId sur la
+  // frame 1 (tileBase + tilesPerFrame) qui pointe alors des tiles RÉELLEMENT chargées (fin de
+  // l'anim mon CORROMPUE en Hall of Fame). Borné à MAX_MON_PIC_FRAMES (cap décomp) ; un substrat
+  // 1-frame (starter/pokédex) reste à 64 tiles inchangé.
+  const frameSize = Math.min(MON_PIC_SIZE * MAX_MON_PIC_FRAMES, framePics.length);
   const images: Array<{ data: Uint8Array; size: number }> = [{ data: framePics, size: frameSize }];
-  void MAX_MON_PIC_FRAMES;  // (les frames d'anim mon ne sont pas chargées : front pic statique)
 
   // 1:1 décomp c:259-277 : sCreatingSpriteTemplate (tileTag=TAG_NONE inline, oam + affineAnims).
   const affineMode = (type === MON_PIC_AFFINE_FRONT || type === MON_PIC_AFFINE_BACK) ? 1 : 0;
@@ -163,7 +166,11 @@ export function CreateMonPicSprite_Affine(
     : null;
   const template: SpriteTemplate = {
     // tileTag omis = TAG_NONE → voie inline `_CreateSpriteAtTemplate` (sprite.ts).
-    oam: { shape: 0, size: 3, priority: 1, affineMode: affineMode as 0 | 1, paletteNum: paletteSlot },
+    // 1:1 sOamData_Affine (trainer_pokemon_sprites.c:38-43) : priority 0 par DÉFAUT (bitfield à 0).
+    // Les callers posent ensuite la priority voulue : starter_choose/pokedex/ribbons re-posent 0
+    // explicitement ; HOF pousse les mons à 1 (Task_Hof_DoConfetti) pour que le dresseur (pri 0)
+    // passe DEVANT. Le hardcode `priority: 1` précédent cassait ce z-order (dresseur derrière).
+    oam: { shape: 0, size: 3, priority: 0, affineMode: affineMode as 0 | 1, paletteNum: paletteSlot },
     images,
     anims: null,
     affineAnims: affineAnimsName,
@@ -302,7 +309,10 @@ function CreatePicSprite(
   const frameSize = Math.min(MON_PIC_SIZE, framePics.length);
   const images: Array<{ data: Uint8Array; size: number }> = [{ data: framePics, size: frameSize }];
   const template: SpriteTemplate = {
-    oam: { shape: 0, size: 3, priority: 1, affineMode: 0, paletteNum: paletteSlot },
+    // 1:1 sOamData_Normal (trainer_pokemon_sprites.c:32-36) : priority 0 par DÉFAUT (bitfield à 0).
+    // Voie du trainer-pic HOF : le dresseur reste à pri 0 = DEVANT les mons (poussés à 1 par
+    // Task_Hof_DoConfetti). cf. CreateMonPicSprite_Affine ci-dessus.
+    oam: { shape: 0, size: 3, priority: 0, affineMode: 0, paletteNum: paletteSlot },
     images,
     anims: null,
     affineAnims: null,

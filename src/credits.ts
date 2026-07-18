@@ -1757,15 +1757,23 @@ function CreateMovingScenerySprites(hasVerticalMove: number, metadata: any[], an
   let i = 0;
   for (i = 0; i < numSprites; i++)
   {
-    const sprite = CreateSprite(sSpriteTemplate_MovingScenery, metadata[i].x, metadata[i].y, metadata[i].subpriority);
+    // 1:1 décomp : `sSpriteTemplate_MovingScenery` est un DUMMY (shape/size 8×8) ; chaque sprite
+    // reçoit sa shape/size réelle. Le décomp écrit `gSprites[id].oam.shape/size/priority` APRÈS
+    // création — mais notre syncSpritesToOam NE propage PAS shape/size/priority/paletteNum (fixés à
+    // la CRÉATION dans CreateSpriteAtOam, cf. sprite.ts). On les pose donc au CREATE via un template
+    // PAR-SPRITE, sinon nuages/arbres/maisons rendent en 8×8 (« scenery minuscule »).
+    const template = {
+      ...sSpriteTemplate_MovingScenery,
+      oam: { ...sSpriteTemplate_MovingScenery.oam, shape: metadata[i].shape, size: metadata[i].size },
+    };
+    const sprite = CreateSprite(template, metadata[i].x, metadata[i].y, metadata[i].subpriority);
+    // CreateSpriteAtOam a DÉJÀ calculé le centerToCornerVec pour la vraie shape/size (1:1
+    // CalcCenterToCornerVec à la création) ; on garde l'appel décomp explicite (idempotent).
     const ctc = CalcCenterToCornerVec(metadata[i].shape, metadata[i].size, ST_OAM_AFFINE_OFF);
     gSprites[sprite].centerToCornerVecX = ctc.centerToCornerVecX;
     gSprites[sprite].centerToCornerVecY = ctc.centerToCornerVecY;
-    // 1:1 décomp `gSprites[spriteId].oam.priority/shape/size/paletteNum` — le modèle DecompSprite
-    // de CE moteur est PLAT (pas de sous-objet `.oam` ; cf. mémoire « .oam.paletteNum n'existe pas »).
-    // `.oam.FIELD` (undefined) crashait ; on écrit les champs plats (affineMode/matrixNum/objMode sont
-    // relus par syncSpritesToOam). priority/shape/size/paletteNum sont figés à la création (template) →
-    // ces écritures restent inertes au rendu = imperfection cosmétique connue (scenery à la taille template).
+    // priority 3 + paletteNum 0 sont posés au CREATE (template.oam.priority=3 ; paletteBank défaut
+    // 0). Les écritures plates ci-dessous gardent le DecompSprite cohérent (inertes au rendu).
     gSprites[sprite].priority = 3;
     gSprites[sprite].shape = metadata[i].shape;
     gSprites[sprite].size = metadata[i].size;

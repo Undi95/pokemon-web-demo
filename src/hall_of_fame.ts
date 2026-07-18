@@ -1141,11 +1141,17 @@ export async function preloadHallOfFameAssets(): Promise<void> {
         done.add(key);
         const folder = key.replace('SPECIES_', '').toLowerCase();
         try {
-          const [front, pal] = await Promise.all([
-            loadIndexedPngStrict(`/decomp/em/pokemon/${folder}/front.png`, 4),
+          // 1:1 DecompressPic (LoadSpecialPokePic) charge la pic front MULTI-FRAME (anim_front =
+          // 64×128 = 2 frames : idle + respiration). Task_Hof_DisplayMon → SpriteCB_GetOnScreenAndAnimate
+          // → DoMonFrontSpriteAnimation bascule sur la frame 1 (StartSpriteAnim(.,1)) : le substrat DOIT
+          // contenir les 2 frames sinon le toggle pointe des tiles NON chargées = anim CORROMPUE.
+          // (front.png = 1 frame seule → fallback si anim_front absent : pas de toggle, frame 0 saine.)
+          const [frontTiles, pal] = await Promise.all([
+            loadTileBin(`/decomp/em/pokemon/${folder}/anim_front.png`, 4)
+              .catch(() => loadIndexedPngStrict(`/decomp/em/pokemon/${folder}/front.png`, 4).then((r) => r.charData)),
             loadGbaPal(`/decomp/em/pokemon/${folder}/normal.pal`),
           ]);
-          _registerMonPicSubstrate(key, front.charData, pal.subarray(0, 16));
+          _registerMonPicSubstrate(key, frontTiles, pal.subarray(0, 16));
         } catch (e) {
           console.error('[hall_of_fame] front pic préload KO', key, e);
         }
