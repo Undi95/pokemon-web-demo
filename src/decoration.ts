@@ -111,7 +111,9 @@ import {
 } from './sprite';
 import { FadeScreen, IsWeatherNotFadingIn, FADE_TO_BLACK } from './field_weather';
 import { FadeInFromBlack } from './field_screen_effect';
-import { PlayerGetDestCoords } from './field_player_avatar';
+import { PlayerGetDestCoords, GetPlayerFacingDirection } from './field_player_avatar';
+import { FlagGet } from './engine/script/script-vars';
+import { FLAG_DECORATION_1, FLAG_DECORATION_14 } from '../include/constants/flags';
 import { SetWarpDestination, WarpIntoMap, CB2_ReturnToField_Manual } from './overworld';
 import { SetMainCallback2 } from './main';
 import { TryPutSecretBaseVisitOnAir } from './tv';
@@ -119,10 +121,11 @@ import {
   MetatileBehavior_IsSecretBaseImpassable, MetatileBehavior_IsSecretBaseNorthWall,
   MetatileBehavior_IsSecretBaseTrainerSpot, MetatileBehavior_IsSecretBaseHole,
   MetatileBehavior_IsNormal, MetatileBehavior_HoldsLargeDecoration, MetatileBehavior_HoldsSmallDecoration,
+  MetatileBehavior_IsSecretBasePC, MetatileBehavior_IsPlayerRoomPCOn,
 } from './metatile_behavior';
 import { JOY_HELD, SpriteCallbackDummy, getRuntime } from '../harness/runtime/decomp-globals';
 import { BG_TILE_H_FLIP, BG_TILE_V_FLIP } from '../harness/runtime/decomp-helpers';
-import { OBJECT_EVENTS_COUNT, MALE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../include/constants/global';
+import { OBJECT_EVENTS_COUNT, MALE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, OBJECT_EVENT_TEMPLATES_COUNT } from '../include/constants/global';
 import { OBJ_EVENT_GFX_BRENDAN_DECORATING, OBJ_EVENT_GFX_MAY_DECORATING } from '../include/constants/event_objects';
 import { METATILE_SecretBase_SandOrnament_BrokenBase } from '../include/constants/metatile_labels';
 import type { Decoration } from './data/decoration/header';
@@ -421,17 +424,18 @@ function DecorationMenuAction_Decorate(taskId: number): void {
   }
 }
 
-/** 1:1 décomp `static void DecorationMenuAction_PutAway(u8 taskId)` (decoration.c:646-661). */
+/** 1:1 décomp `static void DecorationMenuAction_PutAway(u8 taskId)` (decoration.c:646-661).
+ *  VAGUE 3 : la branche succès lance le flux PUT-AWAY (Task_ContinuePuttingAwayDecorations). */
 function DecorationMenuAction_PutAway(taskId: number): void {
   if (!HasDecorationsInUse(taskId)) {
     StringExpandPlaceholders(gStringVar4, getString('gText_NoDecorationsInUse'));
     DisplayItemMessageOnField(taskId, gStringVar4, (t) => ReturnToDecorationActionsAfterInvalidSelection(t.taskId));
   } else {
-    // 1:1 :655-659 — bascule vers le flux PUT-AWAY (caméra/rearrangement sur la map) =
-    // VAGUE 3 (Task_ContinuePuttingAwayDecorations + AttemptMarkDecorUnderCursorForRemoval
-    // non portés — decoration.c:2178-2718). Garde-fou HURLANT : on NE touche PAS à l'écran
-    // (pas de RemoveDecorationWindow/FadeScreen) → menu reste sain.
-    console.error('[decoration] DecorationMenuAction_PutAway → Task_ContinuePuttingAwayDecorations (put-away) : vague 3 non portée');
+    RemoveDecorationWindow(WINDOW_MAIN_MENU);
+    ClearDialogWindowAndFrame(0, false);
+    FadeScreen(FADE_TO_BLACK, 0);
+    gTasks[taskId].data[tState] = 0;
+    gTasks[taskId].func = (t) => Task_ContinuePuttingAwayDecorations(t.taskId);
   }
 }
 
@@ -1055,6 +1059,10 @@ function BlitMenuInfoIcon(_windowId: number, _iconId: number, _x: number, _y: nu
 // ─── 1:1 décomp #defines (decoration.c:42-44) ───────────────────────────────
 const PLACE_DECORATION_SELECTOR_TAG = 0xbe5;
 const PLACE_DECORATION_PLAYER_TAG = 0x008;
+/** 1:1 `#define NUM_DECORATION_FLAGS (FLAG_DECORATION_14 - FLAG_DECORATION_1 + 1)`
+ *  (decoration.c:44). = 14. Consommé par SetDecoration (:1287) — spawn object-event
+ *  gardé-fou dans le port. */
+const NUM_DECORATION_FLAGS = FLAG_DECORATION_14 - FLAG_DECORATION_1 + 1;
 
 // ─── 1:1 décomp enums non exportés par le port (valeurs = include/decoration.h:4-28,
 //  constants/decorations.h:125, global.fieldmap.h:20, constants/maps.h:28). Définis
@@ -2177,22 +2185,542 @@ function DecorIconTableEntryIsNull(decor: number): boolean {
   return true;
 }
 
-// ─── VAGUE 3 (put-away / rearrangement) — garde-fous référencés par du code vague 2 ──
+// ═════════════════════════════════════════════════════════════════════════════
+//  VAGUE 3 — PUT-AWAY / REARRANGEMENT (decoration.c:2178-2717)
+//  Transcription 1:1 du flux « ranger une décoration » : marquage des décos sous le
+//  curseur partagé (Task_SelectLocation, vague 2), retrait des metatiles, retour au
+//  menu déco. Les 2 specials SCRIPT-SIDE de cette plage (PutAwayDecorationIteration
+//  :2191, GetObjectEventLocalIdByFlag :2217) NE sont PAS transcrits ici : les specials
+//  `void(void)` du port vivent dans engine/script/specials-registry.ts
+//  (GetObjectEventLocalIdByFlag = 1:1 :3101 ; PutAwayDecorationIteration = listé). Les
+//  dupliquer ici = VRAIE DUPE (contre-contrat). Assets gbagfx (brendan/may.pal,
+//  put_away_cursor.4bpp) non inlinés → garde-fous HURLANTS (pattern GetDecorTiles).
+// ═════════════════════════════════════════════════════════════════════════════
 
-/** VAGUE 3 : `MAX_SPRITES` — sprite.h:36 (item_icon MAX_SPRITES=64) ; défini local (le port
- *  disperse la constante). */
+/** VAGUE 3 : `MAX_SPRITES` — sprite.h:36 (MAX_SPRITES=64) ; défini local (le port disperse
+ *  la constante). Renvoyé par AddDecorationIconObjectFromIconTable (= échec). */
 const MAX_SPRITES = 64;
 
-/** VAGUE 3 (decoration.c:2367) — référencé par sPlacePutAwayYesNoFunctions[1]. Garde-fou. */
-function AttemptPutAwayDecoration(taskId: number): void {
-  void taskId;
-  console.error('[decoration] AttemptPutAwayDecoration (decoration.c:2367) : flux put-away/rearrangement = vague 3 non portée');
+// ─── 1:1 décomp EWRAM put-away (decoration.c:116, 127-128) ───────────────────
+
+/** 1:1 `EWRAM_DATA static u32 UNUSED sFiller[2]` (decoration.c:116). Padding inutilisé
+ *  (matérialisé pour la complétude de la carte EWRAM ; jamais lu). */
+const sFiller = new Uint32Array(2);
+
+/** 1:1 `struct DecorRearrangementDataBuffer` (decoration.h:82-88). `flagId` = `u16` (id de
+ *  flag numérique) dans le décomp ; le port stocke les flags par NOM (string, cf.
+ *  ObjectEventTemplate.flagId). Écrit par SetDecorRearrangementFlagIdIfFlagUnset, relu
+ *  UNIQUEMENT par le special PutAwayDecorationIteration (specials-registry.ts) → typé
+ *  `string` pour rester cohérent avec la représentation flag du port. */
+interface DecorRearrangementDataBuffer { idx: number; width: number; height: number; flagId: string; }
+
+/** 1:1 `EWRAM_DATA static struct DecorRearrangementDataBuffer sDecorRearrangementDataBuffer[DECOR_MAX_SECRET_BASE]`
+ *  (decoration.c:127). Init `{}` → chaque entrée à 0 (flagId = '' = pas de flag). */
+const sDecorRearrangementDataBuffer: DecorRearrangementDataBuffer[] =
+  Array.from({ length: DECOR_MAX_SECRET_BASE }, () => ({ idx: 0, width: 0, height: 0, flagId: '' }));
+
+let sCurDecorSelectedInRearrangement = 0; // decoration.c:128 (u8)
+
+// ─── 1:1 décomp données put-away (decoration.c:437-507) ──────────────────────
+
+/** 1:1 `sBrendanPalette[]/sMayPalette[] = INCGFX_U16("graphics/decorations/{brendan,may}.pal")`
+ *  (decoration.c:437-439). Assets gbapal NON inlinés (comme sDecorationMenuPalette:298) →
+ *  placeholder 16 couleurs = 0 ; le vrai chargement passera par le système d'assets. Garde-fou
+ *  HURLANT (1×) au call-site (LoadPlayerSpritePalette). */
+const sBrendanPalette = new Uint16Array(16);
+const sMayPalette = new Uint16Array(16);
+
+/** 1:1 `sDecorationPuttingAwayCursor[] = INCGFX_U8("graphics/decorations/put_away_cursor.png", ".4bpp")`
+ *  (decoration.c:453). Feuille 16×16 4bpp (0x80 octets) NON inlinée → placeholder zéro
+ *  (sprite curseur INERTE/transparent tant que l'asset n'est pas câblé). */
+const sDecorationPuttingAwayCursor = new Uint8Array(0x80);
+
+/** 1:1 `sReturnDecorationYesNoFunctions` (decoration.c:441-445). */
+const sReturnDecorationYesNoFunctions: YesNoFuncTable = {
+  yesFunc: (t) => PutAwayDecoration(t.taskId),
+  noFunc: (t) => ContinuePuttingAwayDecorations(t.taskId),
+};
+
+/** 1:1 `sStopPuttingAwayDecorationsYesNoFunctions` (decoration.c:447-451). */
+const sStopPuttingAwayDecorationsYesNoFunctions: YesNoFuncTable = {
+  yesFunc: (t) => StopPuttingAwayDecorations(t.taskId),
+  noFunc: (t) => ContinuePuttingAwayDecorations(t.taskId),
+};
+
+/** 1:1 `sSpritePal_PuttingAwayCursorBrendan/May` (decoration.c:455-465). data → &{brendan,may}Palette. */
+const sSpritePal_PuttingAwayCursorBrendan = { data: sBrendanPalette, tag: PLACE_DECORATION_PLAYER_TAG };
+const sSpritePal_PuttingAwayCursorMay = { data: sMayPalette, tag: PLACE_DECORATION_PLAYER_TAG };
+
+/** 1:1 `struct OamData sPuttingAwayCursorOamData` (decoration.c:467-479). SPRITE_SHAPE/SIZE(16x16)
+ *  = shape 0 / size 1 (table OAM GBA, gba/types.h) ; priority 1. Même jeu de champs que
+ *  sDecorSelectorOam (vague 2). */
+const sPuttingAwayCursorOamData = {
+  y: 0, affineMode: ST_OAM_AFFINE_OFF, objMode: ST_OAM_OBJ_NORMAL, mosaic: false, bpp: ST_OAM_4BPP,
+  shape: 0, x: 0, matrixNum: 0, size: 1, tileNum: 0, priority: 1, paletteNum: 0,
+};
+
+/** 1:1 `sPuttingAwayCursorAnimCmd0`/`sPuttingAwayCursorAnimCmds` (decoration.c:481-490). 1 frame statique. */
+const sPuttingAwayCursorAnimCmd0: ReadonlyArray<unknown> = [{ type: 'frame', imageValue: 0, duration: 0 }, { type: 'end' }];
+const sPuttingAwayCursorAnimCmds: ReadonlyArray<ReadonlyArray<unknown>> = [sPuttingAwayCursorAnimCmd0];
+
+/** 1:1 `struct SpriteFrameImage sPuttingAwayCursorPicTable` (decoration.c:492-496). data → &sDecorationPuttingAwayCursor. */
+const sPuttingAwayCursorPicTable = { data: sDecorationPuttingAwayCursor, size: sDecorationPuttingAwayCursor.length };
+
+/** 1:1 `sPuttingAwayCursorSpriteTemplate` (decoration.c:498-507). callback = InitializeCameraSprite1. */
+const sPuttingAwayCursorSpriteTemplate = {
+  tileTag: TAG_NONE,
+  paletteTag: PLACE_DECORATION_PLAYER_TAG,
+  oam: sPuttingAwayCursorOamData,
+  anims: sPuttingAwayCursorAnimCmds,
+  images: [sPuttingAwayCursorPicTable],
+  affineAnims: gDummySpriteAffineAnimTable,
+  callback: InitializeCameraSprite1,
+};
+
+// ─── 1:1 décomp fonctions put-away (decoration.c:2178-2717) ──────────────────
+
+/** 1:1 décomp `static void ClearDecorationContextIndex(u8 idx)` (decoration.c:2178-2182). */
+function ClearDecorationContextIndex(idx: number): void {
+  sDecorationContext.items[idx] = DECOR_NONE;
+  sDecorationContext.pos[idx] = 0;
 }
 
-/** VAGUE 3 (decoration.c:2374) — référencé par sPlacePutAwayYesNoFunctions[1]. Garde-fou. */
+/** 1:1 décomp `static void ClearRearrangementNonSprites(void)` (decoration.c:2231-2258).
+ *  `gMapHeader.mapLayout->map[...]` → `gMapHeader!.mapLayout!.map[...]` (précédent ts:1815). */
+function ClearRearrangementNonSprites(): void {
+  let i: number;
+  let y: number;
+  let x: number;
+  let posX: number;
+  let posY: number;
+  let perm: number;
+
+  for (i = 0; i < sCurDecorSelectedInRearrangement; i++) {
+    perm = gDecorations[sDecorationContext.items[sDecorRearrangementDataBuffer[i].idx]].permission;
+    posX = sDecorationContext.pos[sDecorRearrangementDataBuffer[i].idx] >> 4;
+    posY = sDecorationContext.pos[sDecorRearrangementDataBuffer[i].idx] & 0x0F;
+    if (perm !== DECORPERM_SPRITE) {
+      for (y = 0; y < sDecorRearrangementDataBuffer[i].height; y++) {
+        for (x = 0; x < sDecorRearrangementDataBuffer[i].width; x++) {
+          MapGridSetMetatileEntryAt(posX + MAP_OFFSET + x, posY + MAP_OFFSET - y, gMapHeader!.mapLayout!.map[posX + x + gMapHeader!.mapLayout!.width * (posY - y)] | 0x3000);
+        }
+      }
+
+      ClearDecorationContextIndex(sDecorRearrangementDataBuffer[i].idx);
+    }
+  }
+}
+
+/** 1:1 décomp `static void Task_PutAwayDecoration(u8 taskId)` (decoration.c:2260-2293).
+ *  Le script SecretBase_EventScript_PutAwayDecoration appelle le special
+ *  PutAwayDecorationIteration (porté côté specials-registry.ts). */
+function Task_PutAwayDecoration(taskId: number): void {
+  switch (gTasks[taskId].data[tState]) {
+    case 0:
+      ClearRearrangementNonSprites();
+      gTasks[taskId].data[tState] = 1;
+      break;
+    case 1:
+      if (!gPaletteFade.active) {
+        DrawWholeMapView();
+        ScriptContext_SetupScript('SecretBase_EventScript_PutAwayDecoration');
+        ClearDialogWindowAndFrame(0, true);
+        gTasks[taskId].data[tState] = 2;
+      }
+      break;
+    case 2:
+      LockPlayerFieldControls();
+      IdentifyOwnedDecorationsCurrentlyInUseInternal(taskId);
+      FadeInFromBlack();
+      gTasks[taskId].data[tState] = 3;
+      break;
+    case 3:
+      if (IsWeatherNotFadingIn() === true) {
+        StringExpandPlaceholders(gStringVar4, getString('gText_DecorationReturnedToPC'));
+        DisplayItemMessageOnField(taskId, gStringVar4, (t) => ContinuePuttingAwayDecorationsPrompt(t.taskId));
+        if (gMapHeader!.regionMapSectionId === 'MAPSEC_SECRET_BASE')
+          TryPutSecretBaseVisitOnAir();
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `static void SetUpPuttingAwayDecorationPlayerAvatar(void)` (decoration.c:2307-2322).
+ *  `gSprites[...].oam.priority` → SetDecorSpriteOamPriority (précédent vague 2, ts:1325). */
+function SetUpPuttingAwayDecorationPlayerAvatar(): void {
+  GetPlayerFacingDirection();
+  sDecor_CameraSpriteObjectIdx1 = gSprites[gFieldCamera.spriteId]!.data[0];
+  LoadPlayerSpritePalette();
+  gFieldCamera.spriteId = CreateSprite(sPuttingAwayCursorSpriteTemplate, 120, 80, 0);
+  if (gSaveBlock2Ptr.playerGender === MALE)
+    sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_BRENDAN_DECORATING, SpriteCallbackDummy, 136, 72, 0);
+  else
+    sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_MAY_DECORATING, SpriteCallbackDummy, 136, 72, 0);
+
+  SetDecorSpriteOamPriority(sDecor_CameraSpriteObjectIdx2, 1);
+  DestroySprite(gSprites[sDecor_CameraSpriteObjectIdx1]);
+  sDecor_CameraSpriteObjectIdx1 = gFieldCamera.spriteId;
+  SetDecorSpriteOamPriority(sDecor_CameraSpriteObjectIdx1, 1);
+}
+
+/** 1:1 décomp `static void Task_ContinuePuttingAwayDecorations(u8 taskId)` (decoration.c:2324-2353). */
+function Task_ContinuePuttingAwayDecorations(taskId: number): void {
+  const data = gTasks[taskId].data;
+  switch (data[tState]) {
+    case 0:
+      if (!gPaletteFade.active) {
+        SetInitialPositions(taskId);
+        data[tState] = 1;
+        data[tDecorHeight] = 1;
+        data[tDecorWidth] = 1;
+      }
+      break;
+    case 1:
+      SetUpPuttingAwayDecorationPlayerAvatar();
+      FadeInFromBlack();
+      data[tState] = 2;
+      break;
+    case 2:
+      if (IsWeatherNotFadingIn() === true) {
+        data[tDecorationItemsMenuCommand] = DECOR_ITEMS_MENU_PUT_AWAY;
+        ContinuePuttingAwayDecorations(taskId);
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `static void ContinuePuttingAwayDecorations(u8 taskId)` (decoration.c:2355-2365). */
+function ContinuePuttingAwayDecorations(taskId: number): void {
+  ClearDialogWindowAndFrame(0, true);
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.data[7] = 0;
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.invisible = false;
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.callback = InitializeCameraSprite1;
+  gSprites[sDecor_CameraSpriteObjectIdx2]!.x = 136;
+  gSprites[sDecor_CameraSpriteObjectIdx2]!.y = 72;
+  gTasks[taskId].data[tButton] = 0;
+  gTasks[taskId].func = (t) => Task_SelectLocation(t.taskId);
+}
+
+/** 1:1 décomp `static void AttemptPutAwayDecoration(u8 taskId)` (decoration.c:2367-2372).
+ *  VAGUE 3 : câblé par sPlacePutAwayYesNoFunctions[1].yesFunc (Task_SelectLocation). */
+function AttemptPutAwayDecoration(taskId: number): void {
+  gTasks[taskId].data[tButton] = 0;
+  ResetCursorMovement();
+  AttemptPutAwayDecoration_(taskId);
+}
+
+/** 1:1 décomp `static void AttemptCancelPutAwayDecoration(u8 taskId)` (decoration.c:2374-2382).
+ *  VAGUE 3 : câblé par sPlacePutAwayYesNoFunctions[1].noFunc (Task_SelectLocation). */
 function AttemptCancelPutAwayDecoration(taskId: number): void {
-  void taskId;
-  console.error('[decoration] AttemptCancelPutAwayDecoration (decoration.c:2374) : flux put-away/rearrangement = vague 3 non portée');
+  gTasks[taskId].data[tButton] = 0;
+  ResetCursorMovement();
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.invisible = false;
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.callback = SpriteCallbackDummy;
+  StringExpandPlaceholders(gStringVar4, getString('gText_StopPuttingAwayDecorations'));
+  DisplayItemMessageOnField(taskId, gStringVar4, (t) => StopPuttingAwayDecorationsPrompt(t.taskId));
+}
+
+/** 1:1 décomp `static void AttemptPutAwayDecoration_(u8 taskId)` (decoration.c:2384-2412). */
+function AttemptPutAwayDecoration_(taskId: number): void {
+  let behavior: number;
+
+  AttemptMarkDecorUnderCursorForRemoval(taskId);
+  if (sCurDecorSelectedInRearrangement !== 0) {
+    StringExpandPlaceholders(gStringVar4, getString('gText_ReturnDecorationToPC'));
+    DisplayItemMessageOnField(taskId, gStringVar4, (t) => ReturnDecorationPrompt(t.taskId));
+  } else {
+    const data = gTasks[taskId].data;
+    behavior = MapGridGetMetatileBehaviorAt(data[tCursorX], data[tCursorY]);
+    if (MetatileBehavior_IsSecretBasePC(behavior) === true || MetatileBehavior_IsPlayerRoomPCOn(behavior) === true) {
+      gSprites[sDecor_CameraSpriteObjectIdx1]!.invisible = false;
+      gSprites[sDecor_CameraSpriteObjectIdx1]!.callback = SpriteCallbackDummy;
+      StringExpandPlaceholders(gStringVar4, getString('gText_StopPuttingAwayDecorations'));
+      DisplayItemMessageOnField(taskId, gStringVar4, (t) => StopPuttingAwayDecorationsPrompt(t.taskId));
+    } else {
+      StringExpandPlaceholders(gStringVar4, getString('gText_NoDecorationHere'));
+      DisplayItemMessageOnField(taskId, gStringVar4, (t) => ContinuePuttingAwayDecorationsPrompt(t.taskId));
+    }
+  }
+}
+
+/** 1:1 décomp `static void ContinuePuttingAwayDecorationsPrompt(u8 taskId)` (decoration.c:2414-2418). */
+function ContinuePuttingAwayDecorationsPrompt(taskId: number): void {
+  if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))
+    ContinuePuttingAwayDecorations(taskId);
+}
+
+/** 1:1 décomp `static void SetDecorRearrangementShape(u8 decor, struct DecorRearrangementDataBuffer *data)` (decoration.c:2420-2472). */
+function SetDecorRearrangementShape(decor: number, data: DecorRearrangementDataBuffer): void {
+  if (gDecorations[decor].shape === DECORSHAPE_1x1) {
+    data.width = 1;
+    data.height = 1;
+  } else if (gDecorations[decor].shape === DECORSHAPE_2x1) {
+    data.width = 2;
+    data.height = 1;
+  } else if (gDecorations[decor].shape === DECORSHAPE_3x1) {
+    data.width = 3;
+    data.height = 1;
+  } else if (gDecorations[decor].shape === DECORSHAPE_4x2) {
+    data.width = 4;
+    data.height = 2;
+  } else if (gDecorations[decor].shape === DECORSHAPE_2x2) {
+    data.width = 2;
+    data.height = 2;
+  } else if (gDecorations[decor].shape === DECORSHAPE_1x2) {
+    data.width = 1;
+    data.height = 2;
+  } else if (gDecorations[decor].shape === DECORSHAPE_1x3) {
+    data.width = 1;
+    data.height = 3;
+  } else if (gDecorations[decor].shape === DECORSHAPE_2x4) {
+    data.width = 2;
+    data.height = 4;
+  } else if (gDecorations[decor].shape === DECORSHAPE_3x3) {
+    data.width = 3;
+    data.height = 3;
+  } else if (gDecorations[decor].shape === DECORSHAPE_3x2) {
+    data.width = 3;
+    data.height = 2;
+  }
+}
+
+/** 1:1 décomp `static void SetCameraSpritePosition(u8 x, u8 y)` (decoration.c:2474-2480). */
+function SetCameraSpritePosition(x: number, y: number): void {
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.invisible = true;
+  gSprites[sDecor_CameraSpriteObjectIdx1]!.callback = SpriteCallbackDummy;
+  gSprites[sDecor_CameraSpriteObjectIdx2]!.x = x * 16 + 136;
+  gSprites[sDecor_CameraSpriteObjectIdx2]!.y = y * 16 + 72;
+}
+
+/** 1:1 décomp `static bool8 DecorationIsUnderCursor(u8 taskId, u8 idx, struct DecorRearrangementDataBuffer *data)` (decoration.c:2482-2505). */
+function DecorationIsUnderCursor(taskId: number, idx: number, data: DecorRearrangementDataBuffer): boolean {
+  let x: number;
+  let y: number;
+  let xOff: number;
+  let yOff: number;
+  let ht: number;
+
+  x = gTasks[taskId].data[tCursorX] - MAP_OFFSET;
+  y = gTasks[taskId].data[tCursorY] - MAP_OFFSET;
+  xOff = sDecorationContext.pos[idx] >> 4;
+  yOff = sDecorationContext.pos[idx] & 0x0F;
+  ht = data.height;
+  if (sDecorationContext.items[idx] === DECOR_SAND_ORNAMENT && MapGridGetMetatileIdAt(xOff + MAP_OFFSET, yOff + MAP_OFFSET) === METATILE_SecretBase_SandOrnament_BrokenBase)
+    ht--;
+
+  if (x >= xOff && x < xOff + data.width && y > yOff - ht && y <= yOff) {
+    SetCameraSpritePosition(data.width - (x - xOff + 1), yOff - y);
+    return true;
+  }
+
+  return false;
+}
+
+/** 1:1 décomp `static void SetDecorRearrangementFlagIdIfFlagUnset(void)` (decoration.c:2507-2523).
+ *  ADAPTATION : `gSaveBlock1Ptr->objectEventTemplates[i]` — le port stocke un tableau de
+ *  LONGUEUR VARIABLE (≠ fixe OBJECT_EVENT_TEMPLATES_COUNT ; précédent TrySpawnObjectEvents,
+ *  event_object_movement.ts:8520) → garde `undefined` (pas de crash sur slot absent).
+ *  `.flagId` = NOM de flag (string) → `FlagGet(string)` (script-vars.ts, précédent
+ *  event_object_movement.ts:7260). */
+function SetDecorRearrangementFlagIdIfFlagUnset(): void {
+  let xOff: number;
+  let yOff: number;
+  let i: number;
+
+  xOff = sDecorationContext.pos[sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].idx] >> 4;
+  yOff = sDecorationContext.pos[sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].idx] & 0x0F;
+  for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++) {
+    const tmpl = gSaveBlock1Ptr.objectEventTemplates[i];
+    if (tmpl === undefined) continue;
+    if (tmpl.x === xOff && tmpl.y === yOff && !FlagGet(tmpl.flagId)) {
+      sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].flagId = tmpl.flagId;
+      break;
+    }
+  }
+}
+
+/** 1:1 décomp `static bool8 AttemptMarkSpriteDecorUnderCursorForRemoval(u8 taskId)` (decoration.c:2525-2547).
+ *  `sDecorRearrangementDataBuffer` (nu) = `&sDecorRearrangementDataBuffer[0]` → l'entrée [0]. */
+function AttemptMarkSpriteDecorUnderCursorForRemoval(taskId: number): boolean {
+  let i: number;
+
+  for (i = 0; i < sDecorationContext.size; i++) {
+    if (sDecorationContext.items[i] !== DECOR_NONE) {
+      if (gDecorations[sDecorationContext.items[i]].permission === DECORPERM_SPRITE) {
+        SetDecorRearrangementShape(sDecorationContext.items[i], sDecorRearrangementDataBuffer[0]);
+        if (DecorationIsUnderCursor(taskId, i, sDecorRearrangementDataBuffer[0]) === true) {
+          sDecorRearrangementDataBuffer[0].idx = i;
+          SetDecorRearrangementFlagIdIfFlagUnset();
+          sCurDecorSelectedInRearrangement = 1;
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `static void MarkSpriteDecorsInBoundsForRemoval(u8 left, u8 top, u8 right, u8 bottom)` (decoration.c:2549-2568). */
+function MarkSpriteDecorsInBoundsForRemoval(left: number, top: number, right: number, bottom: number): void {
+  let i: number;
+  let xOff: number;
+  let yOff: number;
+  let decor: number;
+
+  for (i = 0; i < sDecorationContext.size; i++) {
+    decor = sDecorationContext.items[i];
+    xOff = sDecorationContext.pos[i] >> 4;
+    yOff = sDecorationContext.pos[i] & 0x0F;
+    if (decor !== DECOR_NONE && gDecorations[decor].permission === DECORPERM_SPRITE && left <= xOff && top <= yOff && right >= xOff && bottom >= yOff) {
+      sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].idx = i;
+      SetDecorRearrangementFlagIdIfFlagUnset();
+      sCurDecorSelectedInRearrangement++;
+    }
+  }
+}
+
+/** 1:1 décomp `static void AttemptMarkDecorUnderCursorForRemoval(u8 taskId)` (decoration.c:2570-2607). */
+function AttemptMarkDecorUnderCursorForRemoval(taskId: number): void {
+  let i: number;
+  let xOff: number;
+  let yOff: number;
+  let var1: number;
+  let var2: number;
+
+  sCurDecorSelectedInRearrangement = 0;
+  if (AttemptMarkSpriteDecorUnderCursorForRemoval(taskId) !== true) {
+    // Not a sprite.
+    for (i = 0; i < sDecorationContext.size; i++) {
+      var1 = sDecorationContext.items[i];
+      if (var1 !== DECOR_NONE) {
+        SetDecorRearrangementShape(var1, sDecorRearrangementDataBuffer[0]);
+        if (DecorationIsUnderCursor(taskId, i, sDecorRearrangementDataBuffer[0]) === true) {
+          sDecorRearrangementDataBuffer[0].idx = i;
+          sCurDecorSelectedInRearrangement++;
+          break;
+        }
+      }
+    }
+    if (sCurDecorSelectedInRearrangement !== 0) {
+      xOff = sDecorationContext.pos[sDecorRearrangementDataBuffer[0].idx] >> 4;
+      yOff = sDecorationContext.pos[sDecorRearrangementDataBuffer[0].idx] & 0x0F;
+      var1 = yOff - sDecorRearrangementDataBuffer[0].height + 1;
+      var2 = sDecorRearrangementDataBuffer[0].width + xOff - 1;
+
+      // Remove any dolls/cushions on this decoration.
+      MarkSpriteDecorsInBoundsForRemoval(xOff, var1, var2, yOff);
+    }
+  }
+}
+
+/** 1:1 décomp `static void ReturnDecorationPrompt(u8 taskId)` (decoration.c:2609-2613). */
+function ReturnDecorationPrompt(taskId: number): void {
+  DisplayYesNoMenuDefaultYes();
+  DoYesNoFuncWithChoice(taskId, sReturnDecorationYesNoFunctions);
+}
+
+/** 1:1 décomp `static void PutAwayDecoration(u8 taskId)` (decoration.c:2615-2620). */
+function PutAwayDecoration(taskId: number): void {
+  FadeScreen(FADE_TO_BLACK, 0);
+  gTasks[taskId].data[tState] = 0;
+  gTasks[taskId].func = (t) => Task_PutAwayDecoration(t.taskId);
+}
+
+/** 1:1 décomp `static void StopPuttingAwayDecorationsPrompt(u8 taskId)` (decoration.c:2622-2626). */
+function StopPuttingAwayDecorationsPrompt(taskId: number): void {
+  DisplayYesNoMenuDefaultYes();
+  DoYesNoFuncWithChoice(taskId, sStopPuttingAwayDecorationsYesNoFunctions);
+}
+
+/** 1:1 décomp `static void StopPuttingAwayDecorations(u8 taskId)` (decoration.c:2628-2632). */
+function StopPuttingAwayDecorations(taskId: number): void {
+  ClearDialogWindowAndFrame(0, false);
+  StopPuttingAwayDecorations_(taskId);
+}
+
+/** 1:1 décomp `static void StopPuttingAwayDecorations_(u8 taskId)` (decoration.c:2634-2639). */
+function StopPuttingAwayDecorations_(taskId: number): void {
+  FadeScreen(FADE_TO_BLACK, 0);
+  gTasks[taskId].data[tState] = 0;
+  gTasks[taskId].func = (t) => Task_StopPuttingAwayDecorations(t.taskId);
+}
+
+/** 1:1 décomp `static void Task_StopPuttingAwayDecorations(u8 taskId)` (decoration.c:2641-2659).
+ *  `gFieldCallback = ...` → globalThis (précédent ts:1766) ; `SetMainCallback2(CB2_ReturnToField)`
+ *  → CB2_ReturnToField_Manual (variante « _Manual » du port ; précédent ts:1767). */
+function Task_StopPuttingAwayDecorations(taskId: number): void {
+  switch (gTasks[taskId].data[tState]) {
+    case 0:
+      if (!gPaletteFade.active) {
+        WarpToInitialPosition(taskId);
+        gTasks[taskId].data[tState] = 1;
+      }
+      break;
+    case 1:
+      FreePlayerSpritePalette();
+      (globalThis as Record<string, unknown>).gFieldCallback = FieldCB_StopPuttingAwayDecorations;
+      SetMainCallback2(CB2_ReturnToField_Manual);
+      DestroyTask(taskId);
+      break;
+  }
+}
+
+/** 1:1 décomp `static void Task_ReinitializeDecorationMenuHandler(u8 taskId)` (decoration.c:2661-2683). */
+function Task_ReinitializeDecorationMenuHandler(taskId: number): void {
+  const data = gTasks[taskId].data;
+  switch (data[tState]) {
+    case 0:
+      HideSecretBaseDecorationSprites();
+      data[tState]++;
+      break;
+    case 1:
+      ScriptContext_SetupScript('SecretBase_EventScript_InitDecorations');
+      data[tState]++;
+      break;
+    case 2:
+      LockPlayerFieldControls();
+      data[tState]++;
+      break;
+    case 3:
+      if (IsWeatherNotFadingIn() === true)
+        gTasks[taskId].func = (t) => HandleDecorationActionsMenuInput(t.taskId);
+      break;
+  }
+}
+
+/** 1:1 décomp `static void FieldCB_StopPuttingAwayDecorations(void)` (decoration.c:2685-2694). */
+function FieldCB_StopPuttingAwayDecorations(): void {
+  let taskId: number;
+
+  FadeInFromBlack();
+  DrawDialogueFrame(0, true);
+  InitDecorationActionsWindow();
+  taskId = CreateTask((t: DecompTask) => Task_ReinitializeDecorationMenuHandler(t.taskId), 8);
+  gTasks[taskId].data[tState] = 0;
+}
+
+/** 1:1 décomp `static void InitializeCameraSprite1(struct Sprite *sprite)` (decoration.c:2696-2704). */
+function InitializeCameraSprite1(sprite: any): void {
+  sprite.data[0]++;
+  sprite.data[0] &= 0x1F;
+  if (sprite.data[0] > 15)
+    sprite.invisible = true;
+  else
+    sprite.invisible = false;
+}
+
+let sWarnedPuttingAwayCursorPal = false;
+/** 1:1 décomp `static void LoadPlayerSpritePalette(void)` (decoration.c:2706-2712).
+ *  Assets brendan/may.pal non inlinés (placeholder 0) → garde-fou HURLANT 1×. */
+function LoadPlayerSpritePalette(): void {
+  if (!sWarnedPuttingAwayCursorPal) {
+    console.error('[decoration] sBrendan/sMayPalette (graphics/decorations/{brendan,may}.pal) non inlinés — palette curseur put-away = 0 (INERTE)');
+    sWarnedPuttingAwayCursorPal = true;
+  }
+  if (gSaveBlock2Ptr.playerGender === MALE)
+    LoadSpritePalette(sSpritePal_PuttingAwayCursorBrendan);
+  else
+    LoadSpritePalette(sSpritePal_PuttingAwayCursorMay);
 }
 
 /** 1:1 décomp `static void FreePlayerSpritePalette(void)` (decoration.c:2714-2717). Appelé par
@@ -2201,11 +2729,11 @@ function FreePlayerSpritePalette(): void {
   FreeSpritePaletteByTag(PLACE_DECORATION_PLAYER_TAG);
 }
 
-/** `HideSecretBaseDecorationSprites` (secret_base.c) — non porté → garde-fou (retour placement). */
+/** `HideSecretBaseDecorationSprites` (secret_base.c) — non porté → garde-fou (retour placement/put-away). */
 let sWarnedHideSbDecorSprites = false;
 function HideSecretBaseDecorationSprites(): void {
   if (!sWarnedHideSbDecorSprites) {
-    console.error('[decoration] HideSecretBaseDecorationSprites (secret_base.c) : non porté — retour placement (Task_InitDecorationItemsWindow) INERTE');
+    console.error('[decoration] HideSecretBaseDecorationSprites (secret_base.c) : non porté — retour (Task_InitDecorationItemsWindow / Task_ReinitializeDecorationMenuHandler) INERTE');
     sWarnedHideSbDecorSprites = true;
   }
 }
