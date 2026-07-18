@@ -42,6 +42,14 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
   si ambigu/intranscriptible → STOP + le dire.
 
 ## PHASE B — « simulateur d'états » (exerciseur anti-stub) — vague n°2
+> ✅ ÉTAT 2026-07-18 : B.1 inventaire FAIT · B.3 exerciseur ÉCRIT ET EXÉCUTÉ post-changements
+> (starter gTasks + affine source unique + dma3 + envol 1:1 + transitions 12/12 + purge bespoke) :
+> **11/11 écrans OK, 0 erreur, 21 warns** = 20 fallbacks assets pokenav (.bin absents → PNG,
+> dette d'extraction, rendu correct) + 1 note d'adaptation one-shot (CB2_OverworldBasic).
+> B.2 (throws systématiques sur les 205 no-op moteur) : les gardes critiques existent (pattern
+> StringCopy/LoopedTask) et se posent au fil des chantiers ; pas de no-op silencieux déclenché
+> par le sweep. B.4 : l'oracle callgraph sert déjà à chaque chantier. → Phase B OPÉRATIONNELLE ;
+> relancer `__e2e.run('engine-sweep')` après chaque lot (c'est le filet de la Phase C).
 1. **Inventaire mécanique** : script `scripts/audit-engine-stubs.cjs` : scanner src/+harness/ pour
    __wireTodo/no-op/TODO/stub/_warnOnce/@ts-nocheck + les `default:` silencieux des switch de registres →
    `audit-reports/engine/STUBS-INVENTORY.md` (compte par fichier, call-sites atteignables).
@@ -54,18 +62,18 @@ dans différents états pour trouver tout ce qui est stub, no-op ou TODO. »
 4. Croiser avec l'oracle callgraph (`audit-callgraph-closure.cjs`) pour l'atteignabilité.
 
 ## PHASE C — hors-moteur : dédup + miroir 1:1 rétroactif — vagues n°3+
-1. Inventaire des DUPES : les copies locales révélées par l'audit — bag-screen.ts (clone list_menu,
-   utilisé par sac de combat battle_controller_player.ts:2062 + ItemPC player_pc.ts:621),
-   DisplayItemMessageOnField ré-inliné ×43 (item_menu.ts:2676 « DETTE »), AddTextPrinterParameterized5
-   stub local PSS:125, pipeline tile-data ×3 copies (dont 2 divergentes pokenav/mail),
-   CreateInvisibleSpriteWithCallback local battle_main, helpers maison scrcmd.ts:1100/1107 +
+> Rafraîchi 2026-07-18 : ✅ DÉJÀ MORTS — bag-screen.ts (supprimé lot 6 bag), IsDma3ManagerBusyWithBgCopy
+> (src/dma3_manager créé + 11 imports redirigés `d55354afc`), AddTextPrinterParameterized5 (relogée
+> menu.ts `d7a0a20e5`), GetBgAttribute PSS (dédupliqué → window.ts, commenté PSS:115).
+1. Inventaire des DUPES restantes :
+   DisplayItemMessageOnField ré-inliné ×43 (item_menu.ts:2676 « DETTE »),
+   pipeline tile-data ×3 copies (dont 2 divergentes pokenav/mail),
+   CreateInvisibleSpriteWithCallback local battle_main (→ la charpente battle_transition a
+   désormais CreateInvisibleSprite, sprite.c:524 — rapprocher),
+   helpers maison scrcmd.ts:1100/1107 +
    battle_message.ts:648 (chaîne FR classes dresseurs → GetTrainerClassNameFromId/GetTrainerNameFromId
-   pokemon.c:6945 à porter), _resolveTrainerClassNameFr, émulations locales oam.affineParam ×3,
-   IsDma3ManagerBusyWithBgCopy logée dans battle_bg.ts:661 (compteur ad-hoc `_bgCopiesInFlight` +
-   2 wrappers locaux battle_controller_player/battle_main + imports croisés depuis pokenav_ribbons_*
-   et pokenav_region_map → à reloger dans un src/dma3_manager.ts miroir, compteur = requêtes réelles),
-   GetBgAttribute stub local `return 0` pokemon_storage_system.ts:116 alors que l'impl 1:1 EXISTE
-   (window.ts:810, bg.c:504-545) → rediriger les call-sites PSS:1936/1949.
+   pokemon.c:6945 à porter — recoupe la dette fine « battle_message » du périmètre user),
+   _resolveTrainerClassNameFr, émulations locales oam.affineParam ×3.
    Hors dédup, noté au passage : SpawnCameraObject/RemoveCameraObject no-op différés
    (field_specials.ts:649) = scènes cinématiques overworld (climax) à porter un jour.
 2. Par lot : porter la fonction décomp 1:1 dans le .ts miroir du .c d'origine → rediriger TOUS les
