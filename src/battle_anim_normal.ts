@@ -135,12 +135,24 @@ function _HitSplat_Step(sprite: AnimSprite): void {
   }
 }
 
+/** 1:1 `AnimHitSplatHandleInvert` (battle_anim_normal.c:1038) : hit splats appariés
+ *  dont la position Y est inversée quand l'adversaire frappe le joueur
+ *  (Twineedle, Spike Cannon). args = [x, y, relativeTo, animation]. */
+function AnimHitSplatHandleInvert(sprite: AnimSprite): void {
+  // 1:1 c:1043-1044 : cmd->y = -cmd->y si l'attaquant n'est pas côté joueur
+  // (hors contest — IsContest()=false, doctrine repo). gBattleAnimArgs = live
+  // Int16Array → la mutation est relue par AnimHitSplatBasic (comme cmd/gBattleAnimArgs en C).
+  const args = _itf().getArgs?.();
+  if (args && ((_itf().getAttacker?.() ?? 0) & 1) !== 0) args[1] = -args[1];
+  AnimHitSplatBasic(sprite);
+}
+
 // ─── Enregistrement registry ────────────────────────────────────────────────
 registerAnimTemplates([
   { name: 'gBasicHitSplatSpriteTemplate', tileTag: ANIM_TAG_IMPACT, paletteTag: ANIM_TAG_IMPACT, oam: { shape: 0, size: 2 }, load: LoadAnimImpactGfx, callback: AnimHitSplatBasic as never, affineAnims: 'sAffineAnims_HitSplat' },
-  // 1:1 : gHandleInvertHitSplatSpriteTemplate partage gfx+callback (l'invert X
-  // est ignoré par AnimHitSplatBasic de base — dette douce).
-  { name: 'gHandleInvertHitSplatSpriteTemplate', tileTag: ANIM_TAG_IMPACT, paletteTag: ANIM_TAG_IMPACT, oam: { shape: 0, size: 2 }, load: LoadAnimImpactGfx, callback: AnimHitSplatBasic as never, affineAnims: 'sAffineAnims_HitSplat' },
+  // 1:1 : gHandleInvertHitSplatSpriteTemplate partage gfx mais callback dédié
+  // AnimHitSplatHandleInvert (inverse Y quand l'adversaire frappe — Twineedle).
+  { name: 'gHandleInvertHitSplatSpriteTemplate', tileTag: ANIM_TAG_IMPACT, paletteTag: ANIM_TAG_IMPACT, oam: { shape: 0, size: 2 }, load: LoadAnimImpactGfx, callback: AnimHitSplatHandleInvert as never, affineAnims: 'sAffineAnims_HitSplat' },
 ]);
 
 // PHASE 1a : les callbacks portes, par NOM C (consommes par les 387 templates generes).
@@ -623,7 +635,7 @@ registerAnimCallbacks({
   AnimConfusionDuck: AnimConfusionDuck as never,
   AnimCirclingSparkle: AnimCirclingSparkle as never,
   AnimHitSplatBasic: AnimHitSplatBasic as never,
-  AnimHitSplatHandleInvert: AnimHitSplatBasic as never, // 1:1 : meme base, invert X = dette douce
+  AnimHitSplatHandleInvert: AnimHitSplatHandleInvert as never,
   AnimSimplePaletteBlend: AnimSimplePaletteBlend as never,
   // Vague 2 :
   AnimComplexPaletteBlend: AnimComplexPaletteBlend as never,
@@ -656,8 +668,9 @@ function AnimTask_InvertScreenColor(task: { taskId: number }): void {
   const itf = _nItf3();
   const a = itf.getArgs?.() ?? [];
   let selected = 0;
-  // flagsScenery bit8 → BG 0-3 (GetBattlePalettesMask(TRUE,...) net : pal BG 0..3)
-  if (a[0] & 0x100) selected |= 0x0F;
+  // flagsScenery bit8 → GetBattlePalettesMask(TRUE,...) non-contest = 0xE (pals BG 1,2,3 ;
+  // la palette BG 0 ne doit PAS être inversée — 1:1 battle_anim_mons.c:1410).
+  if (a[0] & 0x100) selected |= 0x0E;
   if (a[1] & 0x100) selected |= (0x10000 << _nBattlerPalSlot(itf.getAttacker?.() ?? 0));
   if (a[2] & 0x100) selected |= (0x10000 << _nBattlerPalSlot(itf.getTarget?.() ?? 1));
   // InvertPlttBuffer (palette.c) : ~couleur sur chaque entrée

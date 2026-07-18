@@ -15,9 +15,9 @@ import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
 } from '../harness/runtime/decomp-globals';
-import { registerAnimTemplates, lookupAnimTemplate } from './engine/battle/battle-anim-registry';
+import { lookupAnimTemplate } from './engine/battle/battle-anim-registry';
 import {
-  TranslateAnimSpriteToTargetMonLocation, InitSpritePosToAnimAttacker,
+  InitSpritePosToAnimAttacker,
   InitAnimLinearTranslation, AnimTranslateLinear, GetBattlerSpriteCoord,
   InitSpritePosToAnimTarget, StartAnimLinearTranslation, StoreSpriteCallbackInData6,
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine, PrepareBattlerSpriteForRotScale,
@@ -37,9 +37,12 @@ export function LoadAnimBubbleGfx(): void {
     LoadCompressedSpritePaletteUsingHeap(sPal);
   }
 }
-registerAnimTemplates([
-  { name: 'gWaterBubbleProjectileSpriteTemplate', tileTag: ANIM_TAG_BUBBLE, paletteTag: ANIM_TAG_BUBBLE, oam: { shape: 0, size: 1 }, load: LoadAnimBubbleGfx, callback: TranslateAnimSpriteToTargetMonLocation as never },
-]);
+// LOT 4 : gWaterBubbleProjectileSpriteTemplate DÉ-SHADOWÉ (registerAnimTemplates
+// retiré). Le bridge généré le fournit complet — tag ANIM_TAG_BUBBLE (manifest ✓),
+// oam AffineNormal/ObjBlend 16x16, anims sAnims_WaterBubbleProjectile, affineAnims
+// sAffineAnims_WaterBubbleProjectile — avec son VRAI callback AnimWaterBubbleProjectile
+// (porté water.ts:1454, enregistré via registerAnimCallbacks). Le shadow forçait le
+// mauvais callback (TranslateAnimSpriteToTargetMonLocation) + perdait oam Blend/anims.
 
 // ─── VAGUE 2a : AnimToTargetInSinWave 1:1 (battle_anim_water.c) — 6 templates
 // générés (bulles/projectiles eau...) : trajectoire linéaire + onde Sin.

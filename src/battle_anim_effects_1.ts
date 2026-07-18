@@ -202,6 +202,7 @@ function AnimTranslateLinearSingleSineWave(sprite: _PSprite): void {
   sprite.data[5] = args[5] | 0;
   InitAnimArcTranslation(sprite as never);
   if ((atk & 1) === (tgt & 1)) sprite.data[0] = 1;
+  else sprite.data[0] = 0; // 1:1 c:2635-2636 : cible côté opposé → data[0]=0 (désarme flicker/auto-destruct)
   (sprite as { _affineParam?: number })._affineParam = 0;
   sprite.callback = AnimTranslateLinearSingleSineWave_Step;
 }
@@ -353,6 +354,9 @@ function AnimSporeParticle(sprite: _PSprite): void {
   const args = _pItf().getArgs?.() ?? [0, 0, 0, 60, 0];
   InitSpritePosToAnimTarget(sprite as never, true);
   sprite.invisible = false;
+  // 1:1 c:2427-2429 : anim n° blend (Spore=1 → tile 4) + objMode BLEND si blend==TRUE.
+  _StartSpriteAnim(sprite, args[4] | 0);
+  if ((args[4] | 0) === 1) (sprite as { objMode?: number }).objMode = 1; // ST_OAM_OBJ_BLEND
   sprite.data[0] = args[3] | 0;
   sprite.data[1] = args[2] | 0;
   sprite.data[2] = 0;
@@ -360,9 +364,18 @@ function AnimSporeParticle(sprite: _PSprite): void {
   AnimSporeParticle_Step(sprite);
 }
 function AnimSporeParticle_Step(sprite: _PSprite): void {
+  const tgt = _pItf().getTarget?.() ?? 1;
   sprite.x2 = Sin(sprite.data[1] & 0xFF, 32);
   sprite.data[2] += 24;
   sprite.y2 = Cos(sprite.data[1] & 0xFF, -3) + ((sprite.data[2] << 16 >> 16) >> 8);
+  // 1:1 c:2441-2452 : la spore passe devant/derrière le mon selon sa phase de rotation.
+  if (((sprite.data[1] - 0x40) & 0xFFFF) < 0x80) {
+    _p1SetOamPriority(sprite, _p1GetBattlerSpriteBGPriority(tgt));
+  } else {
+    let priority = _p1GetBattlerSpriteBGPriority(tgt) + 1;
+    if (priority > 3) priority = 3;
+    _p1SetOamPriority(sprite, priority);
+  }
   sprite.data[1] = (sprite.data[1] + 2) & 0xFF;
   if (--sprite.data[0] === -1) _pItf().DestroyAnimSprite?.(sprite);
 }
@@ -498,7 +511,12 @@ function AnimCuttingSlice(sprite: _PSprite): void {
   sprite.data[2] = 0;
   sprite.data[3] = 0;
   sprite.data[4] = 0;
+  // 1:1 battle_anim_effects_1.c:3775-3779 : la lame décroche en diagonale
+  // (data[1]/data[2] initialisés ±0x400, flip du sens si unk2==1).
+  sprite.data[1] -= 0x400;
+  sprite.data[2] += 0x400;
   sprite.data[5] = args[2] | 0;
+  if (sprite.data[5] === 1) sprite.data[1] = -sprite.data[1];
   sprite.callback = _Slice_Step;
 }
 function _Slice_Step(sprite: _PSprite): void {

@@ -18,6 +18,8 @@ import {
   GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT,
 } from './engine/battle/util';
 import { getRuntime } from '../harness/runtime/decomp-globals';
+import { CreateSprite as _CreateSpriteFromTemplate, DestroySprite, FreeOamMatrix, MAX_SPRITES } from './sprite';
+import { lookupAnimTemplate } from './engine/battle/battle-anim-registry';
 
 type _FSprite = { data: number[]; x: number; y: number; x2: number; y2: number; invisible?: boolean; callback: unknown };
 function _fItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void } {
@@ -65,7 +67,48 @@ function AnimFistOrFootRandomPos(sprite: _FSprite): void {
   sprite.y += y;
   sprite.invisible = false;
   sprite.data[0] = args[1] | 0;
-  sprite.callback = _waitThenDestroy;
+  // 1:1 c:502-507 : splat d'impact décoratif créé SOUS le poing/pied
+  // (gBasicHitSplatSpriteTemplate, affine anim 0, callback SpriteCallbackDummy).
+  const sub = ((sprite as { subpriority?: number }).subpriority ?? 0) + 1;
+  const tpl = lookupAnimTemplate('gBasicHitSplatSpriteTemplate');
+  const splatId = tpl ? _CreateSpriteFromTemplate(tpl as never, sprite.x, sprite.y, sub) : MAX_SPRITES;
+  sprite.data[7] = splatId;
+  if (splatId !== MAX_SPRITES) {
+    const splat = _fGSprites()?.[splatId];
+    if (splat) {
+      _StartSpriteAffineAnim(splat, 0);
+      splat.callback = _spriteCallbackDummy as never;
+    }
+  }
+  sprite.callback = AnimFistOrFootRandomPos_Step;
+}
+
+/** 1:1 `SpriteCallbackDummy` (sprite.c) — no-op : le splat d'impact ne s'anime pas seul. */
+function _spriteCallbackDummy(): void {}
+/** Accès runtime gSprites (même source que _rtF). */
+function _fGSprites(): Array<{ matrixNum?: number; callback?: unknown } | undefined> | undefined {
+  return (getRuntime() as { gSprites?: Array<{ matrixNum?: number; callback?: unknown } | undefined> } | null)?.gSprites;
+}
+
+/** 1:1 `AnimFistOrFootRandomPos_Step` (battle_anim_fight.c:512) : attend data[0]
+ *  frames, puis libère la matrice + détruit le splat d'impact (data[7]) avant de
+ *  se détruire. */
+function AnimFistOrFootRandomPos_Step(sprite: _FSprite): void {
+  if (sprite.data[0] === 0) {
+    if (sprite.data[7] !== MAX_SPRITES) {
+      // 1:1 c:518-519 : FreeOamMatrix(splat.oam.matrixNum) + DestroySprite.
+      // Garde matrixNum>0 : AnimSpriteTemplate.oam ne porte pas l'affineMode du
+      // décomp (gOamData_AffineNormal_ObjBlend_32x32) → splat non-affine possible,
+      // matrixNum 0 = slot identité PARTAGÉ (ne jamais libérer). Substrat cité.
+      const splat = _fGSprites()?.[sprite.data[7]];
+      const mtx = splat?.matrixNum ?? 0;
+      if (mtx > 0) FreeOamMatrix(mtx);
+      DestroySprite(sprite.data[7]);
+    }
+    _fItf().DestroyAnimSprite?.(sprite);
+  } else {
+    sprite.data[0]--;
+  }
 }
 
 /** 1:1 sprite.c `StartSpriteAffineAnim(sprite, n)` : champs PLATS du runtime

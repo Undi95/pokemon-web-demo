@@ -1071,8 +1071,35 @@ function Cmd_loadspritegfx(): void {
   _vtrace({ op: 'load', tag: 10000 + trueIndex, tileStart: _spr_GetSpriteTileStartByTag(10000 + trueIndex) });
   AddSpriteIndex(trueIndex);
   _pc += 2;
+  // 1:1 décomp : gAnimFramesToWait=1 + WaitAnimFrameCount — le load décomp est
+  // SYNCHRONE (ROM mappée), 1 frame suffit. LOT 2 (ADAPTATION substrat, Règle 3) :
+  // _loadAnimSheetByTag est ASYNC (fetch/cache) → attendre que la sheet soit
+  // RÉELLEMENT en VRAM avant que le createsprite suivant naisse sur tile 0
+  // (= « blocs pleins » tile-0, signalés après un vidage de cache). Gate =
+  // GetSpriteTileStartByTag(tag) !== 0xFFFF ; garde-fou HURLANT ~300f (jamais
+  // geler, même contrat que Cmd_waitforvisualfinish@600).
+  _pendingGfxTag = 10000 + trueIndex;
+  _gfxLoadWaitFrames = 0;
   sAnimFramesToWait = 1;
-  gAnimScriptCallback = WaitAnimFrameCount;
+  gAnimScriptCallback = WaitAnimGfxLoad;
+}
+/** LOT 2 : attend la mise en VRAM de la sheet du dernier loadspritegfx (notre
+ *  loader est ASYNC, ≠ ROM synchrone). Même contrat que WaitAnimFrameCount :
+ *  dès que prêt (ou timeout garde-fou), rend la main à RunAnimScriptCommand. */
+let _pendingGfxTag = 0;
+let _gfxLoadWaitFrames = 0;
+function WaitAnimGfxLoad(): void {
+  if (_spr_GetSpriteTileStartByTag(_pendingGfxTag) !== 0xFFFF) {
+    gAnimScriptCallback = RunAnimScriptCommand;
+    sAnimFramesToWait = 0;
+    _gfxLoadWaitFrames = 0;
+  } else if (++_gfxLoadWaitFrames > 300) {
+    console.error('[battle-anim] loadspritegfx : tag ' + _pendingGfxTag + ' JAMAIS en VRAM après 300f (asset manquant ?) — on continue (garde-fou, jamais geler).');
+    gAnimScriptCallback = RunAnimScriptCommand;
+    sAnimFramesToWait = 0;
+    _gfxLoadWaitFrames = 0;
+  }
+  // sinon : rester sur WaitAnimGfxLoad, re-poll la frame suivante.
 }
 /** tileStart du tag (sprite.tileBase — AnimateSprite calcule tileBase+frame). */
 function _resolveTileBase(tag: number): number {
@@ -1385,10 +1412,13 @@ function Cmd_createsprite(): void {
               matrixNum: number;
             };
             spF.affineAnimsTableName = tpl.affineAnims;
-            // 1:1 gOamData_AffineNormal_* (les templates anim combat) =
-            // ST_OAM_AFFINE_ON (1), PAS DOUBLE (3 = rendu 2x la box -> le
-            // hitsplat GEANT vu par le user 2026-06-11).
-            spF.affineMode = 1;
+            // LOT 1 : honorer l'affineMode RÉEL du template (OAM décomp :
+            // AFFINE_OFF/NORMAL/DOUBLE → 0/1/3). L'ancien `= 1` codé en dur
+            // clippait les ~46 sprites AFFINE_DOUBLE dans leur box SIMPLE (ACID
+            // « carré mauve », etc.). Les hitsplats sont AFFINE_NORMAL(1) → le
+            // `?? 1` conserve leur rendu (aucune régression). Le compositor lit
+            // sprite.affineMode et double la bbox si 3 (compositor.ts:668).
+            spF.affineMode = tpl.oam?.affineMode ?? 1;
             // ...ET dans L'OAM (le point de verite) : la sync retrograde du
             // ticker (sprite-engine-impl:363) ECRASAIT sprite.affineMode avec
             // l'OAM(0) au tick suivant -> plus jamais ticke -> affineAnimEnded
@@ -1397,15 +1427,19 @@ function Cmd_createsprite(): void {
             {
               const rtO = (globalThis as Record<string, unknown>).__rt as { gba?: { oam?: Array<{ affineMode?: number }> } } | undefined;
               const oamE = rtO?.gba?.oam?.[(sp as { oamIndex?: number }).oamIndex ?? -1];
-              if (oamE) oamE.affineMode = 1;
+              if (oamE) oamE.affineMode = tpl.oam?.affineMode ?? 1;
             }
             // 1:1 InitSpriteAffineAnim -> AllocOamMatrix : SA PROPRE matrice.
             // Sans alloc, matrixNum=0 = LA MATRICE DU MON ADVERSE -> l'anim
             // ecrasait la matrice du Wailord = mon deplace/deforme (retour
-            // user x2 2026-06-11).
-            const rtm = (globalThis as Record<string, unknown>).__rt as { AllocOamMatrix?: () => number } | undefined;
-            const m = AllocOamMatrix();
-            if (m !== undefined && m >= 0) spF.matrixNum = m;
+            // user x2 2026-06-11). LOT 1 : la voie tileTag de CreateSprite
+            // (_CreateSpriteAtTemplate) alloue DÉJÀ la matrice quand
+            // oam.affineMode != 0 (+ CalcCenterToCornerVec doublé pour DOUBLE) →
+            // la RÉUTILISER, sinon DOUBLE alloc = fuite des 32 slots OAM.
+            if (!spF.matrixNum || spF.matrixNum <= 0) {
+              const m = AllocOamMatrix();
+              if (m !== undefined && m >= 0) spF.matrixNum = m;
+            }
             spF.affineAnimNum = 0;
             spF.affineAnimBeginning = true;
             spF.affineAnimEnded = false;
@@ -2545,12 +2579,28 @@ function _resolveGeneratedTemplate(name: string, requireCallback: boolean): Anim
   }
   // OAM résolu — objMode 1:1 (AUDIT OBJMODE 2026-06-12 : la string
   // "ST_OAM_OBJ_BLEND/WINDOW" était extraite mais jetée → anims opaques).
-  const oam = g.oam ? (BATTLE_ANIM_OAMS as Record<string, { shape: number | null; size: number | null; objMode?: string }>)[g.oam] : undefined;
+  const oam = g.oam ? (BATTLE_ANIM_OAMS as Record<string, { shape: number | null; size: number | null; objMode?: string; affineMode?: string }>)[g.oam] : undefined;
   const objMode = oam?.objMode === 'ST_OAM_OBJ_BLEND' ? 1 : oam?.objMode === 'ST_OAM_OBJ_WINDOW' ? 2 : 0;
+  // LOT 1 : affineMode 1:1 (ST_OAM_AFFINE_OFF/NORMAL/DOUBLE → 0/1/3). La string
+  // était extraite (BATTLE_ANIM_OAMS) mais JETÉE → les ~46 templates
+  // AFFINE_DOUBLE naissaient en box SIMPLE = sprite rotozoomé CLIPPÉ (ACID
+  // « carré mauve », etc.). Passé à CreateSprite via sysTpl.oam (l'OAM naît au
+  // bon mode : matrice allouée + CalcCenterToCornerVec doublé pour DOUBLE) et
+  // honoré par le bloc affine de l'interpréteur. Compositor : lit sprite.affineMode.
+  const affineMode = oam?.affineMode === 'ST_OAM_AFFINE_DOUBLE' ? 3 : oam?.affineMode === 'ST_OAM_AFFINE_NORMAL' ? 1 : 0;
   // anims : la ref table → les tables AnimCmd (format runtime déjà)
   let anims: ReadonlyArray<ReadonlyArray<unknown>> | undefined;
   if (g.anims && g.anims !== 'gDummySpriteAnimTable') {
-    const refs = (BATTLE_ANIM_ANIM_TABLES as Record<string, readonly string[]>)[g.anims];
+    let refs = (BATTLE_ANIM_ANIM_TABLES as Record<string, readonly string[]>)[g.anims];
+    // LOT 3 : anims `&sAnims_Table[N]` (C `.anims = &table[N]` = pointeur au N-ième
+    // élément → table qui DÉMARRE à l'index N). 8 moves l'utilisent (STOMP,
+    // ROLLING/LOW_KICK, ACID droplet, SLUDGE_BOMB, CROSS_CHOP, TWISTER,
+    // WEATHER_BALL). Sans ça `refs` restait undefined → sprite figé sur l'anim 0.
+    if (!refs) {
+      const m = g.anims.match(/^&(\w+)\[(\d+)\]$/);
+      const base = m ? (BATTLE_ANIM_ANIM_TABLES as Record<string, readonly string[]>)[m[1]] : undefined;
+      if (m && base) refs = base.slice(Number(m[2]));
+    }
     if (refs) {
       anims = refs
         .map((r) => (BATTLE_ANIM_ANIMS as Record<string, ReadonlyArray<unknown>>)[r])
@@ -2563,7 +2613,7 @@ function _resolveGeneratedTemplate(name: string, requireCallback: boolean): Anim
     paletteTag: tileTag,
     callback: (cb ?? null) as never,
     oam: oam && oam.shape !== null && oam.size !== null
-      ? { shape: oam.shape as 0 | 1 | 2, size: oam.size as 0 | 1 | 2 | 3, objMode: objMode as 0 | 1 | 2 }
+      ? { shape: oam.shape as 0 | 1 | 2, size: oam.size as 0 | 1 | 2 | 3, objMode: objMode as 0 | 1 | 2, affineMode: affineMode as 0 | 1 | 3 }
       : { shape: 0, size: 2 },
     ...(anims && anims.length ? { anims } : {}),
     ...(g.affineAnims && g.affineAnims !== 'gDummySpriteAffineAnimTable' ? { affineAnims: g.affineAnims } : {}),

@@ -46,10 +46,11 @@ import { TranslateAnimSpriteToTargetMonLocation } from './battle_anim_mons';
 
 registerAnimTemplates([
   { name: 'gEmberSpriteTemplate', tileTag: ANIM_TAG_SMALL_EMBER, paletteTag: ANIM_TAG_SMALL_EMBER, oam: { shape: 0, size: 2 }, load: LoadAnimSmallEmberGfx, callback: TranslateAnimSpriteToTargetMonLocation as never },
-  // 1:1 gEmberFlareSpriteTemplate : même gfx, callback AnimEmberFlare (flammes
-  // au point d'impact) — net-effect : même projectile court (dette douce :
-  // l'oscillation flare).
-  { name: 'gEmberFlareSpriteTemplate', tileTag: ANIM_TAG_SMALL_EMBER, paletteTag: ANIM_TAG_SMALL_EMBER, oam: { shape: 0, size: 2 }, load: LoadAnimSmallEmberGfx, callback: TranslateAnimSpriteToTargetMonLocation as never },
+  // LOT 4 : gEmberFlareSpriteTemplate DÉ-SHADOWÉ (retiré ici). Le bridge généré
+  // le fournit complet — tag ANIM_TAG_SMALL_EMBER (manifest ✓), oam 32x32,
+  // anims gAnims_BasicFire — avec son VRAI callback AnimEmberFlare (porté
+  // fire.ts:881, enregistré via registerAnimCallbacks). Le shadow forçait le
+  // mauvais callback (TranslateAnimSpriteToTargetMonLocation) + perdait les anims.
 ]);
 
 // ════════════════════════════════════════════════════════════════════════════

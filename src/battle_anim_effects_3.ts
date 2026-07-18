@@ -2341,6 +2341,7 @@ _e3RegTasks({ AnimTask_IsTargetPlayerSide: AnimTask_IsTargetPlayerSide as never 
 import {
   PrepareBattlerSpriteForRotScale as _psPrep, SetSpriteRotScale as _psSet,
   ResetSpriteRotScale as _psReset, SetBattlerSpriteYOffsetFromYScale as _psYOff,
+  SetBattlerSpriteYOffsetFromRotation as _psYOffRot,
 } from './battle_anim_mons';
 function AnimTask_PainSplitMovement(task: { taskId: number; data: number[] }): void {
   const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -2418,7 +2419,7 @@ function AnimTask_RockMonBackAndForth_Step(task: { taskId: number; data: number[
   if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
   const rot = (): void => {
     _psSet(task.data[15], 0x100, 0x100, task.data[2] & 0xFFFF);
-    _psYOff(task.data[15]);
+    _psYOffRot(task.data[15]); // 1:1 c:2752/2763/2774/2914 : offset Y depuis la ROTATION (pas l'échelle Y)
   };
   switch (task.data[0]) {
     case 0:
@@ -2705,7 +2706,7 @@ function AnimTask_FlailMovement_Step(task: { taskId: number; data: number[] }): 
       return;
   }
   _psSet(task.data[15], 0x100, 0x100, task.data[2] & 0xFFFF);
-  _psYOff(task.data[15]);
+  _psYOffRot(task.data[15]); // 1:1 c:2914 : offset Y depuis la ROTATION (pas l'échelle Y)
   const t = task.data[2];
   sp.x2 = -((t >= 0 ? t : t + 63) >> 6);
   if (++task.data[1] > 8) {
@@ -3564,7 +3565,8 @@ function AnimTask_BarrageBall(task: { taskId: number; data: number[]; func?: unk
       sp.data[4] = task.data[14];
       sp.data[5] = -32;
       _bbArcInit(sp as never);
-      // (affine anim 1 = rotation inverse cote opponent — dette douce inline)
+      // 1:1 c:4174-4175 : attaquant côté adversaire → affine anim 1 (rotation inverse de l'œuf).
+      if ((atk & 1) === 1) _StartSpriteAffineAnim(sp as never, 1);
     }
     task.func = AnimTask_BarrageBall_Step;
   } else {

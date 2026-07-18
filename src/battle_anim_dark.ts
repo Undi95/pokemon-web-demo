@@ -98,7 +98,13 @@ function AnimBite_Step2(sprite: AnimSprite): void {
 }
 
 registerAnimTemplates([
-  { name: 'gFangSpriteTemplate', tileTag: ANIM_TAG_SHARP_TEETH, paletteTag: ANIM_TAG_SHARP_TEETH, oam: { shape: 0, size: 3 }, load: LoadAnimSharpTeethGfx, callback: AnimBite as never, affineAnims: 'gAffineAnims_Bite' },
+  // LOT 4 : gFangSpriteTemplate DÉ-SHADOWÉ (retiré). Le shadow était FAUX sur
+  // presque tout — tag ANIM_TAG_SHARP_TEETH au lieu de ANIM_TAG_FANG_ATTACK, oam
+  // 64x64 au lieu d'AffineDouble 32x32, callback AnimBite au lieu d'AnimFang. Le
+  // bridge généré le fournit correct (FANG_ATTACK manifest ✓, gFangAnimTable,
+  // gFangAffineAnimTable) avec son VRAI callback AnimFang (porté + enregistré
+  // effects_3.ts:1990, appelé SANS args par HYPER_FANG/POISON_FANG). gSharpTeeth
+  // (Crunch/Bite) reste : template manuel CORRECT (ne pas toucher).
   { name: 'gSharpTeethSpriteTemplate', tileTag: ANIM_TAG_SHARP_TEETH, paletteTag: ANIM_TAG_SHARP_TEETH, oam: { shape: 0, size: 3 }, load: LoadAnimSharpTeethGfx, callback: AnimBite as never, affineAnims: 'gAffineAnims_Bite' },
 ]);
 
@@ -152,17 +158,51 @@ import { SetGrayscaleOrOriginalPalette as _dSetGrayPal } from './battle_anim_mon
 function _dItf3(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
+/** 1:1 `GetAnimBattlerSpriteId(animBattler)` (battle_anim_mons.c:373) — branches
+ *  ANIM_ATTACKER/TARGET (IsBattlerSpritePresent ≈ id 0xFF si absent) et
+ *  ATK_PARTNER/DEF_PARTNER (IsBattlerSpriteVisible sur BATTLE_PARTNER = ^2). */
+function _dkGetAnimBattlerSpriteId(animBattler: number): number {
+  const itf = _dItf3();
+  if (animBattler === 0 /* ANIM_ATTACKER */) return _dkMonSpriteId(itf.getAttacker?.() ?? 0);
+  if (animBattler === 1 /* ANIM_TARGET */) return _dkMonSpriteId(itf.getTarget?.() ?? 1);
+  if (animBattler === 2 /* ANIM_ATK_PARTNER */) {
+    const p = (itf.getAttacker?.() ?? 0) ^ 2; // BATTLE_PARTNER
+    return _dkIsVisible(p) ? _dkMonSpriteId(p) : 0xFF /* SPRITE_NONE */;
+  }
+  const p = (itf.getTarget?.() ?? 1) ^ 2; // ANIM_DEF_PARTNER (3)
+  return _dkIsVisible(p) ? _dkMonSpriteId(p) : 0xFF;
+}
+/** 1:1 `AnimTask_SetGrayscaleOrOriginalPal` (battle_anim_dark.c:939) : switch complet
+ *  sur cmd->battler (attacker/target/partners + positions PLAYER/OPPONENT LEFT/RIGHT). */
 function AnimTask_SetGrayscaleOrOriginalPal(task: { taskId: number }): void {
   const itf = _dItf3();
   const a = itf.getArgs?.() ?? [];
-  const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : a[0] === 1 ? (itf.getTarget?.() ?? 1) : -1;
-  if (b >= 0) {
-    const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const cmdBattler = a[0] | 0;
+  let spriteId = 0xFF; // SPRITE_NONE
+  let calcSpriteId = false;
+  let position = 0; // B_POSITION_PLAYER_LEFT
+  switch (cmdBattler) {
+    case 0: // ANIM_ATTACKER
+    case 1: // ANIM_TARGET
+    case 2: // ANIM_ATK_PARTNER
+    case 3: // ANIM_DEF_PARTNER
+      spriteId = _dkGetAnimBattlerSpriteId(cmdBattler);
+      break;
+    case 4: /* ANIM_PLAYER_LEFT    */ position = 0 /* B_POSITION_PLAYER_LEFT    */; calcSpriteId = true; break;
+    case 5: /* ANIM_PLAYER_RIGHT   */ position = 2 /* B_POSITION_PLAYER_RIGHT   */; calcSpriteId = true; break;
+    case 6: /* ANIM_OPPONENT_LEFT  */ position = 1 /* B_POSITION_OPPONENT_LEFT  */; calcSpriteId = true; break;
+    case 7: /* ANIM_OPPONENT_RIGHT */ position = 3 /* B_POSITION_OPPONENT_RIGHT */; calcSpriteId = true; break;
+    default: spriteId = 0xFF; break;
+  }
+  if (calcSpriteId) {
+    const battler = _dkGetBattlerAtPosition(position);
+    spriteId = _dkIsVisible(battler) ? _dkMonSpriteId(battler) : 0xFF;
+  }
+  if (spriteId !== 0xFF) {
     const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Array<{ oamIndex: number } | undefined>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
-    const sid = co?.getBattlerMonSpriteId?.(b);
-    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.[sid] : undefined;
+    const sp = rt?.gSprites?.[spriteId];
     const pal = sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : -1;
-    // 1:1 battle_anim_dark.c.c:1005 : SetGrayscaleOrOriginalPalette(paletteNum + 16, mode).
+    // 1:1 battle_anim_dark.c:987 : SetGrayscaleOrOriginalPalette(oam.paletteNum + 16, mode).
     if (pal >= 0) _dSetGrayPal(pal + 16, a[1] !== 0);
   }
   itf.DestroyAnimVisualTask?.(task.taskId);
@@ -194,7 +234,12 @@ function AnimTask_AttackerFadeToInvisible(task: { taskId: number; data: number[]
   task.data[1] = 16;
   task.data[2] = 0;
   _dkRt().SetGpuReg?.(0x52, 16);
-  _dkRt().SetGpuReg?.(0x50, 0x3F40 | 0x02);
+  // LOT 5 : restaurer la branche else→BG2 droppée (1:1 dark.c:200-203). L'ancien
+  // 0x3F40|0x02 forçait TGT1_BG1 quel que soit le rang BG du battler.
+  if (_dkBgRank(_dItf3().getAttacker?.() ?? 0) === 1)
+    _dkRt().SetGpuReg?.(0x50, 0x3F42); // TGT2_ALL | EFFECT_BLEND | TGT1_BG1
+  else
+    _dkRt().SetGpuReg?.(0x50, 0x3F44); // TGT2_ALL | EFFECT_BLEND | TGT1_BG2
   task.func = AnimTask_AttackerFadeToInvisible_Step;
 }
 /** 1:1 `AnimTask_AttackerFadeToInvisible_Step` (battle_anim_dark.c:208). */
@@ -245,7 +290,11 @@ function AnimTask_AttackerFadeFromInvisible_Step(task: { taskId: number; data: n
 }
 function AnimTask_InitAttackerFadeFromInvisible(task: { taskId: number }): void {
   _dkRt().SetGpuReg?.(0x52, (16 << 8) | 0);
-  _dkRt().SetGpuReg?.(0x50, 0x3F40 | 0x02);
+  // LOT 5 : restaurer la branche else→BG2 droppée (1:1 dark.c:268-271).
+  if (_dkBgRank(_dItf3().getAttacker?.() ?? 0) === 1)
+    _dkRt().SetGpuReg?.(0x50, 0x3F42); // TGT2_ALL | EFFECT_BLEND | TGT1_BG1
+  else
+    _dkRt().SetGpuReg?.(0x50, 0x3F44); // TGT2_ALL | EFFECT_BLEND | TGT1_BG2
   _dItf3().DestroyAnimVisualTask?.(task.taskId);
 }
 _dRegT({
@@ -397,6 +446,7 @@ import {
 import {
   GetBattlerSpriteBGPriorityRank as _dkBgRank,
   GetBattlerSpriteCoord as _dkCoord,
+  GetBattlerAtPosition as _dkGetBattlerAtPosition,
 } from './battle_anim_mons';
 import { getMonBackPicCoords as _dkBackCoords, getMonFrontPicCoords as _dkFrontCoords } from './data/mon_pic_coords';
 import { gBattlerPartyIndexes as _dkPartyIdx } from './engine/battle/state';
@@ -529,7 +579,7 @@ function AnimTask_MoveAttackerMementoShadow(task: _DkTask): void {
   if (task.data[3] === 1) {
     const animBg = _dkBgData();
     task.data[10] = _dkG('gBattle_BG1_Y');
-    rt.SetGpuReg?.(_DK_REG_BLDCNT, 0x3F41); // TGT2_ALL | EFFECT_BLEND | TGT1_BG1
+    rt.SetGpuReg?.(_DK_REG_BLDCNT, 0x3F42); // TGT2_ALL | EFFECT_BLEND | TGT1_BG1 (bit1=0x02) — 1:1 dark.c:437 (0x3F41 avait TGT1_BG0/bit0)
     _dkFillPaletteBlack(animBg.paletteId);
     dmaDest = _DK_REG_BG1VOFS;
     var0 = 0x02; // WINOUT_WIN01_BG1
@@ -608,7 +658,7 @@ function AnimTask_MoveTargetMementoShadow(task: _DkTask): void {
     case 0:
       task.data[3] = _dkBgRank(tgt);
       if (task.data[3] === 1) {
-        rt.SetGpuReg?.(_DK_REG_BLDCNT, 0x3F41);
+        rt.SetGpuReg?.(_DK_REG_BLDCNT, 0x3F42); // TGT2_ALL | EFFECT_BLEND | TGT1_BG1 (bit1=0x02) — 1:1 dark.c:561 (0x3F41 avait TGT1_BG0/bit0)
         _dkSetG('gBattle_BG2_X', _dkG('gBattle_BG2_X') + 240);
       } else {
         rt.SetGpuReg?.(_DK_REG_BLDCNT, 0x3F44);

@@ -119,7 +119,7 @@ function AnimTask_ShakeMon(task: AnimTask): void {
   // 15 moves rouges) : données corrompues → skip le shake, l'anim continue.
   // RACINE À AUDITER : l'encodage s16 des opérandes createvisualtask.
   if ((_args()[3] | 0) <= 0 || (_args()[3] | 0) > 1000 || (_args()[4] | 0) < 0 || (_args()[4] | 0) > 240) {
-    console.warn('[anim] ShakeMon2 args corrompus (bytecode) :', _args().slice(0, 5).join(','), '— skip');
+    console.warn('[anim] ShakeMon args corrompus (bytecode) :', _args().slice(0, 5).join(','), '— skip');
     DestroyAnimVisualTask(task.taskId);
     return;
   }

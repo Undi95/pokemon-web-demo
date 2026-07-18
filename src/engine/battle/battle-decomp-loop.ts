@@ -561,7 +561,11 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     import('../../battle_anim_smokescreen'),             // F50 (SmokescreenImpact)
     import('../../battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
-  void _ensureAnimSpriteGfx();
+  // LOT 2 (Règle 3) : jamais `void promesse` nue → `.catch` HURLANT. La promesse
+  // est exposée (consultable via window.__animGfxPreloadPromise) pour diagnostiquer
+  // un préchargement gfx d'anim en retard (course tile-0).
+  (globalThis as Record<string, unknown>).__animGfxPreloadPromise =
+    _ensureAnimSpriteGfx().catch((e) => console.error('[decomp-loop] _ensureAnimSpriteGfx (préchargement gfx anim) KO', e));
   const cb = _CB2_InitBattle();
   if (!cb) {
     console.warn('[decomp-loop] CB2_InitBattle indisponible (battle-init pas chargé)');
