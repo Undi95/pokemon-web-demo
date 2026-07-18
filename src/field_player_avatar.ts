@@ -129,7 +129,7 @@ import {
 } from '../include/constants/event_object_movement';
 import { CreateTask, DestroyTask } from './task';
 import { FindTaskIdByFunc, GetTask, getRuntime, FuncIsActiveTask } from '../harness/runtime/decomp-globals';
-import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST } from './field_effect';
+import { FieldEffectStart, gFieldEffectArguments, FLDEFF_DUST, FLDEFF_SURF_BLOB } from './field_effect';
 import {
   SetSurfBlob_BobState, SetSurfBlob_PlayerOffset,
   preloadWarpArrowEffect,
@@ -2449,18 +2449,39 @@ function PlayerAvatarTransition_AcroBike(objEvent: ObjectEvent): void {
   Bike_HandleBumpySlopeJump();
 }
 
-/** 1:1 STRICT décomp `PlayerAvatarTransition_Surfing` (fpa.c:856). Part flags portée ; gfx +
- *  FieldEffectStart(FLDEFF_SURF_BLOB) + SetSurfBlob_BobState = sous-système surf (étape 5). */
-function PlayerAvatarTransition_Surfing(_objEvent: ObjectEvent): void {
+/** 1:1 STRICT décomp `PlayerAvatarTransition_Surfing` (fpa.c:856) :
+ *    ObjectEventSetGraphicsId(Surfing) ; ObjectEventTurn(movementDir) ; StateMask(SURFING) ;
+ *    gFieldEffectArguments[0..2] = coords + objectEventId ; fieldEffectSpriteId =
+ *    FieldEffectStart(FLDEFF_SURF_BLOB) ; SetSurfBlob_BobState(BOB_PLAYER_AND_MON).
+ *  Recrée le sprite MONTURE (blob de surf) quand l'avatar est REMIS en surf par la machine à
+ *  transitions (retour-combat / refresh OW / warp émersion). Les helpers blob vivent dans
+ *  field_effect_helpers.ts → ponts globalThis (anti-cycle ESM). SetSurfBlob_BobState (port) prend
+ *  `rt` → le pont l'injecte. Le blob de MONTÉE normale passe par SurfFieldEffect_JumpOnSurfBlob
+ *  (inchangé) : cette fonction n'est jouée QUE via SetPlayerAvatarTransitionFlags/…ExtraState. */
+function PlayerAvatarTransition_Surfing(objEvent: ObjectEvent): void {
+  ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));
+  ObjectEventTurn(objEvent, objEvent.movementDirection);
   SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_SURFING);
-  // ObjectEventSetGraphicsId(Surfing) + ObjectEventTurn + FieldEffectStart(FLDEFF_SURF_BLOB) — étape 5 (surf)
+  gFieldEffectArguments[0] = objEvent.currentCoordsX;
+  gFieldEffectArguments[1] = objEvent.currentCoordsY;
+  gFieldEffectArguments[2] = gPlayerAvatar.objectEventId;
+  const spriteId = FieldEffectStart(FLDEFF_SURF_BLOB);
+  objEvent.fieldEffectSpriteId = spriteId;
+  ((globalThis as Record<string, unknown>).__SetSurfBlob_BobState as ((id: number, state: number) => void) | undefined)?.(spriteId, 1 /* BOB_PLAYER_AND_MON */);
 }
 
-/** 1:1 STRICT décomp `PlayerAvatarTransition_Underwater` (fpa.c:871). Part flags portée ;
- *  gfx + StartUnderwaterSurfBlobBobbing = sous-système plongée (étape 5). */
-function PlayerAvatarTransition_Underwater(_objEvent: ObjectEvent): void {
+/** 1:1 STRICT décomp `PlayerAvatarTransition_Underwater` (fpa.c:871) :
+ *    ObjectEventSetGraphicsId(Underwater) ; ObjectEventTurn(movementDir) ; StateMask(UNDERWATER) ;
+ *    fieldEffectSpriteId = StartUnderwaterSurfBlobBobbing(objEvent->spriteId).
+ *  Remet l'avatar en état PLONGÉE (sous-marin) quand la machine à transitions est jouée à
+ *  l'arrivée sur une map MAP_TYPE_UNDERWATER. StartUnderwaterSurfBlobBobbing vit dans
+ *  field_effect_helpers.ts → pont globalThis (anti-cycle ESM). */
+function PlayerAvatarTransition_Underwater(objEvent: ObjectEvent): void {
+  ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_UNDERWATER));
+  ObjectEventTurn(objEvent, objEvent.movementDirection);
   SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_UNDERWATER);
-  // ObjectEventSetGraphicsId(Underwater) + ObjectEventTurn + StartUnderwaterSurfBlobBobbing — étape 5
+  const start = (globalThis as Record<string, unknown>).__StartUnderwaterSurfBlobBobbing as ((spriteId: number) => number) | undefined;
+  if (start) objEvent.fieldEffectSpriteId = start(objEvent.spriteId);
 }
 
 /** 1:1 STRICT décomp `PlayerAvatarTransition_ReturnToField` (field_player_avatar.c:879) :

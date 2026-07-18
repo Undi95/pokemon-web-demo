@@ -42,10 +42,11 @@ import {
   FldEff_SandFootprints, FldEff_DeepSandFootprints, FldEff_BikeTireTracks,
   FldEff_SurfBlob, FldEff_UseSurf, FldEff_UseWaterfall, FldEff_UseDive,
   FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
-  FldEff_Shadow, FldEff_PokecenterHeal,
+  FldEff_Shadow, FldEff_PokecenterHeal, FldEff_HallOfFameRecord,
   FldEff_FieldMoveShowMon, FldEff_FieldMoveShowMonInit,
   FldEff_UseFly, FldEff_FlyIn, FldEff_NPCFlyOut,
   LoadGeneralFieldEffectPalette, LoadSmallSparkleFieldEffectPalette, LoadPokeballGlowFieldEffectPalette,
+  LoadHofMonitorFieldEffectPalette,
 } from './field_effect_helpers';
 import { FldEff_UseCutOnTree } from './fldeff_cut';
 import { FldEff_UseRockSmash } from './fldeff_rocksmash';
@@ -119,6 +120,7 @@ export const FLDEFF_HEART_ICON                 = 46;
 export const FLDEFF_BUBBLES                    = 53;
 export const FLDEFF_SPARKLE                    = 54;
 export const FLDEFF_POKECENTER_HEAL            = 25;
+export const FLDEFF_HALL_OF_FAME_RECORD        = 62;
 export const FLDEFF_FIELD_MOVE_SHOW_MON        = 6;
 export const FLDEFF_FIELD_MOVE_SHOW_MON_INIT   = 59;
 export const FLDEFF_NPCFLY_OUT                 = 30;
@@ -287,6 +289,12 @@ const gFieldEffectScriptPointers: Partial<Record<number, FieldEffectScriptCmd[]>
   //    Le 1er loadfadedpal charge la palette pulsée (FLDEFF_PAL_TAG_POKEBALL_GLOW), le 2e charge
   //    GENERAL_0 (palette du moniteur). Débloque le soin nurse (waitfieldeffect ne gèle plus). ──
   [FLDEFF_POKECENTER_HEAL]:       [{ op: 'loadfadedpal', loadPal: LoadPokeballGlowFieldEffectPalette }, { op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_PokecenterHeal }, { op: 'end' }],
+
+  // ── Hall of Fame record (field_effect.c:1066) : 1:1 `gFieldEffectScript_HallOfFameRecord`
+  //    (field_effect_scripts.s:326) = loadfadedpal pokeball_glow (palette pulsée PARTAGÉE PokéCenter)
+  //    + loadfadedpal_callnative hof_monitor. Débloque le Panthéon : SANS ça, `waitfieldeffect 62`
+  //    gelait à vie AVANT GameClear (l'id 62 restait dans la liste active, jamais retiré). ──
+  [FLDEFF_HALL_OF_FAME_RECORD]:   [{ op: 'loadfadedpal', loadPal: LoadPokeballGlowFieldEffectPalette }, { op: 'loadfadedpal', loadPal: LoadHofMonitorFieldEffectPalette }, { op: 'callnative', native: FldEff_HallOfFameRecord }, { op: 'end' }],
 };
 
 /** 1:1 décomp boucle d'interprétation `FieldEffectStart` (field_effect.c:166) :

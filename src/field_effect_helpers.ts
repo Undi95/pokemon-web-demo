@@ -2407,6 +2407,211 @@ function SpriteCB_PokecenterMonitor(sprite: DecompSprite): void {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+//  1:1 décomp `field_effect.c` /* Hall of Fame record */ (field_effect.c:1066-1124,
+//  1289-1319). L'animation du Panthéon (EverGrandeCity_HallOfFame) : les pokéballs de
+//  l'équipe MONTENT une à une (réutilise CreateGlowingPokeballsEffect du soin PokéCenter,
+//  mais SANS le heal SE/fanfare — playHealSe=FALSE), pendant que 5 moniteurs muraux
+//  CLIGNOTENT (1 grand 64×16 subsprite-tablé + 4 petits 32×16). Déclenché par
+//  `dofieldeffect FLDEFF_HALL_OF_FAME_RECORD` (62) + `waitfieldeffect 62` du script HOF.
+//
+//  ⚠️ SANS ce port, FieldEffectStart(62) ajoutait l'id à la liste active mais ne trouvait
+//  AUCUN script dans gFieldEffectScriptPointers → jamais de Remove → `waitfieldeffect`
+//  gelait à VIE, AVANT le GameClear (= le SEUL hang dur du chemin de complétion solo).
+//
+//  Script 1:1 (data/field_effect_scripts.s:326) :
+//    field_eff_loadfadedpal gSpritePalette_PokeballGlow      (palette pulsée, PARTAGÉE PokéCenter)
+//    field_eff_loadfadedpal_callnative gSpritePalette_HofMonitor, FldEff_HallOfFameRecord
+//    field_eff_end
+//
+//  Assets : hof_monitor_big.png (64×16 = 16 tuiles, subsprite-tablé en 4×[32×8], layout
+//  row-major = exactement les tileOffsets 0/4/8/12) + hof_monitor_small.png (32×16 = 8 tuiles,
+//  OAM plein) + hof_monitor.pal (tag FLDEFF_PAL_TAG_HOF_MONITOR). Le glow des balls réutilise
+//  le sheet + palette pokeball_glow du soin PokéCenter (préchargés ensemble).
+//
+//  ⚠️ Le moniteur HOF n'a qu'UNE frame (sAnims_HofMonitor = {sAnim_Static}) : il ne clignote
+//  PAS par frames d'anim (≠ moniteur PokéCenter, qui swap tileBase) — il TOGGLE `invisible ^= 1`
+//  toutes les 16 frames (SpriteCB_HallOfFameMonitor). Le renderer subsprite propage
+//  `!sprite.invisible` aux OAM enfants (decomp-globals `syncSubspriteOam`) → clignotement 1:1
+//  pour le grand moniteur, et clearSubspriteTable au free libère ses OAM enfants.
+// ════════════════════════════════════════════════════════════════════════════
+
+const FLDEFF_HALL_OF_FAME_RECORD = 62;
+
+const HOF_MONITOR_BIG_PNG = '/decomp/em/field_effects/hof_monitor_big.png';
+const HOF_MONITOR_SMALL_PNG = '/decomp/em/field_effects/hof_monitor_small.png';
+const HOF_MONITOR_PAL = '/decomp/em/field_effects/hof_monitor.pal';
+const TAG_HOF_MONITOR_BIG_GFX = 'FIELD_EFFECT_HOF_MONITOR_BIG_GFX';
+const TAG_HOF_MONITOR_SMALL_GFX = 'FIELD_EFFECT_HOF_MONITOR_SMALL_GFX';
+const TAG_HOF_MONITOR_PAL = 'FLDEFF_PAL_TAG_HOF_MONITOR';
+
+/** 1:1 décomp `sSubsprites_HofMonitorBig[]` (field_effect.c:456). 64×16 en 4 pièces 32×8
+ *  (shape 1 = H_RECTANGLE, size 1) : [0_____][1_____] haut (tiles 0-3, 4-7), [2][3] bas
+ *  (tiles 8-11, 12-15). Origin bas-droite (comme le décomp). */
+const sSubsprites_HofMonitorBig: ReadonlyArray<NamingSubsprite> = [
+  { x: -32, y: -8, shape: 1, size: 1, tileOffset: 0, priority: 2 },  // 32×8 haut-gauche
+  { x: 0, y: -8, shape: 1, size: 1, tileOffset: 4, priority: 2 },    // 32×8 haut-droite
+  { x: -32, y: 0, shape: 1, size: 1, tileOffset: 8, priority: 2 },   // 32×8 bas-gauche
+  { x: 0, y: 0, shape: 1, size: 1, tileOffset: 12, priority: 2 },    // 32×8 bas-droite
+];
+
+let _hofMonitorBigTileStart = -1;
+let _hofMonitorSmallTileStart = -1;
+let _hofMonitorPalData: Uint16Array | null = null;
+let _hofRecordInit = false;
+
+/** Préchargement assets Hall-of-Fame record (concern plateforme). hof_monitor_big.png (16 tuiles)
+ *  + hof_monitor_small.png (8 tuiles) + hof_monitor.pal CACHÉE (loadfadedpal on-demand par le
+ *  script). Garantit AUSSI le préchargement PARTAGÉ pokeball_glow (sheet + palette du glow des
+ *  balls) via preloadPokecenterHealEffect (idempotent). Règle 3 : HURLE en console si un asset
+ *  manque, mais l'effet s'auto-termine QUAND MÊME (le sprite contrôleur du glow pilote la machine
+ *  d'états SANS dépendre de ces assets → jamais de gel). */
+export async function preloadHallOfFameRecordEffect(rt: DecompRuntime): Promise<void> {
+  // Ressources PARTAGÉES avec le soin PokéCenter (pokeball_glow sheet + palette + le glow).
+  await preloadPokecenterHealEffect(rt);
+  if (_hofRecordInit && IndexOfSpriteTileTag(TAG_HOF_MONITOR_BIG_GFX) !== 0xFF) return;
+  _hofRecordInit = false;
+  try {
+    const big = await loadIndexedPngStrict(HOF_MONITOR_BIG_PNG, 4);     // 64×16 = 16 tuiles row-major
+    _hofMonitorBigTileStart = LoadSpriteSheet({ data: big.charData, size: big.charData.length, tag: TAG_HOF_MONITOR_BIG_GFX });
+    const small = await loadIndexedPngStrict(HOF_MONITOR_SMALL_PNG, 4); // 32×16 = 8 tuiles
+    _hofMonitorSmallTileStart = LoadSpriteSheet({ data: small.charData, size: small.charData.length, tag: TAG_HOF_MONITOR_SMALL_GFX });
+    _hofMonitorPalData = await loadGbaPal(HOF_MONITOR_PAL);
+    _hofRecordInit = true;
+  } catch (e) {
+    console.error('[preloadHallOfFameRecordEffect] asset moniteur HOF manquant — effet DÉGRADÉ (mais NON gelant)', e);
+  }
+}
+
+/** loadfadedpal de la palette hof_monitor (1:1 `field_eff_loadfadedpal_callnative gSpritePalette_HofMonitor,…`,
+ *  2e cmd du script gFieldEffectScript_HallOfFameRecord, field_effect_scripts.s:328). */
+export function LoadHofMonitorFieldEffectPalette(): number {
+  return FieldEffectScript_LoadFadedPalette(_hofMonitorPalData, TAG_HOF_MONITOR_PAL);
+}
+
+// Task data — MÊME layout que Task_PokecenterHeal (field_effect.c:988) :
+//   tState=data[0] tNumMons=data[1] tFirstBallX=data[2] tFirstBallY=data[3]
+//   tBallSpriteId=data[6] tStartHofFlash=data[15]
+// Sprite data moniteur HOF (SpriteCB_HallOfFameMonitor, field_effect.c:1305) :
+//   data[0]=taskId  data[1]=timer clignotement (16f)  data[2]=compteur de vie (>127 → free).
+
+/** 1:1 décomp `FldEff_HallOfFameRecord` (field_effect.c:1066). */
+export function FldEff_HallOfFameRecord(rt: DecompRuntime): number {
+  const nPokemon = CalculatePlayerPartyCount();
+  const taskId = rt.CreateTask(Task_HallOfFameRecord, 0xFF);
+  const task = rt.gTasks[taskId];
+  if (task) {
+    task.data[1] = nPokemon; // tNumMons
+    task.data[2] = 117;      // tFirstBallX
+    task.data[3] = 52;       // tFirstBallY
+  }
+  return 0; // FALSE
+}
+
+/** 1:1 décomp `Task_HallOfFameRecord` (field_effect.c:1079). */
+function Task_HallOfFameRecord(task: DecompTask): void {
+  sHallOfFameRecordEffectFuncs[task.data[0]](task);
+}
+
+/** 1:1 décomp `HallOfFameRecordEffect_Init` (field_effect.c:1086). */
+function HallOfFameRecordEffect_Init(task: DecompTask): void {
+  task.data[0]++; // tState
+  task.data[6] = CreateGlowingPokeballsEffect(task.data[1], task.data[2], task.data[3], false); // tBallSpriteId (playHealSe=FALSE)
+  const taskId = FindTaskIdByFunc(Task_HallOfFameRecord);
+  CreateHofMonitorSprite(taskId, 120, 24, false);
+  CreateHofMonitorSprite(taskId, 40, 8, true);
+  CreateHofMonitorSprite(taskId, 72, 8, true);
+  CreateHofMonitorSprite(taskId, 168, 8, true);
+  CreateHofMonitorSprite(taskId, 200, 8, true);
+}
+
+/** 1:1 décomp `HallOfFameRecordEffect_WaitForBallPlacement` (field_effect.c:1099). */
+function HallOfFameRecordEffect_WaitForBallPlacement(task: DecompTask): void {
+  const rt = getRuntime();
+  const ball = rt.gSprites[task.data[6]];
+  if (ball && ball.data[0] > 1) { // sState > 1
+    task.data[15]++; // tStartHofFlash → déclenche le clignotement des moniteurs
+    task.data[0]++;  // tState
+  }
+}
+
+/** 1:1 décomp `HallOfFameRecordEffect_WaitForBallFlashing` (field_effect.c:1108). */
+function HallOfFameRecordEffect_WaitForBallFlashing(task: DecompTask): void {
+  const rt = getRuntime();
+  const ball = rt.gSprites[task.data[6]];
+  if (ball && ball.data[0] > 4) task.data[0]++; // sState > 4 → tState
+}
+
+/** 1:1 décomp `HallOfFameRecordEffect_WaitForSoundAndEnd` (field_effect.c:1116). */
+function HallOfFameRecordEffect_WaitForSoundAndEnd(task: DecompTask): void {
+  const rt = getRuntime();
+  const ball = rt.gSprites[task.data[6]];
+  if (ball && ball.data[0] > 6) { // sState > 6 (Idle)
+    DestroySprite(task.data[6]);
+    FieldEffectActiveListRemove(FLDEFF_HALL_OF_FAME_RECORD);
+    DestroyTask(FindTaskIdByFunc(Task_HallOfFameRecord));
+  }
+}
+
+/** 1:1 décomp `sHallOfFameRecordEffectFuncs[]` (field_effect.c:577). */
+const sHallOfFameRecordEffectFuncs: ReadonlyArray<(task: DecompTask) => void> = [
+  HallOfFameRecordEffect_Init,
+  HallOfFameRecordEffect_WaitForBallPlacement,
+  HallOfFameRecordEffect_WaitForBallFlashing,
+  HallOfFameRecordEffect_WaitForSoundAndEnd,
+];
+
+/** 1:1 décomp `CreateHofMonitorSprite` (field_effect.c:1289). Grand moniteur (64×16) =
+ *  subsprite-tablé (4×[32×8]) + tileBase pour le renderer subsprite ; petits (32×16) = OAM plein.
+ *  invisible au départ + data[0]=taskId. La callback SpriteCB_HallOfFameMonitor (= .callback des
+ *  templates sSpriteTemplate_HofMonitorBig/Small, field_effect.c:555/566) est posée à la main
+ *  (notre CreateSpriteAtOam n'applique pas la callback de template — cf. CreatePokecenterMonitorSprite). */
+function CreateHofMonitorSprite(taskId: number, x: number, y: number, isSmallMonitor: boolean): void {
+  const rt = getRuntime();
+  let spriteId: number;
+  if (!isSmallMonitor) {
+    ({ spriteId } = rt.CreateSpriteAtOam({
+      tileId: _hofMonitorBigTileStart,
+      paletteBank: IndexOfSpritePaletteTag(TAG_HOF_MONITOR_PAL),
+      x, y, shape: 0, size: 1, priority: 2, subpriority: 0, fromEnd: true, // base sOam_16x16 (subsprites overrident)
+    }));
+    const sprite = rt.gSprites[spriteId];
+    if (sprite) sprite.tileBase = _hofMonitorBigTileStart;
+    SetSubspriteTables(spriteId, sSubsprites_HofMonitorBig);
+  } else {
+    ({ spriteId } = rt.CreateSpriteAtOam({
+      tileId: _hofMonitorSmallTileStart,
+      paletteBank: IndexOfSpritePaletteTag(TAG_HOF_MONITOR_PAL),
+      x, y, shape: 1, size: 2, priority: 2, subpriority: 0, fromEnd: true, // sOam_32x16
+    }));
+  }
+  const s = rt.gSprites[spriteId];
+  if (s) {
+    s.invisible = true;
+    s.callback = SpriteCB_HallOfFameMonitor;
+    s.data[0] = taskId;
+  }
+}
+
+/** 1:1 décomp `SpriteCB_HallOfFameMonitor` (field_effect.c:1305). Une fois que la task a levé
+ *  tStartHofFlash (WaitForBallPlacement), le moniteur TOGGLE `invisible ^= 1` toutes les 16 frames
+ *  puis se libère après 127 frames de vie (data[2]). clearSubspriteTable = engine-adaptation (libère
+ *  les OAM enfants du grand moniteur ; no-op pour les petits, cf. CreatePokecenterMonitorSprite). */
+function SpriteCB_HallOfFameMonitor(sprite: DecompSprite): void {
+  const rt = getRuntime();
+  if (rt.gTasks[sprite.data[0]]?.data[15]) { // gTasks[taskId].tStartHofFlash
+    if (sprite.data[1] === 0 || (--sprite.data[1]) === 0) {
+      sprite.data[1] = 16;
+      sprite.invisible = !sprite.invisible; // invisible ^= 1
+    }
+    sprite.data[2]++;
+  }
+  if (sprite.data[2] > 127) {
+    clearSubspriteTable(sprite.spriteId);
+    FieldEffectFreeGraphicsResources(rt, sprite);
+  }
+}
+
 // ─── 1:1 décomp tâche field-move COMMUNE (fldeff_rocksmash.c:48-117) ───────────────────────────
 // Utilisée par Cut/RockSmash/Dig/Flash/secret base : pose field-move (le joueur lève le Pokémon) →
 // show-mon (no-op) → restore gfx joueur → run le callback de l'effet → preventStep=FALSE.
@@ -2570,6 +2775,21 @@ export function StartUnderwaterSurfBlobBobbing(rt: DecompRuntime, blobSpriteId: 
   sprite.data[1] = 1;            // sBobY
   return result.spriteId;
 }
+
+// Ponts globalThis (anti-cycle ESM) : field_player_avatar.ts `PlayerAvatarTransition_Surfing` /
+// `_Underwater` recréent le blob de surf / plongée quand la machine à transitions (SetPlayerAvatar
+// TransitionFlags / SetPlayerAvatarExtraStateTransition) est jouée au retour-field / warp plongée
+// (1:1 field_player_avatar.c:866-876). Import statique field_player_avatar→field_effect_helpers
+// INTERDIT (fermerait un cycle) → ponts runtime. Le blob de MONTÉE normale
+// (SurfFieldEffect_JumpOnSurfBlob) reste direct : ces ponts ne servent QUE la RESTAURATION.
+(globalThis as Record<string, unknown>).__SetSurfBlob_BobState = (spriteId: number, state: number): void => {
+  const rt = getRuntime();
+  if (rt) SetSurfBlob_BobState(rt, spriteId, state);
+};
+(globalThis as Record<string, unknown>).__StartUnderwaterSurfBlobBobbing = (blobSpriteId: number): number => {
+  const rt = getRuntime();
+  return rt ? StartUnderwaterSurfBlobBobbing(rt, blobSpriteId) : -1;
+};
 
 /** 1:1 décomp `SpriteCB_UnderwaterSurfBlob` (1170). Callback per-frame du sprite dummy. */
 export function SpriteCB_UnderwaterSurfBlob(sprite: DecompSprite, rt: DecompRuntime): void {
