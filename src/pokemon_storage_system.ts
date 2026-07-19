@@ -742,15 +742,17 @@ function _boxMonAt(boxId: number, pos: number): Pokemon | null {
 export function GetBoxNamePtr(boxId: number): string {
   return GetPokemonStorage().boxNames?.[boxId] ?? `BOITE ${boxId + 1}`;
 }
-/** 1:1 `u8 GetBoxWallpaper(u8 boxId)` / `void SetBoxWallpaper(...)` (:9530-9545). */
+/** 1:1 `u8 GetBoxWallpaper(u8 boxId)` (:9528-9534). Lit le champ SÉRIALISÉ
+ *  `boxWallpapers` (save-blocks.ts:1243, initialisé `i % 4` au new game), PAS un champ
+ *  fantôme `wallpapers` (jamais persisté) → les papiers-peints survivent au save/reload. */
 function GetBoxWallpaper(boxId: number): number {
-  return (GetPokemonStorage() as unknown as { wallpapers?: number[] }).wallpapers?.[boxId] ?? (boxId % 4);
+  if (boxId < TOTAL_BOXES_COUNT) return GetPokemonStorage().boxWallpapers[boxId];
+  return 0;
 }
-/** 1:1 `void SetBoxWallpaper(u8 boxId, u8 wallpaper)` (:9545). */
+/** 1:1 `void SetBoxWallpaper(u8 boxId, u8 wallpaperId)` (:9536-9540). */
 function SetBoxWallpaper(boxId: number, wallpaperId: number): void {
-  const st = GetPokemonStorage() as unknown as { wallpapers?: number[] };
-  if (!st.wallpapers) st.wallpapers = [];
-  st.wallpapers[boxId] = wallpaperId;
+  if (boxId < TOTAL_BOXES_COUNT && wallpaperId < WALLPAPER_COUNT)
+    GetPokemonStorage().boxWallpapers[boxId] = wallpaperId;
 }
 
 // ─── TilemapUtil (:9772-9967) — moteur de tilemaps rectangulaires du PC. ─────
@@ -4141,11 +4143,22 @@ function CreateMovingMonIcon(): void {
   if (spr) spr.callback = SpriteCB_HeldMon;
 }
 
-// :6353 SetMovingMonData / :6365 SetPlacedMonData / :6378 PurgeMonOrBoxMon — déplacement de RÉFÉRENCE.
+// :6353 SetMovingMonData / :6365 SetPlacedMonData / :6378 PurgeMonOrBoxMon.
+// 🔴 SYS-4 (copie-VALEUR C → RÉFÉRENCE JS). Le décomp `sStorage->movingMon` est un
+// `struct Pokemon` INLINE (:521) → `movingMon = gPlayerParty[...]` et
+// `BoxMonAtToMon(..., &movingMon)` sont des COPIES PAR VALEUR. Sans copie, l'alias JS
+// serait DÉTRUIT par le `PurgeMonOrBoxMon` → `ZeroMonData(&gPlayerParty[position])` qui
+// suit (mute le slot party SUR PLACE, pokemon.ts:1192, position === sCursorPosition) :
+// déposer/saisir un mon d'ÉQUIPE rangeait un mon BLANC et perdait l'original.
+// `structuredClone` = copie par valeur, cf. précédent MultiMove_GetMonsFromSelection (:5753).
 function SetMovingMonData(boxId: number, position: number): void {
   const s = sStorage!;
-  if (boxId === TOTAL_BOXES_COUNT) s.movingMon = gPlayerParty[sCursorPosition] as Pokemon;
-  else s.movingMon = _boxMonAt(boxId, position);
+  if (boxId === TOTAL_BOXES_COUNT) {
+    s.movingMon = structuredClone(gPlayerParty[sCursorPosition]) as Pokemon;
+  } else {
+    const src = _boxMonAt(boxId, position);   // BoxMonAtToMon (copie struct)
+    s.movingMon = src ? structuredClone(src) : null;
+  }
   PurgeMonOrBoxMon(boxId, position);
   sMovingMonOrigBoxId = boxId;
   sMovingMonOrigBoxPos = position;
@@ -4332,10 +4345,15 @@ function MoveShiftingMons(): boolean {
 // l'occupant devient le tenu.
 function SetShiftedMonData(boxId: number, position: number): void {
   const s = sStorage!;
-  if (boxId === TOTAL_BOXES_COUNT)
-    s.tempMon = gPlayerParty[position] as Pokemon;    // struct copy décomp (case réassignée après → réf sûre)
-  else
-    s.tempMon = _boxMonAt(boxId, position);           // BoxMonAtToMon
+  // 1:1 décomp (:6386-6394) `tempMon = gPlayerParty[...]` / `BoxMonAtToMon(&tempMon)` =
+  // COPIES PAR VALEUR (struct Pokemon inline). structuredClone = même sémantique (SYS-4),
+  // pour que `SetPlacedMonData` (réassigne le slot avec movingMon) n'altère pas tempMon.
+  if (boxId === TOTAL_BOXES_COUNT) {
+    s.tempMon = structuredClone(gPlayerParty[position]) as Pokemon;
+  } else {
+    const src = _boxMonAt(boxId, position);           // BoxMonAtToMon
+    s.tempMon = src ? structuredClone(src) : null;
+  }
   SetPlacedMonData(boxId, position);
   s.movingMon = s.tempMon;
   SetDisplayMonData(s.movingMon, MODE_PARTY);
@@ -5369,6 +5387,7 @@ function SetWaldaPhrase(src: number[]): void { _waldaPhrase.text = src.slice(); 
 /** 1:1 `bool32 IsWaldaPhraseEmpty(void)` (:9724). */
 function IsWaldaPhraseEmpty(): boolean { return _waldaPhrase.text[0] === EOS; }
 const WALLPAPER_FRIENDS = 16;     // wallpaper Walda (index après les 16 standards)
+const WALLPAPER_COUNT = 17;       // 1:1 décomp data/wallpapers.h:19 (WALLPAPER_FRIENDS + 1)
 const RGB_WHITEALPHA = 0xFFFF;    // RGB_WHITE (0x7FFF) | 0x8000 (bit alpha)
 // DMA3 async : nos copies de tilemap BG sont synchrones → jamais busy.
 function IsDma3ManagerBusyWithBgCopy(): boolean { return false; }

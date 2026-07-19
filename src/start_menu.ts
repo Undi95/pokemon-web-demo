@@ -67,7 +67,8 @@ import {
 // source FR via encodeOwText (= notre préproc, strippe `$`, ajoute EOS).
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from './menu';
 import { PlaySE, getRuntime, gMain } from '../harness/runtime/decomp-globals';
-import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../include/constants/songs';
+import { SE_SELECT, SE_WIN_OPEN, SE_SAVE, SE_BOO } from '../include/constants/songs';
+import { GAME_STAT_SAVED_GAME } from '../include/constants/game_stat';
 import { HasValidSave } from './save';
 import { bagContents } from './engine/bag/bag';
 import { HideMapNamePopUpWindow } from './map_name_popup';
@@ -117,6 +118,7 @@ type SubState =
   | 'save_overwrite_yesno'  // Yes/No menu open for overwrite confirm
   | 'save_saving_msg'       // showing "SAUVEGARDE EN COURS…" ; printer done → gameState.save() + show "X a sauvegardé."
   | 'save_done'             // showing "X a sauvegardé." ; printer done → PlaySE(SE_SAVE) + wait SE done → close
+  | 'save_error'            // 1:1 SaveErrorCallback : showing "ERREUR" ; PlaySE(SE_BOO) + wait timer + A → close
   | 'bag_screen'            // session 127 : bag UI ouvert, drive via TickBagScreen
   | 'trainer_card_screen'   // session 127 : trainer card UI ouvert
   | 'pokedex_screen'        // session 127 : pokédex UI ouvert
@@ -774,6 +776,9 @@ export function TickStartMenu(): void {
     case 'save_done':
       _tickSaveDone(newKeys);
       break;
+    case 'save_error':
+      _tickSaveError(newKeys);
+      break;
     case 'bag_screen':
       // Session 129 refactor : 'bag_screen' substate obsolète. Le bag est
       // maintenant standalone CB2 (= MainCB2_BagMenuRun). TickStartMenu ne
@@ -986,7 +991,14 @@ function _doSave(): void {
 // false`, cf. field-message-box.ts:185-188). Pattern déjà utilisé dans
 // _tickSaveConfirm (= preuve qu'il marche pour gater post-typing).
 let _saveDoneSeStarted = false;
+let _saveErrorSeStarted = false;  // 1:1 SaveErrorCallback : PlaySE(SE_BOO) une seule fois
 let _saveTimer = 0;  // 1:1 décomp sSaveDialogTimer (start_menu.c:89, u8)
+// Adaptation web : TrySavingData est async chez nous (SaveGame() → Promise<boolean>) alors
+// que le décomp est synchrone. On latch le résultat pour brancher SaveSuccess/SaveError une
+// fois résolu (le byte-VM sync ne peut pas lire un boolean d'un microtask le même tour).
+let _saveInProgress = false;
+let _saveStatusResolved = false;
+let _saveStatusOk = false;
 
 /** 1:1 décomp `SaveDoSaveCallback` (start_menu.c:1086-1109). Gated par
  *  `RunSaveCallback`'s `IsTextPrinterActive(0)` check = équivalent à
@@ -994,15 +1006,46 @@ let _saveTimer = 0;  // 1:1 décomp sSaveDialogTimer (start_menu.c:89, u8)
 function _tickSaveSavingMsg(): void {
   // Gate 1:1 RunSaveCallback : wait printer done.
   if (GetFieldMessageBoxMode() !== FIELD_MESSAGE_BOX_HIDDEN) return;
-  // TrySavingData (= notre persist).
-  void (async () => { const { SaveGame } = await import('./save'); await SaveGame(); })();
-  // ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback) :
-  const text = getText('gText_PlayerSavedGame') ?? encodeOwText(getString('gText_PlayerSavedGame'));
-  ShowFieldMessage(text);
-  // SaveStartTimer : sSaveDialogTimer = 60.
+  // 1:1 SaveDoSaveCallback : `IncrementGameStat(GAME_STAT_SAVED_GAME)` PUIS `TrySavingData`
+  // (le compteur incrémenté DOIT être écrit → avant l'écriture SRAM). Notre TrySavingData
+  // est enveloppé dans SaveGame() async → on lance une fois, on latch le boolean, puis on
+  // branche SaveSuccess/SaveError (1:1 `saveStatus == SAVE_STATUS_OK ? ... : ...`).
+  if (!_saveInProgress && !_saveStatusResolved) {
+    _saveInProgress = true;
+    void (async () => {
+      let ok = false;
+      try {
+        const { IncrementGameStat } = await import('./field_player_avatar');
+        IncrementGameStat(GAME_STAT_SAVED_GAME);
+        const { SaveGame } = await import('./save');
+        ok = await SaveGame();
+      } catch (e) {
+        console.error('[start_menu] SaveGame failed:', e);
+        ok = false;
+      }
+      _saveStatusOk = ok;
+      _saveStatusResolved = true;
+      _saveInProgress = false;
+    })();
+    return;
+  }
+  if (!_saveStatusResolved) return;  // save toujours en cours (attend le microtask)
+  // Résolu → 1:1 branche `saveStatus` + `SaveStartTimer()` (= sSaveDialogTimer = 60).
   _saveTimer = 60;
-  _saveDoneSeStarted = false;
-  sSubState = 'save_done';
+  if (_saveStatusOk) {
+    // ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback).
+    const text = getText('gText_PlayerSavedGame') ?? encodeOwText(getString('gText_PlayerSavedGame'));
+    ShowFieldMessage(text);
+    _saveDoneSeStarted = false;
+    sSubState = 'save_done';
+  } else {
+    // ShowSaveMessage(gText_SaveError, SaveErrorCallback).
+    const text = getText('gText_SaveError') ?? encodeOwText(getString('gText_SaveError'));
+    ShowFieldMessage(text);
+    _saveErrorSeStarted = false;
+    sSubState = 'save_error';
+  }
+  _saveStatusResolved = false;  // reset pour le prochain save
 }
 
 /** 1:1 décomp `SaveSuccessCallback` + `SaveReturnSuccessCallback` +
@@ -1039,6 +1082,33 @@ function _tickSaveDone(newKeys: number): void {
   _removeSaveInfoWindow();
   HideFieldMessageBox();
   _saveDoneSeStarted = false;
+  _saveTimer = 0;
+  CloseStartMenu();
+}
+
+/** 1:1 décomp `SaveErrorCallback` + `SaveReturnErrorCallback` + `SaveErrorTimer`
+ *  (start_menu.c:1136-1158, 964-976). Branche d'échec de sauvegarde : SE_BOO + attente
+ *  du timer PUIS acquittement A, puis fermeture du menu (SaveCallback :828-829 :
+ *  SAVE_SUCCESS et SAVE_ERROR ferment tous deux le menu). */
+function _tickSaveError(newKeys: number): void {
+  // Gate 1:1 RunSaveCallback : printer 0 not active = field message box mode HIDDEN.
+  if (GetFieldMessageBoxMode() !== FIELD_MESSAGE_BOX_HIDDEN) return;
+  // Étape 1 : `SaveErrorCallback` — PlaySE(SE_BOO) une fois quand printer done, puis
+  // switch callback à SaveReturnErrorCallback.
+  if (!_saveErrorSeStarted) {
+    void import('../harness/runtime/decomp-globals').then(({ PlaySE }) => PlaySE(SE_BOO));
+    _saveErrorSeStarted = true;
+    return;
+  }
+  // Étape 2 : `SaveReturnErrorCallback` — wait `SaveErrorTimer()`. 1:1 SaveErrorTimer :
+  // `if (sSaveDialogTimer != 0) sSaveDialogTimer-- ; else if (JOY_HELD(A_BUTTON)) return TRUE`.
+  // = attend l'écoulement du timer PUIS un appui A pour acquitter l'erreur.
+  if (_saveTimer !== 0) { _saveTimer--; return; }
+  if (!(newKeys & A_BUTTON)) return;
+  // → HideSaveInfoWindow + SAVE_ERROR → close start menu.
+  _removeSaveInfoWindow();
+  HideFieldMessageBox();
+  _saveErrorSeStarted = false;
   _saveTimer = 0;
   CloseStartMenu();
 }

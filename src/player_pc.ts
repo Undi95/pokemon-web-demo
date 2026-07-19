@@ -1912,6 +1912,7 @@ function _mailboxGive(): void {
  *  Notre port : retour à mailbox_list state, redraw list. */
 function _mailboxCancel(): void {
   _removeSubWindow();
+  _clearSticky();        // 1:1 décomp `ClearDialogWindowAndFrame(0, FALSE)` (player_pc.c:939).
   sMailboxSelectedIdx = -1;
   sSubState = 'mailbox_list';
   // Redraw list (= 1:1 Mailbox_DrawMailboxMenu).
@@ -2069,6 +2070,14 @@ function _tickMsgWait(newKeys: number): void {
       // Re-open item storage sub-menu (= 1:1 décomp ItemStorage_Withdraw
       // fallback : DisplayItemMessageOnField → callback `PlayerPC_ItemStorage`).
       _openItemStorage();
+    } else if (sMsgReturnState === 'mailbox_list') {
+      // 1:1 décomp `Mailbox_DoMailMoveToBag` (player_pc.c:857-874) : les 2 issues
+      // (succès `gText_MailToBagMessageErased`, sac plein `gText_BagIsFull`) =
+      // `DisplayItemMessageOnField(..., Mailbox_Cancel)`. A/B efface le message puis
+      // `Mailbox_Cancel` redessine la liste + retour `Mailbox_ProcessInput`. Sans
+      // cette branche : `_tickMsgWait` ne gérait pas 'mailbox_list' → overlay PC GELÉ
+      // (soft-lock, reload requis) dès qu'un mail était rangé au SAC.
+      _mailboxCancel();
     }
   }
 }

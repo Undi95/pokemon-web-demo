@@ -2272,13 +2272,14 @@ function DeleteTextCharacter(): void {
 
 function AddTextCharacter(): boolean {
   if (!sNamingScreen) return false;
+  // 1:1 décomp `AddTextCharacter` (naming_screen.c:1834-1849) : `BufferCharacter` est
+  // INCONDITIONNEL. L'ancienne garde `if (ch && ch !== ' ')` rendait l'ESPACE intapable
+  // dans un nom/surnom (la touche espace du clavier renvoie ' ' → jamais bufferisé).
   const cur = GetCursorPos();
   const ch = GetCharAtKeyboardPos(cur.x, cur.y);
-  if (ch && ch !== ' ') {
-    BufferCharacter(ch);
-    DrawTextEntry();
-    PlaySE(5);
-  }
+  BufferCharacter(ch);
+  DrawTextEntry();
+  PlaySE(5);
   return GetPreviousTextCaretPosition() === sNamingScreen.template.maxChars - 1;
 }
 
