@@ -936,16 +936,33 @@ export function SetBgAttribute(bg: number, attributeId: number, value: number): 
   }
 }
 
-/** = décomp `ShowBg(bg)` (bg.c:464 : flag `sGpuBgConfigs.bgVisibilityAndMode`
- *  + `SyncBgVisibilityAndMode()` = écrit DISPCNT bit BG_ON immédiat).
- *  ADAPTATION substrat : on ne pose QUE `config.visible` — le compositor lit
- *  la config à chaque frame, donc l'effet est immédiat SANS passer par le
- *  chemin registre DISPCNT (Sync* non porté). Écart doctrinal connu (audit
- *  gfx-substrat 2026-07-02) : le chemin register-encode est perdu. */
+// 1:1 décomp `sGpuBgConfigs.bgVisibilityAndMode` (bg.c:36) — on n'en modélise QUE les
+// bits 0-2 (mode vidéo stagé) ; la visibilité BG (bits 8-11) est portée par config.visible.
+// SetBgModeInternal écrit ces bits ; SyncBgVisibilityAndMode (ShowBg/HideBg) les re-pousse
+// dans DISPCNT. INDISPENSABLE car les inits de scène écrivent DISPCNT=OBJ_ON|OBJ_1D_MAP APRÈS
+// SetBgMode (efface les bits 0-2) et comptent sur ShowBg pour restaurer le mode — sans quoi
+// un BG2/BG3 affine (rayquaza scene 2/5 « takes flight »/« chases away » : Mode 1) retombe en
+// texte 4bpp (damier + fragments). Ferme l'écart « Sync* non porté » (audit gfx-substrat 2026-07-02).
+let sBgVisibilityAndMode = 0;
+
+/** 1:1 décomp `static void SyncBgVisibilityAndMode(void)` (bg.c:234) :
+ *  `SetGpuReg(DISPCNT, (GetGpuReg(DISPCNT) & ~ALL_BG_AND_MODE) | bgVisibilityAndMode)`.
+ *  Ici on ne réinjecte QUE les bits 0-2 (mode) ; les bits BG-on/OBJ/win sont déjà
+ *  round-trippés par GetGpuReg depuis les configs → préservés (RMW idempotent hors mode). */
+function SyncBgVisibilityAndMode(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(0x00 /* REG_OFFSET_DISPCNT */, (rt.GetGpuReg(0x00) & ~0x7) | (sBgVisibilityAndMode & 0x7));
+}
+
+/** = décomp `ShowBg(bg)` (bg.c:464 : `ShowBgInternal` + `SyncBgVisibilityAndMode`).
+ *  ADAPTATION substrat : `config.visible` porte la visibilité (le compositor lit la
+ *  config chaque frame) ; on ajoute Sync* pour restaurer le MODE vidéo dans DISPCNT. */
 export function ShowBg(bg: number): void {
   const rt = getRuntime();
   if (!rt) return;
   rt.gba.bg(bg as 0 | 1 | 2 | 3).config.visible = true;
+  SyncBgVisibilityAndMode();
 }
 
 /** = décomp `HideBg(bg)` (bg.c:470) — même adaptation que ShowBg. */
@@ -953,6 +970,7 @@ export function HideBg(bg: number): void {
   const rt = getRuntime();
   if (!rt) return;
   rt.gba.bg(bg as 0 | 1 | 2 | 3).config.visible = false;
+  SyncBgVisibilityAndMode();
 }
 
 // 1:1 bg.c `sGpuBgConfigs2[bg].bg_x/bg_y` : coordonnées BG persistantes en Q8.8 (s32).
@@ -1004,6 +1022,11 @@ export function ChangeBgX(bg: number, value: number, mode: number): number {
 export function ResetBgsAndClearDma3BusyFlags(_mode: number): void {
   const rt = getRuntime();
   if (!rt) return;
+  // 1:1 ResetBgs (bg.c:51-55) : `sGpuBgConfigs.bgVisibilityAndMode = 0` — remet le mode
+  // vidéo stagé à 0 à CHAQUE init d'écran (sinon un écran affine précédent [rayquaza Mode 1]
+  // laisserait le staging à 1 et le prochain ShowBg→Sync re-poserait BG2 affine sur un écran
+  // texte → overworld noir au retour de cinématique).
+  sBgVisibilityAndMode = 0;
   // 1:1 ResetBgs : les pointeurs tilemap des BG sont réinitialisés → plus
   // aucun BG « owné » par un écran (InitWindows re-blanchira librement).
   _bgScreenTilemapOwned.clear();
@@ -1468,6 +1491,10 @@ export function CopyToBgTilemapBufferRect(
 export function SetBgMode(bgMode: number): void {
   const rt = getRuntime();
   if (!rt) return;
+  // 1:1 SetBgModeInternal (bg.c:58) : stage les bits 0-2 (restaurés par ShowBg→Sync même
+  // si un SetGpuReg(DISPCNT,…) ultérieur les efface). + écriture immédiate (garde le
+  // comportement historique : effet mode sans attendre ShowBg).
+  sBgVisibilityAndMode = (sBgVisibilityAndMode & ~0x7) | (bgMode & 0x7);
   rt.SetGpuReg(0x00 /* REG_OFFSET_DISPCNT */, (rt.GetGpuReg(0x00) & ~0x7) | (bgMode & 0x7));
 }
 

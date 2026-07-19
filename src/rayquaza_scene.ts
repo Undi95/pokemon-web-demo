@@ -1306,7 +1306,10 @@ function LoadDescendsSceneGfx(): void {
   LZDecompressWram(gRaySceneDescends_Bg_Tilemap, sRayScene!.tilemapBuffers[3]);
   CpuFastFill16(0, sRayScene!.tilemapBuffers[2], BG_SCREEN_SIZE);
   CpuFastCopy(sRayScene!.tilemapBuffers[3], sRayScene!.tilemapBuffers[1], BG_SCREEN_SIZE);
-  CpuFastFill16(0, sRayScene!.tilemapBuffers[1].subarray(0x100) /* &tilemapBuffers[1][0x100] */, 0x340);
+  // &tilemapBuffers[1][0x100] : tilemapBuffers[] est u8[] côté décomp → offset 0x100 = 256 OCTETS
+  // = 128 entrées u16 (0x80) dans notre modèle Uint16Array. (`.subarray(0x100)` sautait 256 ENTRÉES
+  // = 512 octets → bg1 gardait les nuages jusqu'à la ligne 7 au lieu de 3 → Rayquaza resté caché.)
+  CpuFastFill16(0, sRayScene!.tilemapBuffers[1].subarray(0x80), 0x340);
 
   LoadCompressedPalette('gRaySceneDescends_Bg_Pal', BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);
   gPlttBufferUnfaded[0] = RGB_WHITE;
@@ -2169,14 +2172,15 @@ export async function preloadRayquazaSceneAssets(): Promise<void> {
       // ── Scene 2 : TakesFlight ──
       (async () => { gRaySceneTakesFlight_Bg_Gfx = await tiles('gRaySceneTakesFlight_Bg_Gfx', `${BASE}/scene_2/bg.png`, 4); })(),
       (async () => { gRaySceneTakesFlight_Bg_Tilemap = await tmap('gRaySceneTakesFlight_Bg_Tilemap', `${BASE}/scene_2/bg.bin`); })(),
-      // rayquaza.png scene_2 : PNG 8bpp mais BG2 TakesFlight = paletteMode 0 (4bpp, rayquaza_scene.c:790).
-      // Les index du PNG sont TOUS 0..15 (vérifié : nibble haut = 0), donc 4bpp est le bon bit-depth
-      // (32 o/tuile, aligné sur le mode BG) — l'ancien chargement 8bpp désalignait tout (garbage).
-      // DETTE NOTÉE (« fold d'index rayquaza.png ») : le tilemap scene_2/rayquaza.bin référence des
-      // tuiles jusqu'à 938 (>240 tuiles du gfx) avec des palette-banks étalées 0..14 → la vue « over
-      // the shoulder » ne compose pas proprement (blocs noirs) ; rendu partiel (fragments verts de
-      // Rayquaza). Rendu 1:1 = re-transcription du layout tuile/bank + palette-cycling (hors périmètre).
-      (async () => { gRaySceneTakesFlight_Rayquaza_Gfx = await tiles('gRaySceneTakesFlight_Rayquaza_Gfx', `${BASE}/scene_2/rayquaza.png`, 4); })(),
+      // rayquaza.png scene_2 = gfx 8bpp du BG2 AFFINE. TakesFlight lance InitBgsFromTemplates(1, …)
+      // → BG Mode 1 GBA → BG2 devient un fond affine (rotation/scaling), TOUJOURS 256 couleurs / 8bpp
+      // (rayquaza_scene.c:2010 ; décomp `.8bpp.lz -num_tiles 227`, data/graphics/rayquaza_scene.h:19).
+      // Le tilemap scene_2/rayquaza.bin est un tilemap AFFINE (1 OCTET/entrée, tileId 0-226 = les 227
+      // tuiles ; SANS flip ni palette-bank — l'ancienne lecture u16 le prenait pour un tilemap texte,
+      // d'où « tuiles jusqu'à 938 / banks 0..14 » = artefact de décodage). Chargé 4bpp, le renderer
+      // affine lisait des tuiles 8bpp (64 o) dans un gfx 2× trop petit → damier noir + fragments verts.
+      // FIX : gfx 8bpp (loadTileBin trouve rayquaza.8bpp.bin = indices IDAT bruts 0-15, 1:1 gbagfx).
+      (async () => { gRaySceneTakesFlight_Rayquaza_Gfx = await tiles('gRaySceneTakesFlight_Rayquaza_Gfx', `${BASE}/scene_2/rayquaza.png`, 8); })(),
       (async () => { gRaySceneTakesFlight_Rayquaza_Tilemap = await tmap('gRaySceneTakesFlight_Rayquaza_Tilemap', `${BASE}/scene_2/rayquaza.bin`); })(),
       palPng('gRaySceneTakesFlight_Rayquaza_Pal', `${BASE}/scene_2/rayquaza.png`),
       tiles('gRaySceneTakesFlight_Smoke_Gfx', `${BASE}/scene_2/smoke.png`, 4),

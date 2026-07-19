@@ -37,7 +37,7 @@ import {
 } from '../include/gba/io_reg';
 import {
   ShowBg, ChangeBgX, ChangeBgY, ScheduleBgCopyTilemapToVram,
-  ClearScheduledBgCopiesToVram, ResetTempTileDataBuffers,
+  ClearScheduledBgCopiesToVram, ResetTempTileDataBuffers, SetBgMode,
 } from './window';
 import { ScanlineEffect_Stop } from './scanline_effect';
 import { ResetOamRange, ResetSpriteData } from './sprite';
@@ -1122,6 +1122,11 @@ export function ResetScreenForMapLoad(): void {
  *  (FreeAllWindowBuffers) = la sémantique décomp exacte à ce point du flux. */
 export function InitOverworldBgs(): void {
   const rt = getRuntime();
+  // 1:1 décomp `InitBgsFromTemplates(0, sOverworldBgTemplates, …)` (overworld.c:1403) : le
+  // 1er arg = mode vidéo 0 → SetBgModeInternal(0). La boucle ci-dessous inline InitBgFromTemplate,
+  // mais le mode 0 était OMIS → un écran affine antérieur (rayquaza Mode 1) laissait BG2 affine
+  // au retour field (overworld noir). SetBgMode(0) restaure le mode texte, comme le décomp.
+  SetBgMode(0);
   // 1:1 sOverworldBgTemplates (overworld.c:266-304) : [bg, charBaseIndex, mapBaseIndex, priority].
   const templates: ReadonlyArray<readonly [0 | 1 | 2 | 3, number, number, number]> = [
     [0, 2, 31, 0],

@@ -276,6 +276,11 @@ function registerJeu(): void {
       run: () => String((g().dev as { debugMap?: (n: number) => string } | undefined)?.debugMap?.(3) ?? 'dev.debugMap absent'),
     },
     {
+      id: 'jeu.rayquaza', category: 'jeu', label: '🐉 Cinématique Rayquaza', ui: 'grid',
+      description: 'Joue la cinématique Rayquaza (Sootopolis) — __rayTest(1) depuis l\'overworld',
+      run: () => { (g() as { __rayTest?: (n: number) => void }).__rayTest?.(1); return 'Cinématique lancée'; },
+    },
+    {
       id: 'jeu.goto', category: 'jeu', label: '🎯 Goto map',
       description: 'TP arbitraire — __devGotoMap(map, x, y) ; la case doit être WALKABLE',
       args: [
