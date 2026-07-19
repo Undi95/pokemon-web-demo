@@ -889,6 +889,13 @@ function SpriteCB_SelectionHand(sprite: { x: number; y: number; y2: number; data
   // sprite->x = sCursorCoords[gTasks[sprite->data[0]].tStarterSelection][0];
   // sprite->y = sCursorCoords[gTasks[sprite->data[0]].tStarterSelection][1];
   const sel = task.data[T_STARTER_SELECTION];
+  // 🐛 fix 2026-07-19 : le décomp DÉTRUIT ces sprites au swap CB2 ; chez nous ils tickent
+  // jusqu'au battle-init, et le SLOT de task est alors RECYCLÉ par le combat → `isActive` est
+  // vrai mais data[] appartient à une autre task → `sel` hors bornes → `sCursorCoords[sel][0]`
+  // throw À CHAQUE FRAME dans runSpriteCallbacks → `tickFixed THREW` → LE TICK ENTIER MEURT
+  // (plus de caméra ni de mise à jour des object events : « la map ne défile plus », « les PNJ
+  // restent figés » après le tuto Birch). Sortie propre = équivalent du sprite détruit.
+  if (!(sel >= 0 && sel < sCursorCoords.length)) return;
   sprite.x = sCursorCoords[sel][0];
   sprite.y = sCursorCoords[sel][1];
   // sprite->y2 = Sin(sprite->data[1], 8);
