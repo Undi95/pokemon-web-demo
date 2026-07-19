@@ -156,8 +156,14 @@ export function findNpcByLocalId(arg: string): ObjectEvent | null {
   // faux après le combat (bug user 2026-07-19). Vaut pour tous les opcodes objet sur le joueur.
   if (arg === 'LOCALID_PLAYER' || arg === '255' || arg === '0xFF') {
     for (const npc of gObjectEvents) {
-      if (npc?.active && npc.isPlayer) return npc;
+      // Le slot joueur porte localId/localIdRaw = 'LOCALID_PLAYER' (string) ; `isPlayer`
+      // n'est pas garanti posé sur tous les chemins de spawn → triple match.
+      if (npc?.active && (npc.isPlayer
+        || String(npc.localId) === 'LOCALID_PLAYER'
+        || (npc as { localIdRaw?: string }).localIdRaw === 'LOCALID_PLAYER')) return npc;
     }
+    console.error(`[findNpcByLocalId] LOCALID_PLAYER (${arg}) : slot joueur INTROUVABLE — opcode objet joueur no-op`);
+    return null;
   }
   // 1:1 décomp : si VAR_*, lire la value (= un number qui matche localId).
   if (arg.startsWith('VAR_')) {
