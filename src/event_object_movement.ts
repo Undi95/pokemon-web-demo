@@ -8432,9 +8432,19 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime, persis
   //     seulement la part flags de SetPlayerAvatarObjectEventIdAndObjectId (ci-dessus).
   //   - CreateReflectionEffectSprites() (= reflexion sur eau pour NPCs) pas
   //     porté (notre port n'a pas le reflection sprite system).
-  for (const npc of gObjectEvents) {
-    if (!npc.active) continue;
+  // 1:1 STRICT décomp (event_object_movement.c:1720) :
+  //   for (i = 0; i < OBJECT_EVENTS_COUNT; i++) if (gObjectEvents[i].active) SpawnObjectEventOnReturnToField(i, x, y);
+  // 🐛 fix 2026-07-19 : l'ancien `for (const npc of gObjectEvents)` s'arrêtait au PREMIER slot
+  // absent (tableau sparse → `npc.active` sur undefined = TypeError) ou à la première exception
+  // d'un respawn — la boucle mourait alors en silence après le 1er NPC. Sonde ayant révélé le
+  // symptôme : un SEUL npc respawné au retour de combat (un résidu), Birch et le sac jamais
+  // traités → « Birch ne vient jamais vers moi » + sprites orphelins figés à (0,0).
+  // Le décomp ne peut pas throw : on isole donc CHAQUE npc (un échec n'empêche pas les suivants).
+  for (let _i = 0; _i < OBJECT_EVENTS_COUNT; _i++) {
+    const npc = gObjectEvents[_i];
+    if (!npc || !npc.active) continue;
     if (npc.isPlayer) continue;  // Voir DETTE ci-dessus.
+    try {
     const ok = await _respawnNpcSpriteForReturnToField(npc, rt, catalog);
     // 🔬 SONDE (2026-07-19, bug « NPC en (0,0) au retour de combat ») : tranche entre
     // « le respawn échoue en silence » et « la position est calculée puis écrasée ».
@@ -8463,6 +8473,12 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime, persis
       console.log(`[returnToField] ${npc.graphicsId} localId=${npc.localId} cur=(${npc.currentCoordsX},`
         + `${npc.currentCoordsY}) logical=(${logicalX},${logicalY}) spriteId=${npc.spriteId} `
         + `→ sprite=(${_s ? Math.round(_s.x) : 'n/a'},${_s ? Math.round(_s.y) : 'n/a'})`);
+    }
+    } catch (e) {
+      // Isolation 1:1 : dans le décomp aucun de ces appels ne peut échouer ; ici un asset
+      // manquant ne doit PAS empêcher les NPC suivants d'être respawnés (bug 2026-07-19).
+      console.error(`[returnToField] respawn de ${npc.graphicsId} (localId ${npc.localId}) a THROW —`
+        + ` les NPC suivants sont quand même traités :`, e);
     }
   }
 }
