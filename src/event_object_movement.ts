@@ -8455,12 +8455,10 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime, persis
     if (npc.isPlayer) continue;  // Voir DETTE ci-dessus.
     try {
     const ok = await _respawnNpcSpriteForReturnToField(npc, rt, catalog);
-    // 🔬 SONDE (2026-07-19, bug « NPC en (0,0) au retour de combat ») : tranche entre
-    // « le respawn échoue en silence » et « la position est calculée puis écrasée ».
-    // Retirer une fois le bug soldé.
+    // Règle 3 : un respawn qui échoue (asset absent) HURLE — sinon le NPC disparaît en silence.
     if (!ok) {
       console.error(`[returnToField] respawn ÉCHOUÉ pour ${npc.graphicsId} (localId ${npc.localId}) `
-        + `— sprite non recréé, NPC invisible ou orphelin figé`);
+        + `— sprite non recréé, NPC invisible`);
       continue;
     }
     // 1:1 STRICT décomp event_object_movement.c:1773 :
@@ -8474,15 +8472,6 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime, persis
     const logicalX = npc.currentCoordsX - MAP_OFFSET;
     const logicalY = npc.currentCoordsY - MAP_OFFSET;
     SetObjectEventSpritePosToMapCoords(npc, logicalX, logicalY);
-    // 🔬 SONDE (voir ci-dessus) : position RÉELLE du sprite juste après le calcul.
-    // x/y à 0 ici ⇒ le calcul lui-même est faux (caméra/coords) ; x/y corrects ici mais
-    // (0,0) à l'écran ⇒ quelque chose ÉCRASE la position après (tick/orphelin).
-    {
-      const _s = rt.gSprites?.[npc.spriteId];
-      console.log(`[returnToField] ${npc.graphicsId} localId=${npc.localId} cur=(${npc.currentCoordsX},`
-        + `${npc.currentCoordsY}) logical=(${logicalX},${logicalY}) spriteId=${npc.spriteId} `
-        + `→ sprite=(${_s ? Math.round(_s.x) : 'n/a'},${_s ? Math.round(_s.y) : 'n/a'})`);
-    }
     } catch (e) {
       // Isolation 1:1 : dans le décomp aucun de ces appels ne peut échouer ; ici un asset
       // manquant ne doit PAS empêcher les NPC suivants d'être respawnés (bug 2026-07-19).
