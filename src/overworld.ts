@@ -1462,58 +1462,6 @@ export function CB2_ReturnToFieldContinueScript_Manual(): void {
   rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
 }
 
-/** 1:1 décomp `void CB2_ReturnToFieldContinueScriptPlayMapMusic(void)` (overworld.c:1684) :
- *  `FieldClearVBlankHBlankCallbacks(); gFieldCallback = FieldCB_ContinueScriptHandleMusic;
- *   CB2_ReturnToField();`
- *
- *  C'est LE chemin de retour post-combat des combats SCRIPTÉS — `CB2_EndFirstBattle`
- *  (battle_setup.c:950, tuto Birch) et `HandleSpecialTrainerBattleEnd` (battle_tower.c:2003)
- *  y arrivent via `SetMainCallback2`. Contrairement à `FieldCB_ContinueScript_Manual`
- *  (ci-dessus, variante locale qui se contente du fade — le script y reprend de lui-même),
- *  `FieldCB_ContinueScriptHandleMusic` est la VRAIE fn 1:1 (field_screen_effect.ts:563) :
- *  LockPlayerFieldControls + Overworld_PlaySpecialMapMusic + FadeInFromBlack +
- *  `CreateTask(Task_WaitForFadeAndEnableScriptCtx, 10)`, laquelle fait `ScriptContext_Enable()`
- *  (+ `SignalWaitState()`, pont waitstate du port) UNE FOIS LE FADE-IN TERMINÉ.
- *
- *  🐛 C'est le maillon qui manquait au retour du 1er combat (tuto Birch, bug user
- *  2026-07-19 « pas de prof, cadre msgbox résiduel, warp à moitié ») : le retour combat
- *  court-circuitait tout `CB2_ReturnToField*` (appel direct à `_restoreOverworldFromMenu`),
- *  donc `gFieldCallback` n'était JAMAIS consulté → pas de `ScriptContext_Enable` → le
- *  waitstate devait être libéré à la main, trop tôt (pendant la restauration, field non
- *  prêt : `gObjectEvents` vide, callback1 absent) → `applymovement`/`msgbox`/`warp` du
- *  script Birch partaient dans le vide. Ici la reprise est reportée à la fin du fade-in,
- *  sous `MainCB2_Overworld` (RunTasks), donc dans un field ENTIÈREMENT restauré.
- *
- *  `FieldCB_ContinueScriptHandleMusic` est lue via pont globalThis : un import statique
- *  overworld→field_screen_effect fermerait un cycle ESM à risque TDZ (même raison que
- *  `InitCurrentFlashLevelScanlineEffect`, cf. :1241). */
-export function CB2_ReturnToFieldContinueScriptPlayMapMusic_Manual(): void {
-  const rt = getRuntime();
-  rt.SetVBlankCallback(null);
-  const fieldCB = (globalThis as Record<string, unknown>).__FieldCB_ContinueScriptHandleMusic as
-    (() => void) | undefined;
-  if (!fieldCB) {
-    console.error('[CB2_ReturnToFieldContinueScriptPlayMapMusic] pont __FieldCB_ContinueScriptHandleMusic '
-      + 'absent (field_screen_effect non évalué) — le script suspendu ne reprendra jamais');
-  }
-  (globalThis as Record<string, unknown>).gFieldCallback = fieldCB ?? null;
-  (globalThis as Record<string, unknown>).gFieldCallback2 = null;
-  gMain.state = 0;
-  rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
-}
-
-// Pont `__overworldCB2` — déjà LU par battle_tower.ts:170 (HandleSpecialTrainerBattleEnd)
-// et par le retour de combat (battle-decomp-loop) : import statique impossible sans
-// refermer un cycle sur overworld.
-(globalThis as Record<string, unknown>).__overworldCB2 = {
-  CB2_ReturnToFieldContinueScript: CB2_ReturnToFieldContinueScript_Manual,
-  CB2_ReturnToFieldContinueScriptPlayMapMusic: CB2_ReturnToFieldContinueScriptPlayMapMusic_Manual,
-  // `CB2_EndFirstBattle` (battle_setup.c:950) appelle Overworld_ClearSavedMusic() juste
-  // avant le SetMainCallback2 : même pont (battle-decomp-loop est côté combat, pas d'import
-  // statique vers overworld).
-  Overworld_ClearSavedMusic,
-};
-
 // ─── Helpers field-init (1:1 décomp overworld.c, appelés par les CB2 ci-dessous) ──
 
 /** 1:1 décomp `EWRAM_DATA static struct { u8 direction; u8 transitionFlags; }

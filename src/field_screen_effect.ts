@@ -613,7 +613,3 @@ export function getMetatileBehaviorAtPlayerPos(): number {
 // specials-registry (DoOrbEffect/FadeOutOrbEffect) via pont (idem anti-cycle).
 (globalThis as Record<string, unknown>).__DoOrbEffect = DoOrbEffect;
 (globalThis as Record<string, unknown>).__FadeOutOrbEffect = FadeOutOrbEffect;
-// overworld.ts::CB2_ReturnToFieldContinueScript[PlayMapMusic]_Manual (1:1 overworld.c:1677/1684)
-// pose `gFieldCallback` = ces deux FieldCB ; même raison anti-cycle que ci-dessus.
-(globalThis as Record<string, unknown>).__FieldCB_ContinueScriptHandleMusic = FieldCB_ContinueScriptHandleMusic;
-(globalThis as Record<string, unknown>).__FieldCB_ContinueScript = FieldCB_ContinueScript;

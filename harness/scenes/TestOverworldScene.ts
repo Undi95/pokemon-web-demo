@@ -935,21 +935,32 @@ export class TestOverworldScene extends Phaser.Scene {
         // re-init field et reprend exactement où il était. No-op si aucun
         // script en vol (option menu/sac : status SHUTDOWN).
         const _scriptSnap = ScriptContext_Snapshot();
+        // Un script byte-VM était-il SUSPENDU à travers ce détour (combat/menu) ? Sondé AVANT
+        // le wipe de loadAndInitMap (diag() post-restore mentirait).
+        const _vmDiag = ((globalThis as Record<string, unknown>).__byteVm as
+          { diag?: () => { status?: string } } | undefined)?.diag?.();
+        const _scriptWasSuspended = !!_vmDiag?.status && _vmDiag.status !== 'SHUTDOWN';
         // 1:1 STRICT décomp `ReturnToFieldLocal` (overworld.c:1961) — utilise
         // SpawnObjectEventsOnReturnToField au lieu de TrySpawnObjectEvents.
         // returnToField=true preserve gObjectEvents (= currentCoords post-
         // script comme MOM-à-chair après PetalburgGymReport).
         await self.loadAndInitMap(gMapHeader.id, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, GetPlayerFacingDirection(), false, true);
         ScriptContext_Restore(_scriptSnap);
-        // ⚠️ Ce restore ne REPREND PAS le script suspendu — et ne doit pas. 1:1 décomp, la
-        // reprise (`ScriptContext_Enable`) est le fait du `gFieldCallback` posé par
-        // `CB2_ReturnToFieldContinueScript[PlayMapMusic]` (overworld.ts), exécuté par
-        // `RunFieldCallback` APRÈS ce restore, et différé au FADE-IN TERMINÉ par
-        // `Task_WaitForFadeAndEnableScriptCtx` (field_screen_effect.ts). Un signal émis ICI
-        // (rustine 2026-07-19, retirée) libérait le waitstate trop tôt — au milieu de la
-        // restauration, avant même que `gMain.callback2` ne redevienne MainCB2_Overworld —
-        // → applymovement/msgbox/warp du tuto Birch dans un field non prêt (gObjectEvents
-        // vide, callback1 absent, warp à moitié exécuté).
+        // 1:1 décomp CB2_ReturnToFieldContinueScript[PlayMapMusic] (overworld.c) : le script
+        // suspendu ne reprend qu'au `ScriptContext_Enable` du FieldCB, une fois le field
+        // ENTIÈREMENT restauré — c'est ICI, après restore. Libère le `waitstate` sur lequel
+        // le script s'était suspendu (tuto Birch : `special ChooseStarter; waitstate` —
+        // le flow « termine » au DÉMARRAGE du combat, le waitstate attend donc ce retour).
+        // Émis SEULEMENT si un script était réellement suspendu (sinon on latcherait un
+        // signal fantôme à chaque fermeture de menu → libération à tort d'un waitstate futur).
+        // Fix du warp-à-moitié post-tuto (2026-07-19) : l'ancien latch précoce (special_flows,
+        // posé AVANT le combat) libérait le script PENDANT cette restauration → son `warp`
+        // partait dans un field non prêt (location posée, objets purgés, map jamais rechargée).
+        if (_scriptWasSuspended) {
+          const _sig = (globalThis as Record<string, unknown>).__SignalWaitState as (() => void) | undefined;
+          if (_sig) _sig();
+          else console.error('[restoreOverworldFromMenu] pont __SignalWaitState absent — script suspendu jamais repris (freeze)');
+        }
         // Clear BG0 tilemap (= mapBase 31, 2KB) après loadAndInitMap : option menu
         // CB2_InitOptionMenu state 8 fait `PutWindowTilemap(WIN_OPTIONS)` qui écrit
         // dans BG0 mapBase 31 (= bg=0, baseBlock=0x36, 26×14 tiles). Au close,
