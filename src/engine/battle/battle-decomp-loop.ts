@@ -606,6 +606,49 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     _setMainSavedCallback(() => {
       if (restored) return;
       restored = true;
+      // ── 1:1 décomp `CB2_EndFirstBattle` (battle_setup.c:950) — tuto Birch ────────────
+      //   static void CB2_EndFirstBattle(void) {
+      //       Overworld_ClearSavedMusic();
+      //       SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
+      //   }
+      // `CB2_StartFirstBattle` (battle_setup.c:938) pose ce savedCallback pour le 1er
+      // combat ; on le transcrit ici (notre savedCallback est POSÉ au boot du combat, il
+      // porte donc les DEUX variantes et branche sur gBattleTypeFlags comme le décomp
+      // branche à la pose). Le retour emprunte alors le VRAI chemin décomp —
+      // CB2_ReturnToField → ReturnToFieldLocal → RunFieldCallback →
+      // FieldCB_ContinueScriptHandleMusic → Task_WaitForFadeAndEnableScriptCtx →
+      // ScriptContext_Enable — au lieu d'appeler `_restoreOverworldFromMenu` en direct.
+      // C'est ce qui manquait : sans passage par CB2_ReturnToField*, `gFieldCallback`
+      // n'était jamais consulté → aucun ScriptContext_Enable → le script Birch suspendu
+      // (`special ChooseStarter; waitstate`) ne reprenait que via une libération manuelle
+      // du waitstate, émise PENDANT la restauration (field non prêt : gObjectEvents vide,
+      // callback1 absent) → applymovement/msgbox/warp dans le vide = « pas de prof, cadre
+      // msgbox résiduel, warp à moitié » (bug user 2026-07-19).
+      if ((gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE) !== 0) {
+        const g = globalThis as {
+          __overworldCB2?: {
+            Overworld_ClearSavedMusic?: () => void;
+            CB2_ReturnToFieldContinueScriptPlayMapMusic?: () => void;
+          };
+        };
+        // ADAPTATION MIXER (précédent : le bloc de retour wild ci-dessous, même fichier) —
+        // `_playBattleBGM` a hijacké le mixer via m4aMPlayAllStop/m4aSongNumStart sans
+        // passer par PlayNewMapMusic, donc le tracker de musique de map n'a pas bougé et
+        // `Overworld_PlaySpecialMapMusic` (appelée par FieldCB_ContinueScriptHandleMusic)
+        // no-opperait → silence au retour. On rend la BGM OW au mixer ici ; la fn 1:1
+        // la retrouvera alors déjà courante (no-op correct).
+        if (_savedOwSong) m4aSongNumStart(_savedOwSong, true);
+        // `BeginFastPaletteFade(3)` (fin de combat) laisse bufferTransferDisabled=true ;
+        // sans ce reset, le FadeInFromBlack de FieldCB_ContinueScriptHandleMusic ne
+        // transfère jamais → écran noir figé. (Même reset que le retour wild ci-dessous.)
+        const r0 = getRuntime();
+        if (r0) r0.gPaletteFade.bufferTransferDisabled = false;
+        g.__overworldCB2?.Overworld_ClearSavedMusic?.();
+        const ret = g.__overworldCB2?.CB2_ReturnToFieldContinueScriptPlayMapMusic;
+        if (ret) { ret(); return; }
+        console.error('[decomp-loop] pont __overworldCB2.CB2_ReturnToFieldContinueScriptPlayMapMusic '
+          + 'absent — retour 1er combat sur le chemin générique (script Birch non repris)');
+      }
       // 1:1 decomp CB2_EndWildBattle/CB2_EndTrainerBattle (battle_setup.c:614/1327) :
       // defaite (B_OUTCOME_LOST=2) ou nul (DREW=3) -> CB2_WhiteOut (overworld.c) ->
       // DoWhiteOut (overworld.c:358) : RunScriptImmediately(EventScript_WhiteOut) +
