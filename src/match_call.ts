@@ -2701,8 +2701,10 @@ function GetPokedexRatingLevel(numSeen: number): number {
     return 20;
 }
 
-/** 1:1 (match_call.c:2039) */
-const sBirchDexRatingTexts = Uint8Array.from([
+/** 1:1 `static const u8 *const sBirchDexRatingTexts[]` (match_call.c:2039). Table
+ *  de CLÉS de strings (getString) ; résolues en buffer GBA via encodeOwText au point
+ *  d'usage — la charmap OW n'est pas prête à l'éval du module (cf. sText_Pokenav*). */
+const sBirchDexRatingTexts: readonly string[] = [
   'gBirchDexRatingText_LessThan10',
   'gBirchDexRatingText_LessThan20',
   'gBirchDexRatingText_LessThan30',
@@ -2724,41 +2726,50 @@ const sBirchDexRatingTexts = Uint8Array.from([
   'gBirchDexRatingText_LessThan190',
   'gBirchDexRatingText_LessThan200',
   'gBirchDexRatingText_DexCompleted',
-]);
+];
 
 /** 1:1 `void BufferPokedexRatingForMatchCall(u8 *destStr)` (match_call.c:2064-2100). */
 export function BufferPokedexRatingForMatchCall(destStr: Uint8Array): void {
-  let numSeen = 0;
-  let numCaught = 0;
-  let str: any = null;
-  let dexRatingLevel = 0;
-  let buffer = ({} as any) /* TRANSPILER-TODO Alloc */;
+  let numSeen: number;
+  let numCaught: number;
+  let str: Uint8Array;
+  let dexRatingLevel: number;
+
+  // `Alloc(sizeof(gStringVar4))` : gStringVar4 = u8[0x3E8]. `new Uint8Array` ne peut
+  // pas échouer côté JS → la garde `!buffer` reste 1:1 structurel (branche morte).
+  // Les `gBirchDexRatingText_*` du décomp sont des `const u8*` (texte ROM encodé) :
+  // notre équivalent = `encodeOwText(getString(clé))` (getString = données extraites,
+  // JAMAIS de texte hardcodé ; encodeOwText → buffer GBA avec placeholders/EOS).
+  const buffer = new Uint8Array(gStringVar4.length);
   if (!buffer)
   {
     destStr[0] = EOS;
     return;
   }
+
   numSeen = GetHoennPokedexCount(FLAG_GET_SEEN);
   numCaught = GetHoennPokedexCount(FLAG_GET_CAUGHT);
   ConvertIntToDecimalStringN(gStringVar1, numSeen, STR_CONV_MODE_LEFT_ALIGN, 3);
   ConvertIntToDecimalStringN(gStringVar2, numCaught, STR_CONV_MODE_LEFT_ALIGN, 3);
   dexRatingLevel = GetPokedexRatingLevel(numCaught);
-  str = StringCopy(buffer, 'gBirchDexRatingText_AreYouCurious');
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str++) = CHAR_PROMPT_CLEAR */;
-  str = StringCopy(str, 'gBirchDexRatingText_SoYouveSeenAndCaught');
-  void 0 /* TRANSPILER-TODO ASSIGN: *(str++) = CHAR_PROMPT_CLEAR */;
-  StringCopy(str, sBirchDexRatingTexts[dexRatingLevel]);
+  str = StringCopy(buffer, encodeOwText(getString('gBirchDexRatingText_AreYouCurious')));
+  str[0] = CHAR_PROMPT_CLEAR; str = str.subarray(1);       // *(str++) = CHAR_PROMPT_CLEAR;
+  str = StringCopy(str, encodeOwText(getString('gBirchDexRatingText_SoYouveSeenAndCaught')));
+  str[0] = CHAR_PROMPT_CLEAR; str = str.subarray(1);       // *(str++) = CHAR_PROMPT_CLEAR;
+  StringCopy(str, encodeOwText(getString(sBirchDexRatingTexts[dexRatingLevel])));
   str = StringExpandPlaceholders(destStr, buffer);
+
   if (IsNationalPokedexEnabled())
   {
-    void 0 /* TRANSPILER-TODO ASSIGN: *(str++) = CHAR_PROMPT_CLEAR */;
+    str[0] = CHAR_PROMPT_CLEAR; str = str.subarray(1);     // *(str++) = CHAR_PROMPT_CLEAR;
     numSeen = GetNationalPokedexCount(FLAG_GET_SEEN);
     numCaught = GetNationalPokedexCount(FLAG_GET_CAUGHT);
     ConvertIntToDecimalStringN(gStringVar1, numSeen, STR_CONV_MODE_LEFT_ALIGN, 3);
     ConvertIntToDecimalStringN(gStringVar2, numCaught, STR_CONV_MODE_LEFT_ALIGN, 3);
-    StringExpandPlaceholders(str, 'gBirchDexRatingText_OnANationwideBasis');
+    StringExpandPlaceholders(str, encodeOwText(getString('gBirchDexRatingText_OnANationwideBasis')));
   }
-  void buffer /* Free — GC */;
+
+  void buffer; // Free(buffer) — GC
 }
 
 // Pont module → pokenav_match_call_data.ts (MatchCall_GetMessage_Birch) : évite un cycle
