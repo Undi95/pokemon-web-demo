@@ -722,6 +722,22 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     // le tick-loop voie V (l.520) no-op ; on marque la flow ChooseStarter terminee
     // (_done) : son role - drive starter + chain battle - est fini. Le combat + le retour
     // OW (CB2_EndFirstBattle -> ReturnToFieldContinueScript) sont pilotes par la chaine CB2.
+    // 1:1 décomp : au swap CB2 vers le combat, les sprites de l'écran starter cessent
+    // d'exister (ResetSpriteData au boot du combat). Notre flow reste inline → le curseur
+    // (SpriteCB_SelectionHand) continuait de ticker pendant CB2_BattleStartTransition, sur
+    // un SLOT DE TASK déjà recyclé par le combat → `sel` hors bornes → throw À CHAQUE FRAME
+    // dans runSpriteCallbacks → tickFixed mourait (plus de caméra ni d'object events), et la
+    // main restait affichée en sautant au centre. On coupe donc le callback ici, à la sortie
+    // de l'écran, comme le décomp (le sprite lui-même part avec le ResetSpriteData du combat).
+    {
+      const _rt = getRuntime();
+      for (const _s of (_rt?.gSprites ?? [])) {
+        if (_s?.inUse && _s.callback === SpriteCB_SelectionHand) {
+          _s.callback = () => { /* dummy — écran starter quitté */ };
+          _s.invisible = true;
+        }
+      }
+    }
     StartFirstBattle();
     _firstBattleStarted = true;
     _done = true;
