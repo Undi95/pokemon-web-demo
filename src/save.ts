@@ -583,6 +583,13 @@ export function LoadGameSave(): number {
       ? (blocks.pokemonStorage as PokemonStorage)
       : emptyPokemonStorage();
     sSaveFileStatus = SAVE_STATUS_OK;
+    // 1:1 décomp save.c:888 : `LoadGameSave` écrit `gSaveFileStatus = status`. Notre port a scindé
+    // le statut en sSaveFileStatus (interne) + gSaveFileStatus (global lu par main_menu/intro). On
+    // rapatrie l'écriture 1:1 ici : TOUT (re)chargement — dont celui rejoué par
+    // CB2_InitCopyrightScreenAfterBootup à CHAQUE reboot (intro.ts:2168, miroir intro.c:1154) —
+    // rafraîchit le global du menu. Sans ça, gSaveFileStatus restait figé à la valeur du 1er
+    // page-load (main.ts:167) → CONTINUER absent après une save faite en session puis SoftReset.
+    SetSaveFileStatus(SAVE_STATUS_OK);
     console.log('[save-system] loaded (sector engine, counter max slot)');
     // 1:1 RTC : offset dans gSaveBlock2.localTimeOffset (struct Time),
     // déjà restauré ci-dessus. Rafraîchir gLocalTime (rtc.c RtcCalcLocalTime).
@@ -599,6 +606,7 @@ export function LoadGameSave(): number {
   SetDecorationInventoriesPointers();
   sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = (status === SAVE_STATUS_CORRUPT) ? SAVE_STATUS_CORRUPT : SAVE_STATUS_EMPTY;
+  SetSaveFileStatus(sSaveFileStatus);   // 1:1 save.c:888 : gSaveFileStatus = status (cf. note branche OK)
   return sSaveFileStatus;
 }
 

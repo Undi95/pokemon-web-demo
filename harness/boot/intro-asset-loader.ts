@@ -245,8 +245,18 @@ export async function preloadScene1Assets(): Promise<void> {
   await loadGPrefixedExtras();
 
   // Copyright screen assets (not in GFX_SOURCES — direct from public/)
+  // gIntroCopyright_Gfx = 'png-strict-4bpp' (loadIndexedPngStrict) et NON 'png' (loadIndexedPng) :
+  // copyright.png a une PLTE 16 couleurs (idx 0-5 noir, rampe grise 6→15, BLANC en idx 15). L'extraction
+  // STRICT préserve les indices ORIGINAUX de la PLTE (texte = idx 15) et pose la palette = les 16 couleurs
+  // (idx 15 = blanc). loadIndexedPng REMAPPAIT au contraire les 5 couleurs uniques (texte = idx 2) → palette
+  // 5-couleurs incohérente avec (a) le générique qui recharge gIntroCopyright_Pal en STRICT 16-couleurs
+  // (intro-asset-loader.ts ~:795, `palfromgfx`) ⇒ au reboot post-FIN la palette 16-couleurs persistait sur
+  // un gfx remappé (idx 2) → texte NOIR ; (b) l'écran « THE END » (credits.c LoadTheEndScreen) qui partage
+  // gIntroCopyright_Pal avec un gfx (the_end_copyright.4bpp) aux indices 9/13/15 = hors des 5-couleurs.
+  // STRICT rend les deux chargeurs IDENTIQUES (16-couleurs, idx 15 = blanc) → copyright blanc au boot ET au
+  // reboot, THE END correct. 1:1 décomp : gIntroCopyright_Pal = INCGFX(copyright.png, ".gbapal") = la PLTE.
   const copyrightAssets: Array<{ symbol: string; url: string; type: 'png' | 'png-strict-4bpp' | 'tilemap' | 'pal' }> = [
-    { symbol: 'gIntroCopyright_Gfx', url: '/decomp/em/intro/copyright.png', type: 'png' },
+    { symbol: 'gIntroCopyright_Gfx', url: '/decomp/em/intro/copyright.png', type: 'png-strict-4bpp' },
     { symbol: 'gIntroCopyright_Tilemap', url: '/decomp/em/intro/copyright.bin', type: 'tilemap' },
   ];
   await Promise.all(copyrightAssets.map(async ({ symbol, url, type }) => {
@@ -792,6 +802,10 @@ export async function preloadCreditsAssets(): Promise<void> {
     { symbol: 'sCredits_Pal', url: '/decomp/em/credits/credits.pal', type: 'pal' },
     // gIntroCopyright_Pal : normalement préchargée par preloadScene1Assets (copyright screen) ;
     // rechargée ici (idempotent) pour un lancement credits À FROID (sans passer par l'intro).
+    // `palfromgfx` = loadIndexedPngStrict(copyright.png,4).palette = les 16 couleurs de la PLTE
+    // (idx 15 = blanc), DÉSORMAIS COHÉRENT avec preloadScene1Assets qui charge gIntroCopyright_Gfx
+    // en `png-strict-4bpp` (mêmes indices ORIGINAUX) → plus de divergence 5-couleurs↔16-couleurs
+    // (bug copyright NOIR au reboot). Sert aussi l'écran THE END (LoadTheEndScreen partage ce symbole).
     { symbol: 'gIntroCopyright_Pal', url: '/decomp/em/intro/copyright.png', type: 'palfromgfx' },
   ];
 

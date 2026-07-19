@@ -519,6 +519,12 @@ export function CB2_StartCreditsSequence(): void {
     unused: new Uint16Array(7),
   } as any;
   DeterminePokemonToShow();
+  // Dette tracée (rapport AUDIT-GENERIQUE) : le décomp lit les pics du défilé depuis la ROM en
+  // SYNCHRONE ; notre port les fetch async. Sans préchargement, CreateCreditsMonSprite SKIPPE les
+  // mons pas encore en cache (garde ~:1586). On précharge ici — dès le début du générique, juste
+  // après que DeterminePokemonToShow a rempli monToShow[] — TOUS les substrats mon-pic du défilé
+  // (pattern preload HOF, hall_of_fame.ts:1153). Le skip hurlant reste le FILET pour tout retardataire.
+  _preloadCreditsMonSubstrates();
   sCreditsData!.imgCounter = 0;
   sCreditsData!.nextImgPos = POS_LEFT;
   sCreditsData!.currShownMon = 0;
@@ -1588,7 +1594,18 @@ function CreateCreditsMonSprite(nationalDexNum: number, x: number, y: number, po
     console.error(`[credits] défilé : substrat mon-pic absent pour dex #${nationalDexNum} — mon SKIPPÉ`);
     return 0xFFFF;
   }
-  gSprites[monSpriteId].priority = 1;
+  // 1:1 credits.c:1473 : gSprites[monSpriteId].oam.priority = 1 — écrit l'OAM RÉEL (lu par le
+  // compositeur), PAS seulement le champ plat. syncSpritesToOam NE propage PAS .priority (figé au
+  // CREATE, cf. CreateMovingScenerySprites credits.ts:1868) : la mon-pic est créée par
+  // CreateMonPicSprite avec OAM priority 0 → sans cette écriture elle compose AU-DESSUS de son carré
+  // (mon-bg, OAM priority 1) et l'alpha-blend OBJ saute au fondu (BLDCNT_TGT2 = BG only) → mon opaque
+  // pendant ~16 frames après disparition du carré. Sur GBA les deux sont priorité 1 (même couche OBJ)
+  // → fusionnés, le mon blende avec le BG grass (TGT2). Route vers l'OAM comme naming_screen.ts:1786.
+  gSprites[monSpriteId].priority = 1;   // champ plat (cohérence DecompSprite, inerte au rendu)
+  {
+    const _monOam = getRuntime()?.gba.oam[gSprites[monSpriteId].oamIndex];
+    if (_monOam) _monOam.priority = 1;
+  }
   gSprites[monSpriteId].data[1] /* sPosition */ = position + 1;
   gSprites[monSpriteId].invisible = true;
   gSprites[monSpriteId].callback = SpriteCB_CreditsMon;
@@ -1715,6 +1732,57 @@ function DeterminePokemonToShow(): void {
     }
   }
   sCreditsData!.numMonToShow = NUM_MON_SLIDES;
+}
+
+/** Préchargement async des substrats mon-pic du défilé (dette tracée, cf. rapport AUDIT-GENERIQUE).
+ *  Le décomp lit chaque pic depuis la ROM en synchrone (CreateMonSpriteFromNationalDexNumber →
+ *  DecompressPic) ; notre port fetch les substrats de façon ASYNC. On précharge donc TOUS les mons de
+ *  sCreditsData.monToShow[] (rempli par DeterminePokemonToShow) dès le début du générique, dans l'ORDRE
+ *  d'affichage (les premiers montrés chargent en premier). Même loader que le préchargement HOF
+ *  (hall_of_fame.ts:1171 : anim_front multi-frame, fallback front). Dédup par enumName (monToShow
+ *  reboucle les mons quand < NUM_MON_SLIDES espèces capturées). Imports DYNAMIQUES (pas de nouvelle arête
+ *  statique dans le graphe credits → anti-bombe TDZ). Tout asset absent HURLE (console.error) sans figer :
+ *  CreateCreditsMonSprite skippera gracieusement le mon si son substrat n'a pas fini de charger. */
+function _preloadCreditsMonSubstrates(): void {
+  const toShow = sCreditsData?.monToShow;
+  if (!toShow) return;
+  void (async () => {
+    try {
+      const [tps, pokemonMod, constMod, pngLoader] = await Promise.all([
+        import('./trainer_pokemon_sprites'),
+        import('./pokemon'),
+        import('../harness/runtime/decomp-constants'),
+        import('../harness/gba/png-loader'),
+      ]);
+      const { _registerMonPicSubstrate } = tps;
+      const { NationalPokedexNumToSpecies } = pokemonMod;
+      const { reverseDecompConstant } = constMod;
+      const { loadTileBin, loadIndexedPngStrict, loadGbaPal } = pngLoader;
+      const done = new Set<string>();
+      for (let i = 0; i < toShow.length; i++) {
+        const dexNum = toShow[i];
+        if (!dexNum) continue;   // NATIONAL_DEX_NONE / slot vide
+        const species = NationalPokedexNumToSpecies(dexNum);
+        const key = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+        if (key === 'SPECIES_NONE' || done.has(key)) continue;
+        done.add(key);
+        const folder = key.replace('SPECIES_', '').toLowerCase();
+        try {
+          // 1:1 pattern HOF : anim_front (64×128, 2 frames) fallback front.png (1 frame) + normal.pal.
+          const [frontTiles, pal] = await Promise.all([
+            loadTileBin(`/decomp/em/pokemon/${folder}/anim_front.png`, 4)
+              .catch(() => loadIndexedPngStrict(`/decomp/em/pokemon/${folder}/front.png`, 4).then((r) => r.charData)),
+            loadGbaPal(`/decomp/em/pokemon/${folder}/normal.pal`),
+          ]);
+          _registerMonPicSubstrate(key, frontTiles, pal.subarray(0, 16));
+        } catch (e) {
+          console.error('[credits] défilé : substrat mon-pic KO (préchargement)', key, e);
+        }
+      }
+    } catch (e) {
+      console.error('[credits] _preloadCreditsMonSubstrates', e);
+    }
+  })();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
