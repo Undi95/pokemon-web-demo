@@ -757,6 +757,25 @@ function Task_CreditsSoftReset(taskId: number): void {
   if (!gPaletteFade.active) {
     if (_softResetToTitleStarted) return;
     _softResetToTitleStarted = true;
+
+    // ── Nettoyage 1:1 du reboot que DoSoftReset(RESET_ALL) fournissait ──────────────
+    // Le vrai SoftReset REBOOTE la GBA : RegisterRamReset zéroie TOUTE la VRAM/OAM/palette RAM
+    // (backdrop color 0 INCLUS) AVANT que copyright→intro→titre ne redémarrent. Notre retour-titre
+    // web ne reboote pas → sans ce clear, l'état résiduel du générique fuit dans l'écran-titre PUIS
+    // le menu principal (bug user : tilemap « FIN » en VRAM, palettes du générique, et surtout la
+    // couleur de fond = backdrop palette 0 index 0 → FOND VIOLET). ResetGpuAndVram (déjà utilisé pour
+    // les transitions de scène du générique) éteint DISPCNT + clear VRAM/OAM/PLTT — mais il skippe
+    // PLTT[0] (`PLTT + 2`, convention décomp) ; on zéroie donc le backdrop en plus. Puis on remet
+    // l'état moteur (fade/sprites/palettes OBJ/fenêtres/BG) à ce qu'un boot propre fournit à
+    // CB2_InitTitleScreen. Cf. mémoire hardware-non-1to1-exemptions (SoftReset = exemption).
+    ResetGpuAndVram();
+    DmaFill16(3, 0, PLTT, 2);            // backdrop color 0 (le reboot le zéroait ; sinon fond violet résiduel)
+    ResetPaletteFade();
+    ResetSpriteData();
+    FreeAllSpritePalettes();
+    FreeAllWindowBuffers();
+    ResetBgsAndClearDma3BusyFlags(0);
+
     SoftReset(RESET_ALL);   // 1:1 conservé : LOG l'exemption matérielle (reset BIOS no-op web).
     // ADAPTATION DOCUMENTÉE : SoftReset(RESET_ALL) 1:1 = reboot BIOS → le jeu se réamorce
     // (copyright → intro → titre). Non reproductible sur web → on retourne à l'écran-titre
@@ -984,16 +1003,20 @@ function Task_ShowMons(taskId: number): void {
       if (sCreditsData!.imgCounter == NUM_MON_SLIDES || gTasks[gTasks[taskId].data[1] /* tMainTaskId */].func != Task_CreditsMain)
         break;
       spriteId = CreateCreditsMonSprite(sCreditsData!.monToShow[sCreditsData!.currShownMon], sMonSpritePos[sCreditsData!.nextImgPos][0], sMonSpritePos[sCreditsData!.nextImgPos][1], sCreditsData!.nextImgPos);
+      // Garde `spriteId` valide (CreateCreditsMonSprite rend 0xFFFF si substrat mon-pic absent —
+      // cf. skip gracieux ci-dessus) : sinon `gSprites[0xFFFF].data[3]` throw → gel. NO-OP nominal.
       if (sCreditsData!.currShownMon < sCreditsData!.numMonToShow - 1)
       {
         sCreditsData!.currShownMon++;
-        gSprites[spriteId].data[3] = 52;
+        if (spriteId !== 0xFFFF && gSprites[spriteId])
+          gSprites[spriteId].data[3] = 52;
         //!< French Difference
       }
       else
       {
         sCreditsData!.currShownMon = 0;
-        gSprites[spriteId].data[3] = 512;
+        if (spriteId !== 0xFFFF && gSprites[spriteId])
+          gSprites[spriteId].data[3] = 512;
       }
       sCreditsData!.imgCounter++;
       if (sCreditsData!.nextImgPos == POS_RIGHT)
@@ -1556,13 +1579,47 @@ function CreateCreditsMonSprite(nationalDexNum: number, x: number, y: number, po
   let monSpriteId = 0;
   let bgSpriteId = 0;
   monSpriteId = CreateMonSpriteFromNationalDexNumber(nationalDexNum, x, y, position);
+  // ROBUSTESSE (adaptation async, cf. [[hardware-non-1to1-exemptions]]) : le décomp lit la pic
+  // depuis la ROM (jamais absente) ; notre port charge les substrats mon-pic de façon ASYNC. Si
+  // l'espèce tirée par DeterminePokemonToShow n'a pas (encore) son substrat en cache,
+  // CreateMonSpriteFromNationalDexNumber rend SPRITE_NONE (0xFFFF) → `gSprites[0xFFFF]` undefined
+  // → throw à chaque frame → Task_ShowMons GÈLE (le générique n'atteint jamais « FIN »). On skippe
+  // gracieusement le mon manquant (le défilé continue) au lieu de figer. NO-OP quand les substrats
+  // sont en cache (cas nominal). Dette à solder : précharger les substrats du défilé (cf. rapport).
+  if (monSpriteId === 0xFFFF || !gSprites[monSpriteId]) {
+    // Règle 3 : un asset attendu qui manque HURLE (skip diagnostiquable, pas silencieux).
+    console.error(`[credits] défilé : substrat mon-pic absent pour dex #${nationalDexNum} — mon SKIPPÉ`);
+    return 0xFFFF;
+  }
   gSprites[monSpriteId].priority = 1;
   gSprites[monSpriteId].data[1] /* sPosition */ = position + 1;
   gSprites[monSpriteId].invisible = true;
   gSprites[monSpriteId].callback = SpriteCB_CreditsMon;
   gSprites[monSpriteId].data[6] /* sSpriteId */ = monSpriteId;
+  // ── FIX « spawn taille normale 1 frame avant le zoom » (bug user, tracé matrice) ────────────
+  // Le mon (et son carré mon-bg) sont pilotés à 100 % par SpriteCB_CreditsMon via SetOamMatrix
+  // (data[2]: 16→256 = petit→grand). MAIS deux affine-anims parasites réécrivent la matrice
+  // partagée `sPosition` À L'IDENTITÉ (= 0x100 = taille NORMALE) sur la frame de spawn, APRÈS le
+  // callback (tickAllAffineAnims tourne après runSpriteCallbacks) :
+  //   1. le MON : CreateMonPicSprite (MON_PIC_AFFINE_FRONT) attache gAffineAnims_BattleSpriteOpponentSide[0]
+  //      = sAffineAnim_Battler_Normal = FRAME(0x100,0x100,0,0) = identité (1:1 décomp sprite.c:1077).
+  //   2. le MON-BG : sSpriteTemplate_CreditsMonBg.affineAnims = gDummySpriteAffineAnimTable. Le carré
+  //      copie affineMode=1 + matrixNum=sPosition du mon (SpriteCB_CreditsMonBg) puis, la 1re frame où
+  //      son affineMode passe ON, tickAllAffineAnims applique la frame dummy = identité sur CETTE MÊME
+  //      matrice partagée. ⚠️ Divergence moteur : le décomp SKIPPE les anims dont la 1re cmd = END
+  //      (BeginAffineAnim `affineAnims[0][0].type != 32767`) → le dummy ne touche PAS la matrice là-bas ;
+  //      notre moteur applique la frame identité → stomp SUPPLÉMENTAIRE absent du décomp.
+  // Résultat : matrice sPosition = 0x100 (plein écran) 1 frame → le mon ET son carré 64×64 flashent
+  // taille normale avant de rétrécir. Sur GBA le ghosting LCD masque la frame ; notre rendu net la montre.
+  // Fix (adaptation affichage, cf. [[hardware-non-1to1-exemptions]] : ghosting LCD non reproduit) :
+  // on marque les DEUX affine-anims TERMINÉES → tickAllAffineAnims ne réécrit jamais la matrice ; elle
+  // reste celle posée par SpriteCB_CreditsMon (petit dès la 1re frame). Le zoom-in reste 100 % 1:1.
+  gSprites[monSpriteId].affineAnimBeginning = false;
+  gSprites[monSpriteId].affineAnimEnded = true;
   bgSpriteId = CreateSprite(sSpriteTemplate_CreditsMonBg, gSprites[monSpriteId].x, gSprites[monSpriteId].y, 1);
   gSprites[bgSpriteId].data[0] /* sMonSpriteId */ = monSpriteId;
+  gSprites[bgSpriteId].affineAnimBeginning = false;
+  gSprites[bgSpriteId].affineAnimEnded = true;
   StartSpriteAnimIfDifferent(gSprites[bgSpriteId], position);
   return monSpriteId;
 }

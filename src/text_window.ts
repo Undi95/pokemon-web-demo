@@ -33,7 +33,7 @@
  */
 
 import { assetCache, getAsset, getRuntime, LoadBgTiles } from '../harness/runtime/decomp-globals';
-import { loadIndexedPngStrict } from '../harness/gba/png-loader';
+import { loadIndexedPngStrict, loadGbaPal } from '../harness/gba/png-loader';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import {
   FillBgTilemapBufferRect, GetWindowAttribute,
@@ -282,7 +282,30 @@ export async function preloadTextWindowFrames(): Promise<void> {
   }
 
   await Promise.all(tasks);
-  console.log(`[text_window] preload done (${WINDOW_FRAMES_COUNT} frames + message_box cached)`);
+
+  // 1:1 décomp text_window.c:51-58 `sTextWindowPalettes[][16]` — 5 palettes 16 couleurs
+  // consommées par GetTextWindowPalette(id) (id 0..4). Sans ce préchargement, GetTextWindowPalette
+  // renvoie null → les callers (hall_of_fame.c:704 fenêtre info-dresseur, battle_records, PC-storage
+  // MultiMove, naming_screen) skippent le LoadPalette → palette BG cible NOIRE (fenêtre au fond noir).
+  //   [0] = message_box.png (= gMessageBox_Pal déjà chargé) · [1..4] = text_palN.pal.
+  // Concaténé en un seul Uint16Array de 80 entrées (GetTextWindowPalette lit .subarray(id*16, +16)).
+  if (!assetCache.has('sTextWindowPalettes')) {
+    const combined = new Uint16Array(5 * 16);
+    const mb = assetCache.get('gMessageBox_Pal') as Uint16Array | undefined;
+    if (mb) combined.set(mb.subarray(0, 16), 0);
+    else console.warn('[text_window] gMessageBox_Pal absent — sTextWindowPalettes[0] laissé noir');
+    await Promise.all([1, 2, 3, 4].map(async (n) => {
+      try {
+        const pal = await loadGbaPal(`/decomp/em/ui/text_window/text_pal${n}.pal`);
+        combined.set(pal.subarray(0, 16), n * 16);
+      } catch (e) {
+        console.warn(`[text_window] text_pal${n}.pal load failed:`, e);
+      }
+    }));
+    assetCache.set('sTextWindowPalettes', combined);
+  }
+
+  console.log(`[text_window] preload done (${WINDOW_FRAMES_COUNT} frames + message_box + sTextWindowPalettes cached)`);
 }
 
 // Expose pour les auto-files qui résolvent via globalThis scope.

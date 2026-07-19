@@ -1119,6 +1119,15 @@ export async function preloadHallOfFameAssets(): Promise<void> {
       }
     })().catch((e) => console.error('[hall_of_fame] preload japanese_hof', e));
 
+    // ── Frames de fenêtre + sTextWindowPalettes (fenêtre info-dresseur, c:703-704) ──
+    // Task_Hof_DisplayPlayer charge le cadre (LoadWindowGfx) + LoadPalette(GetTextWindowPalette(1)).
+    // GetTextWindowPalette lit l'asset 'sTextWindowPalettes' (bâti par preloadTextWindowFrames) : sans
+    // lui, la palette BG 14 (intérieur de la fenêtre) reste NOIRE. Idempotent (skip si déjà en cache).
+    const twP = (async () => {
+      const { preloadTextWindowFrames } = await import('./text_window');
+      await preloadTextWindowFrames();
+    })().catch((e) => console.error('[hall_of_fame] preload text window frames', e));
+
     // ── Confetti (misc/confetti.png : 17 tuiles 4bpp + palette) ──
     const confettiP = (async () => {
       if (!assetCache.has('gConfetti_Gfx')) assetCache.set('gConfetti_Gfx', await loadTileBin('/decomp/em/misc/confetti.png', 4));
@@ -1184,7 +1193,7 @@ export async function preloadHallOfFameAssets(): Promise<void> {
       await loader.preloadCreditsAssets();
     })().catch((e) => console.error('[hall_of_fame] preload credits', e));
 
-    await Promise.all([hofGfxP, confettiP, monP, playerP, creditsP]);
+    await Promise.all([hofGfxP, confettiP, monP, playerP, creditsP, twP]);
   } catch (e) {
     console.error('[hall_of_fame] preloadHallOfFameAssets', e);
   } finally {
