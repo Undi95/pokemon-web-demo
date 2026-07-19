@@ -21,9 +21,6 @@ import { FlagGet, FlagSet, VarGet } from './event_data';
 import { GetTrainerClassNameGenderSpecific } from './international_string_util';
 import { StringExpandPlaceholders } from './string_util';
 
-// ═══ wire-transpiled (auto) : imports résolus par l'index + sentinelles ═══
-import { __wireTodo } from './engine/wire-todo';
-
 // ─── WIRE-TODO : symboles transpilés SANS foyer dans le repo (throw à l'appel) ───
 // 1:1 pokenav.h:229 `#define MCFLAVOR(name)` = check-page flavor texts, array indexé
 // CHECK_PAGE_{STRATEGY,POKEMON,INTRO_1,INTRO_2} (enum pokenav.h:221, ordre 0..3). Le token
@@ -47,8 +44,20 @@ export const gMatchCallFlavorTexts: (Uint8Array[] | null)[] = _FLAVOR_NAMES.map(
 // 1:1 : dans le décomp, MCFLAVOR(Brendan)/(May) passent le TOKEN nom (concat `##`) → ici la string.
 const Brendan = 'Brendan';
 const May = 'May';
-// Runtime-only (pas top-level) → laissés en stub, à câbler au parcours d'exécution.
-const BufferPokedexRatingForMatchCall: any = __wireTodo('BufferPokedexRatingForMatchCall');
+// 1:1 `BufferPokedexRatingForMatchCall` vit dans match_call.ts:2730 (match_call.c:2064),
+// appelé runtime-only par MatchCall_GetMessage_Birch. Import statique INTERDIT : match_call.ts
+// importe déjà `gTrainers` d'ici (arête match_call→pokenav_match_call_data, cf
+// find-import-cycle.cjs) → un import inverse fermerait un CYCLE (bombe TDZ). Pont globalThis
+// SYNCHRONE — même précédent que `__gTrainers` ci-dessous ; match_call.ts s'auto-enregistre à
+// l'éval de son module (garanti avant ce chemin via new_game.ts / pokenav_match_call_list.ts).
+function BufferPokedexRatingForMatchCall(dest: Uint8Array): void {
+  const fn = (globalThis as any).__BufferPokedexRatingForMatchCall as ((d: Uint8Array) => void) | undefined;
+  if (typeof fn !== 'function') {
+    console.error('[match_call bridge] BufferPokedexRatingForMatchCall non enregistrée (match_call.ts non évalué ?)');
+    return;
+  }
+  fn(dest);
+}
 /** Adaptateur `gTrainers[i]` → table JSON du bridge combat (`globalThis.__gTrainers`,
  *  peuplée par ensureGTrainersLoaded() — gate au case 0 de LoopedTask_OpenMatchCall).
  *  Le bridge stocke `trainerName` en charCodes ASCII SANS EOS (il sert au nameHash

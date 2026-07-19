@@ -104,7 +104,17 @@ export let sRotatingTilePuzzle: RotatingTilePuzzle | null = null;
 /** 1:1 `void InitRotatingTilePuzzle(bool8 isTrickHouse)` (rotating_tile_puzzle.c:89-95). */
 export function InitRotatingTilePuzzle(isTrickHouse: boolean): void {
   if (sRotatingTilePuzzle == null)
-    sRotatingTilePuzzle = ({} as any) /* TRANSPILER-TODO AllocZeroed */;
+    // 1:1 `AllocZeroed(sizeof(*sRotatingTilePuzzle))` (rotating_tile_puzzle.c:92) — struct
+    // ZÉRO-remplie : objects[OBJECT_EVENTS_COUNT] de RotatingTileObject {prevPuzzleTileNum=0,
+    // eventTemplateId=0}, numObjects=0, isTrickHouse=FALSE. Le tableau DOIT être pré-alloué :
+    // SaveRotatingTileObject écrit `objects[numObjects].eventTemplateId=…` → sans ça
+    // `undefined.eventTemplateId` = TypeError au 1er interrupteur. Idiome AllocZeroed
+    // struct-à-tableau-fixe : cf event_object_movement.ts:850 (gObjectEvents, même OBJECT_EVENTS_COUNT).
+    sRotatingTilePuzzle = {
+      objects: Array.from({ length: OBJECT_EVENTS_COUNT }, () => ({ prevPuzzleTileNum: 0, eventTemplateId: 0 })),
+      numObjects: 0,
+      isTrickHouse: false,
+    };
   sRotatingTilePuzzle!.isTrickHouse = isTrickHouse;
 }
 

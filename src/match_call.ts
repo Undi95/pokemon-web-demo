@@ -2761,6 +2761,12 @@ export function BufferPokedexRatingForMatchCall(destStr: Uint8Array): void {
   void buffer /* Free — GC */;
 }
 
+// Pont module → pokenav_match_call_data.ts (MatchCall_GetMessage_Birch) : évite un cycle
+// d'import statique — match_call.ts importe déjà `gTrainers` de là-bas. Enregistré à l'éval du
+// module, garanti avant l'usage (chaîne de boot new_game.ts + flux Pokénav match_call_list/gfx).
+// Miroir du pont __gTrainers côté pokenav_match_call_data.ts.
+(globalThis as any).__BufferPokedexRatingForMatchCall = BufferPokedexRatingForMatchCall;
+
 /** 1:1 `void LoadMatchCallWindowGfx(u32 windowId, u32 destOffset, u32 paletteId)` (match_call.c:2102-2107). */
 export function LoadMatchCallWindowGfx(windowId: number, destOffset: number, paletteId: number): void {
   let bg = GetWindowAttribute(windowId, WINDOW_BG);
