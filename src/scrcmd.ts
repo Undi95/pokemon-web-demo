@@ -155,9 +155,15 @@ export function findNpcByLocalId(arg: string): ObjectEvent | null {
   // était un NO-OP → le joueur n'était jamais téléporté avant le combat → respawn et cadrage
   // faux après le combat (bug user 2026-07-19). Vaut pour tous les opcodes objet sur le joueur.
   if (arg === 'LOCALID_PLAYER' || arg === '255' || arg === '0xFF') {
+    // 1:1 décomp GetObjectEventIdByLocalIdAndMap(OBJ_EVENT_ID_PLAYER) →
+    // gPlayerAvatar.objectEventId = LA référence canonique du slot joueur COURANT.
+    // ⚠️ Un scan « premier npc qui ressemble au joueur » écrivait sur un slot FANTÔME
+    // (résidu d'un ancien spawn) : le log montrait « PLAYER x=6 y=13 écrit » mais le
+    // joueur RENDU restait à (5,12) — tuto Birch 2026-07-19. Canonique d'abord, scan en filet.
+    const av = (globalThis as Record<string, unknown>).gPlayerAvatar as { objectEventId?: number } | undefined;
+    const canonical = av && typeof av.objectEventId === 'number' ? gObjectEvents[av.objectEventId] : undefined;
+    if (canonical?.active) return canonical;
     for (const npc of gObjectEvents) {
-      // Le slot joueur porte localId/localIdRaw = 'LOCALID_PLAYER' (string) ; `isPlayer`
-      // n'est pas garanti posé sur tous les chemins de spawn → triple match.
       if (npc?.active && (npc.isPlayer
         || String(npc.localId) === 'LOCALID_PLAYER'
         || (npc as { localIdRaw?: string }).localIdRaw === 'LOCALID_PLAYER')) return npc;
