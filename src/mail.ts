@@ -522,7 +522,11 @@ export function ReadMail(mail: Mail, exitCallback: MainCallback, hasText: boolea
     hasText = false;
   }
 
-  switch (sMailRead.international as unknown as number) {
+  // 🐛 fix 2026-07-19 : `international` est un booléen JS ; `true as unknown as number`
+  // ne coerce PAS à l'exécution (`true === 1` faux) → tombait en `default`/case 0 =
+  // sMailLayouts_Wide (JP, 3 lignes). Le décomp (mail.c:464, bool8 0/1) prend `case TRUE`
+  // = sMailLayouts_Tall. `? 1 : 0` reproduit le bool8 décomp.
+  switch (sMailRead.international ? 1 : 0) {
     case 0: // FALSE
     default:
       // Never reached. JP only?

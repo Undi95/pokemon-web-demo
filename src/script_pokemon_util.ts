@@ -136,6 +136,23 @@ export function ScriptGiveEgg(speciesEnum: string): number {
   return GiveMonToPlayer(mon);
 }
 
+// ─── Ponts globalThis pour les opcodes byte-VM givemon/giveegg (anti-cycle ESM) ──
+// scrcmd.ts NE PEUT PAS importer statiquement ce module (cycle
+// scrcmd→script_pokemon_util→pokemon→…→scrcmd) — d'où l'ancien `import()` dynamique.
+// Mais le décomp (scrcmd.c:1692/1698) est SYNCHRONE : `gSpecialVar_Result = ScriptGive*();
+// return FALSE;` → le `goto_if_eq VAR_RESULT` de l'opcode suivant DOIT lire la valeur DÉJÀ
+// posée. L'`import()` async posait VAR_RESULT dans un microtask APRÈS le branchement sync
+// (course perdue → « envoyé au PC » vs équipe aléatoire). On expose un pont synchrone : ce
+// module est chargé au boot (import statique depuis overworld.ts:67) donc les ponts sont en
+// place bien avant tout givemon interactif (fossiles, Métalosse, œuf Wynaut…).
+// Précédent : ponts __AnimateFlash / __IsAnimateFlashActive (scrcmd.ts:752-754).
+{
+  const g = globalThis as Record<string, unknown>;
+  g.__ScriptGiveMon = (speciesEnum: string, level: number, heldItem?: string): number =>
+    ScriptGiveMon(speciesEnum, level, heldItem);
+  g.__ScriptGiveEgg = (speciesEnum: string): number => ScriptGiveEgg(speciesEnum);
+}
+
 /** 1:1 décomp `ScriptSetMonMoveSlot(u8 monIndex, u16 move, u8 slot)`
  *  (script_pokemon_util.c:151-162) :
  *  ```c

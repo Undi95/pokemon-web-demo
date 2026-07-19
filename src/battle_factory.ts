@@ -1048,7 +1048,12 @@ export function FillFactoryBrainParty(): void {
   fixedIV = GetFactoryMonFixedIV(challengeNum + 2, false);
   monLevel = SetFacilityPtrsGetLevel();
   i = 0;
-  otId = T1_READ_32(gSaveBlock2Ptr.playerTrainerId);
+  // 1:1 battle_factory.c:775 `otId = T1_READ_32(gSaveBlock2Ptr->playerTrainerId)`.
+  // 🐛 fix 2026-07-19 (SYS-1, cf. N°ID Panthéon 8dee92c28) : SB2.playerTrainerId est un u32
+  // number (PAS un u8[4]) → T1_READ_32 (lecture d'octets LE) rendait 0. Le u32 EST la valeur ;
+  // fallback T1_READ_32 pour un save legacy en tableau.
+  const _tid = gSaveBlock2Ptr.playerTrainerId as unknown as number | number[];
+  otId = (typeof _tid === 'number' ? _tid : T1_READ_32(_tid)) >>> 0;
   while (i != FRONTIER_PARTY_SIZE)
   {
     let monId = GetFactoryMonId(lvlMode, challengeNum, false);

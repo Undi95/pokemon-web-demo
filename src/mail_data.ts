@@ -194,9 +194,16 @@ export function GiveMailToMonByItemId(mon: Pokemon, itemId: number): number {
       PadNameString(nameBuf, CHAR_SPACE);
       slot.playerName = Array.from(nameBuf.subarray(0, StringLength(nameBuf) + 1));
 
-      const playerTrainerId = (gSaveBlock2Ptr as any).playerTrainerId as number[] | undefined;
+      // 1:1 mail_data.c:67-68 `mail->trainerId[i] = gSaveBlock2Ptr->playerTrainerId[i]`.
+      // 🐛 fix 2026-07-19 (SYS-1, cf. N°ID Panthéon 8dee92c28) : SB2.playerTrainerId est
+      // un u32 number, PAS un u8[4] → l'ancien `playerTrainerId[i]` rendait undefined⇒0.
+      // Octet i (LE) = (u32 >>> 8*i) & 0xFF. Fallback array = défensif (save legacy).
+      const tid = (gSaveBlock2Ptr as any).playerTrainerId as number | number[] | undefined;
+      const tidU32 = (typeof tid === 'number' ? tid
+        : Array.isArray(tid) ? ((tid[0] ?? 0) | ((tid[1] ?? 0) << 8) | ((tid[2] ?? 0) << 16) | ((tid[3] ?? 0) << 24))
+        : 0) >>> 0;
       for (let i = 0; i < TRAINER_ID_LENGTH; i++) {
-        slot.trainerId[i] = playerTrainerId ? (playerTrainerId[i] ?? 0) : 0;
+        slot.trainerId[i] = (tidU32 >>> (8 * i)) & 0xFF;
       }
 
       const species = GetBoxMonData(mon as any, MON_DATA_SPECIES) as number;

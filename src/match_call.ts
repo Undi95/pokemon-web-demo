@@ -2468,7 +2468,10 @@ function PopulateSpeciesFromTrainerLocation(matchCallId: number, destStr: Uint8A
 /** 1:1 `static void PopulateSpeciesFromTrainerParty(int matchCallId, u8 *destStr)` (match_call.c:1790-1819). */
 function PopulateSpeciesFromTrainerParty(matchCallId: number, destStr: Uint8Array): void {
   let trainerId = 0;
-  const party = { NoItemDefaultMoves: null as any, NoItemCustomMoves: null as any, ItemDefaultMoves: null as any, ItemCustomMoves: null as any };
+  // 1:1 décomp `union TrainerMonPtr party;` (match_call.c:1793) — réassigné ligne
+  // suivante depuis gTrainers[].party ; `let` (pas `const`) sinon esbuild rejette la
+  // réassignation du chemin rematch dresseurs.
+  let party = { NoItemDefaultMoves: null as any, NoItemCustomMoves: null as any, ItemDefaultMoves: null as any, ItemCustomMoves: null as any };
   let monId = 0;
   let speciesName: any = null;
   trainerId = GetLastBeatenRematchTrainerId(sMatchCallTrainers[matchCallId].trainerId);

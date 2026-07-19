@@ -3687,8 +3687,15 @@ registerSpecial('SaveBardSongLyrics', () => {
   if (!oldMan || oldMan.kind !== 'bard') return;
   oldMan.playerName = GetPlayerNameString();
   if (!oldMan.playerTrainerId) oldMan.playerTrainerId = [0, 0, 0, 0];
+  // 🐛 fix 2026-07-19 (SYS-1, cf. N°ID Panthéon 8dee92c28) : SB2.playerTrainerId est un
+  // u32 number, PAS un u8[4] → l'ancien `playerTrainerId?.[i]` rendait undefined⇒0.
+  // Octet i (LE) = (u32 >>> 8*i) & 0xFF. 1:1 mauville_old_man.c:164. Fallback array défensif.
+  const tid = (gSaveBlock2Ptr as any).playerTrainerId as number | number[] | undefined;
+  const tidU32 = (typeof tid === 'number' ? tid
+    : Array.isArray(tid) ? ((tid[0] ?? 0) | ((tid[1] ?? 0) << 8) | ((tid[2] ?? 0) << 16) | ((tid[3] ?? 0) << 24))
+    : 0) >>> 0;
   for (let i = 0; i < 4; i++) {  // TRAINER_ID_LENGTH
-    oldMan.playerTrainerId[i] = gSaveBlock2Ptr.playerTrainerId?.[i] ?? 0;
+    oldMan.playerTrainerId[i] = (tidU32 >>> (8 * i)) & 0xFF;
   }
   if (!oldMan.songLyrics) oldMan.songLyrics = new Array(6).fill(0);
   if (!oldMan.newSongLyrics) oldMan.newSongLyrics = new Array(6).fill(0);

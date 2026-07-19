@@ -755,8 +755,14 @@ const ScrCmd_animateflash: ScrCmdFunc = (ctx) => {
   return true;
 };  // :605
 
-// ─── givemon / giveegg (1:1 scrcmd.c:1681-1700) — ScriptGiveMon/Egg en import dynamique
-//     (anti-cycle ESM script_pokemon_util→pokemon, = moteur parsé). VAR_RESULT async. ──
+// ─── givemon / giveegg (1:1 scrcmd.c:1681-1700) ──────────────────────────────
+// Le décomp est SYNCHRONE : `gSpecialVar_Result = ScriptGiveMon(...); return FALSE;`.
+// script_pokemon_util NE PEUT PAS être importé statiquement ici (cycle ESM
+// scrcmd→script_pokemon_util→pokemon→…→scrcmd) → on lit un PONT globalThis synchrone
+// (posé au boot par script_pokemon_util, chargé via overworld.ts). L'ancien `import()`
+// async posait VAR_RESULT dans un microtask APRÈS le `goto_if_eq VAR_RESULT` du même tour
+// sync → branche périmée (« envoyé au PC » vs équipe). Fallback (pont absent = improbable
+// hors boot) : import async + GATE le byte-VM (SetupNativeScript) jusqu'à la pose du résultat.
 const ScrCmd_givemon: ScrCmdFunc = (ctx) => {                                // :1681
   const species = VarGet(ScriptReadHalfword(ctx));
   const level = ScriptReadByte(ctx);
@@ -764,17 +770,30 @@ const ScrCmd_givemon: ScrCmdFunc = (ctx) => {                                // 
   ScriptReadWord(ctx); ScriptReadWord(ctx); ScriptReadByte(ctx);   // args fixes 0,0,0 (alignement)
   const speciesName = constOf(species, 'SPECIES_');
   const heldItem = item ? constOf(item, 'ITEM_') : undefined;
+  const give = (globalThis as Record<string, unknown>).__ScriptGiveMon as
+    ((s: string, l: number, h?: string) => number) | undefined;
+  if (give) { setResult(give(speciesName, level, heldItem)); return false; }  // 1:1 sync + FALSE
+  console.error('[givemon] pont __ScriptGiveMon absent — fallback async gaté');
+  let done = false;
   void import('./script_pokemon_util')
-    .then(({ ScriptGiveMon }) => setResult(ScriptGiveMon(speciesName, level, heldItem)))
-    .catch((e) => { console.warn('[givemon]', e); setResult(2); });   // 2 = MON_CANT_GIVE
-  return false;
+    .then(({ ScriptGiveMon }) => { setResult(ScriptGiveMon(speciesName, level, heldItem)); done = true; })
+    .catch((e) => { console.error('[givemon]', e); setResult(2); done = true; });   // 2 = MON_CANT_GIVE
+  SetupNativeScript(ctx, () => done);
+  return true;
 };
 const ScrCmd_giveegg: ScrCmdFunc = (ctx) => {                                // :1694
   const species = VarGet(ScriptReadHalfword(ctx));
+  const speciesName = constOf(species, 'SPECIES_');
+  const giveEgg = (globalThis as Record<string, unknown>).__ScriptGiveEgg as
+    ((s: string) => number) | undefined;
+  if (giveEgg) { setResult(giveEgg(speciesName)); return false; }   // 1:1 sync + FALSE
+  console.error('[giveegg] pont __ScriptGiveEgg absent — fallback async gaté');
+  let done = false;
   void import('./script_pokemon_util')
-    .then(({ ScriptGiveEgg }) => setResult(ScriptGiveEgg(constOf(species, 'SPECIES_'))))
-    .catch((e) => { console.warn('[giveegg]', e); setResult(2); });
-  return false;
+    .then(({ ScriptGiveEgg }) => { setResult(ScriptGiveEgg(speciesName)); done = true; })
+    .catch((e) => { console.error('[giveegg]', e); setResult(2); done = true; });
+  SetupNativeScript(ctx, () => done);
+  return true;
 };
 
 // ─── trainerbattle (1:1 scrcmd.c:1821 + battle_setup.c) — VOIE A ─────────────

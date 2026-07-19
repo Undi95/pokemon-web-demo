@@ -3460,9 +3460,16 @@ function GetTVGroupByShowId(kind: number): number {
   return TVGROUP_NONE;
 }
 
-/** 1:1 `u32 GetPlayerIDAsU32(void)` (tv.c:3354-3357). */
+/** 1:1 `u32 GetPlayerIDAsU32(void)` (tv.c:3354-3357) :
+ *  `(playerTrainerId[3]<<24)|([2]<<16)|([1]<<8)|[0]` = reconstruit le u32 LE.
+ *  🐛 fix 2026-07-19 (SYS-1, cf. N°ID Panthéon 8dee92c28) : notre SB2.playerTrainerId
+ *  EST déjà ce u32 (number ; new_game.ts:InitPlayerTrainerId) → l'accès `[i]` rendait
+ *  `undefined` (⇒ 0). Fallback array = défensif (save legacy u8[4]). */
 export function GetPlayerIDAsU32(): number {
-  return (gSaveBlock2Ptr.playerTrainerId[3] << 24) | (gSaveBlock2Ptr.playerTrainerId[2] << 16) | (gSaveBlock2Ptr.playerTrainerId[1] << 8) | gSaveBlock2Ptr.playerTrainerId[0];
+  const tid = gSaveBlock2Ptr.playerTrainerId as unknown as number | number[];
+  return (typeof tid === 'number'
+    ? tid
+    : ((tid?.[0] ?? 0) | ((tid?.[1] ?? 0) << 8) | ((tid?.[2] ?? 0) << 16) | ((tid?.[3] ?? 0) << 24))) >>> 0;
 }
 
 /** 1:1 `u8 CheckForPlayersHouseNews(void)` (tv.c:3359-3384). */

@@ -55,7 +55,7 @@ import {
   IsNotWaitingForBGMStop, StopMapMusic,
 } from './sound';
 import {
-  MAP_TYPE_INDOOR, MAP_TYPE_SECRET_BASE,
+  MAP_TYPE_NONE, MAP_TYPE_INDOOR, MAP_TYPE_SECRET_BASE, MAP_TYPE_UNDERGROUND, MAP_TYPE_UNKNOWN,
   MAP_TYPE_TOWN, MAP_TYPE_CITY, MAP_TYPE_ROUTE, MAP_TYPE_UNDERWATER, MAP_TYPE_OCEAN_ROUTE,
 } from '../include/constants/map_types';
 import { MAP_CONSTANTS } from '../include/constants/map_groups';
@@ -728,11 +728,31 @@ export function setLastUsedWarp(w: WarpData): void {
   gLastUsedWarp.y = w.y;
 }
 
+/** Résout le champ `mapType` d'un header (STRING "MAP_TYPE_*" dans le port,
+ *  = json.map_type ; ou déjà un u8 pour le header-fallback overworld.c:202) vers
+ *  l'enum numérique du décomp. Même patron que `battle_setup._MAP_TYPE_STR_TO_NUM`.
+ *  🐛 fix 2026-07-19 : sans conversion, `string & 0xFF` = `NaN & 0xFF` = 0 pour
+ *  TOUTE map → effondrait GetCurrentMapType/GetLastUsedWarpMapType (météo Route
+ *  119/123 inversée, marée Grotte Marine figée, type carte région faux). */
+const _MAP_TYPE_STR_TO_NUM: Record<string, number> = {
+  MAP_TYPE_NONE: MAP_TYPE_NONE,
+  MAP_TYPE_TOWN: MAP_TYPE_TOWN, MAP_TYPE_CITY: MAP_TYPE_CITY,
+  MAP_TYPE_ROUTE: MAP_TYPE_ROUTE, MAP_TYPE_UNDERGROUND: MAP_TYPE_UNDERGROUND,
+  MAP_TYPE_UNDERWATER: MAP_TYPE_UNDERWATER, MAP_TYPE_OCEAN_ROUTE: MAP_TYPE_OCEAN_ROUTE,
+  MAP_TYPE_UNKNOWN: MAP_TYPE_UNKNOWN, MAP_TYPE_INDOOR: MAP_TYPE_INDOOR,
+  MAP_TYPE_SECRET_BASE: MAP_TYPE_SECRET_BASE,
+};
+function _resolveMapTypeNum(mapType: unknown): number {
+  if (typeof mapType === 'number') return mapType & 0xFF;
+  if (typeof mapType === 'string') return _MAP_TYPE_STR_TO_NUM[mapType] ?? MAP_TYPE_NONE;
+  return MAP_TYPE_NONE;
+}
+
 /** 1:1 décomp `u8 GetMapTypeByGroupAndId(s8 mapGroup, s8 mapNum)` (overworld.c:1334) :
  *  `return Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->mapType;`. */
 export function GetMapTypeByGroupAndId(mapGroup: number, mapNum: number): number {
   const hdr = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum);
-  return (hdr?.mapType ?? 0) & 0xFF;
+  return _resolveMapTypeNum(hdr?.mapType);
 }
 
 /** 1:1 décomp `u8 GetMapTypeByWarpData(struct WarpData *warp)` (overworld.c:1339) :
