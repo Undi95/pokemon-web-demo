@@ -158,10 +158,14 @@ async function buildDebug1(): Promise<MapHeader> {
   const objectEvents: ObjectEventTemplate[] = [
     oe('OBJ_EVENT_GFX_CUTTABLE_TREE', 8, 3, 'EventScript_CutTree', 'FLAG_TEMP_11', 'MOVEMENT_TYPE_LOOK_AROUND'),
     oe('OBJ_EVENT_GFX_BREAKABLE_ROCK', 8, 6, 'EventScript_RockSmash', 'FLAG_TEMP_12', 'MOVEMENT_TYPE_LOOK_AROUND'),
-    // Rocher Force : poussé par collision (TryPushBoulder + FLAG_SYS_USE_STRENGTH), pas de script.
-    oe('OBJ_EVENT_GFX_PUSHABLE_BOULDER', 8, 10, '0x0', 'FLAG_TEMP_13', 'MOVEMENT_TYPE_NONE'),
-    // PNJ « guide » près de l'échelle (spawn NPC + statique ; l'échelle fait le warp).
-    oe('OBJ_EVENT_GFX_MAN_1', 5, 14, '0x0', '0'),
+    // Rocher Force : script EventScript_StrengthBoulder (1:1 vraies maps FieryPath/SeafloorCavern/
+    // VictoryRoad) → A face au rocher = checkpartymove MOVE_STRENGTH → dofieldeffect FLDEFF_USE_STRENGTH
+    // → setflag FLAG_SYS_USE_STRENGTH ; ensuite TryPushBoulder le pousse par collision.
+    oe('OBJ_EVENT_GFX_PUSHABLE_BOULDER', 8, 10, 'EventScript_StrengthBoulder', 'FLAG_TEMP_13', 'MOVEMENT_TYPE_NONE'),
+    // PNJ « guide » près de l'échelle (spawn NPC + statique ; l'échelle fait le warp). Script réel
+    // EventScript_TestSignpostMsg (MSGBOX_SIGN self-lock/release) → lui parler affiche un message
+    // et libère proprement (comme les vraies maps donnent un vrai script aux PNJ, jamais un ptr nul).
+    oe('OBJ_EVENT_GFX_MAN_1', 5, 14, 'EventScript_TestSignpostMsg', '0'),
   ];
   const warps: WarpEvent[] = [
     warp(4, 15, 'MAP_DEBUG_2', 0),   // [0] point d'arrivée depuis Debug_2 (sol nu, pas de re-trigger)

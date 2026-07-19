@@ -163,6 +163,7 @@ import {
   TrySpawnTallGrassOnReturnToField,
 } from '../../src/field_effect_helpers';
 import { preloadSparkleEffect } from '../../src/field_effect_helpers';
+import { preloadCutGrassEffect } from '../../src/fldeff_cut';
 // Réserve GENERAL_0/GENERAL_1 dans [12,16) AVANT les autres field effects (sinon famine
 // de slots → poussière/splash/feet-in-water rendus noirs, palBank=255). Cf. field_effect_helpers.ts.
 import { preloadGeneralFieldEffectPalettes } from '../../src/field_effect_helpers';
@@ -1444,6 +1445,18 @@ export class TestOverworldScene extends Phaser.Scene {
       // currentCoords). Équivalent du ResetSpriteData décomp, scoped aux NPCs
       // (player géré par DestroyPlayerAvatar, sprites combat par battle cleanup).
       destroyAllNpcSprites(this.rt);
+      // FIX piste-3 (AUDIT-CS-PC bug 3 — sprite Plongée corrompu à la transition) : le préchargement
+      // du gfx MONTÉ (surf/underwater) est sauté par le gate !returnToField (:1180). Au RETOUR d'un
+      // combat/menu SUR la map sous-marine, SpawnObjectEventsOnReturnToField re-dérive l'état monté via
+      // ObjectEventSetGraphicsId(persistedPlayerGfxId) ; si le PNG underwater n'est PAS caché, celui-ci
+      // BAIL (« PNG non préchargé ») → l'avatar garde l'ANCIEN gfx (surf/normal) AVEC l'OAM underwater =
+      // sprite corrompu. On précharge le gfx persisté monté AVANT le spawn (idempotent ; le NORMAL passe
+      // par la feuille réservée, pas de PNG → on ne précharge que les états montés). Le décomp a la ROM
+      // toujours chargée → pas ce besoin. .catch = Règle 3 (hurle si le fetch échoue).
+      if (persistedPlayerGfxId && persistedPlayerGfxId !== GetPlayerAvatarGraphicsIdByStateId(0)) {
+        await PreloadObjectEventGraphics(persistedPlayerGfxId)
+          .catch((e) => console.error('[loadAndInitMap] preload gfx persisté monté (returnToField surf/underwater)', e));
+      }
       // FIX (Bug 2a) : passe le graphicsId PERSISTÉ (surf/underwater) snapshotté avant
       // InitPlayerAvatar (qui l'a clobberé) → re-dérivation 1:1 de l'état monté du joueur.
       await SpawnObjectEventsOnReturnToField(this.rt, persistedPlayerGfxId);
@@ -1520,6 +1533,9 @@ export class TestOverworldScene extends Phaser.Scene {
     await preloadLongGrassEffect(this.rt);
     // Herbe basse (FLDEFF_SHORT_GRASS) assets + pool.
     await preloadShortGrassEffect(this.rt);
+    // Coupe-herbe (FLDEFF_CUT_GRASS) : sprites rotatifs + palette (fldeff_cut.ts). Assets seulement —
+    // spawn dynamique à la Coupe party-menu sur herbe haute (FldEff_CutGrass).
+    await preloadCutGrassEffect(this.rt);
     // Effets d'impact de saut (jump tall/long grass + jump small/big splash) assets + pool.
     await preloadJumpImpactEffects(this.rt);
     // Splash + feet-in-flowing-water (FLDEFF_SPLASH/FEET) : assets seulement (sprite.callback).

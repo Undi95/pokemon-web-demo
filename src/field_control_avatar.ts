@@ -772,7 +772,12 @@ export function GetInteractedObjectEventScript(
   gSpecialVar.Facing = direction;
   // DETTE : branche Trainer Hill non portée (sous-système Trainer Hill absent).
   const script = gObjectEvents[objectEventId].scriptLabel;
-  if (!script) return null;
+  // 1:1 décomp : GetObjectEventScriptPointerByObjectEventId peut renvoyer NULL (object event SANS
+  // script — ex. rocher Force poussé par collision). Le décomp renverrait alors NULL → GetInteractionScript
+  // retombe sur bg/metatile/water → pas d'interaction, pas de lock. Notre port stringifie le pointeur
+  // nul en '0x0' (chaîne TRUTHY) : on capte ces formes ('0x0'/'0'/'0x00000000') comme NULL, sinon
+  // TryStartInteractionScript locke sans qu'aucun script ne tourne pour libérer → FREEZE (AUDIT-CS-PC bug 2).
+  if (!script || script === '0x0' || script === '0' || script === '0x00000000') return null;
   // GetRamScript filter skip — pas de RAM scripts dynamic dans notre port.
   return script;
 }

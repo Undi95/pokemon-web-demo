@@ -1607,8 +1607,10 @@ const LONG_GRASS_BASE_LEFT = 2;
 const LONG_GRASS_BASE_CENTER = 3;
 const LONG_GRASS_BASE_RIGHT = 4;
 
-/** 1:1 décomp `GetLongGrassCaseAt(s16 x, s16 y)` (fldeff_cut.c:403-417). */
-function GetLongGrassCaseAt(x: number, y: number): number {
+/** 1:1 décomp `GetLongGrassCaseAt(s16 x, s16 y)` (fldeff_cut.c:403-417).
+ *  Exporté : partagé entre LoadSavedMapView (ici) et le sous-système Coupe-herbe
+ *  (fldeff_cut.ts SetCutGrassMetatiles/HandleLongGrassOnHyper). */
+export function GetLongGrassCaseAt(x: number, y: number): number {
   const metatileId = MapGridGetMetatileIdAt(x, y);
   if (metatileId === METATILE_General_Grass) return LONG_GRASS_FIELD;
   else if (metatileId === METATILE_Fortree_SecretBase_LongGrass_TopLeft) return LONG_GRASS_BASE_LEFT;

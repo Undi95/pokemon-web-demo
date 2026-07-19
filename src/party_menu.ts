@@ -3800,6 +3800,20 @@ function FieldCallback_PrepareFadeInFromMenu(): boolean {
   return true;
 }
 
+/** 1:1 décomp `SetUpFieldMove_Cut(void)` (fldeff_cut.c:138) — wrapper anti-cycle ESM : le corps
+ *  (scan herbe 3×3/5×5 + check arbre devant + remplissage sHyperCutTiles) vit dans game/fldeff_cut.ts
+ *  (`__SetUpFieldMove_Cut`, qui pose `gPostMenuFieldCallback = FieldCallback_CutTree|CutGrass`). Sur TRUE
+ *  on pose `gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu` (même pattern que Strength/Flash). */
+function SetUpFieldMove_Cut(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  const fn = g.__SetUpFieldMove_Cut as (() => boolean) | undefined;
+  if (fn?.() === true) {
+    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+    return true;
+  }
+  return false;
+}
+
 /** 1:1 décomp `sFieldMoveCursorCallbacks[FIELD_MOVES_COUNT]` (data/party_menu.h:770).
  *  {fieldMoveFunc, msgId}. msgId = clé string gText_* (≈ PARTY_MSG_*). Une entrée
  *  absente (fieldMoveFunc NULL) = field move pas encore porté en menu → early
@@ -3809,6 +3823,7 @@ interface FieldMoveCursorCallback {
   msgId: string;
 }
 const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
+  [FIELD_MOVE_CUT]:         { fieldMoveFunc: SetUpFieldMove_Cut,        msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_STRENGTH]:    { fieldMoveFunc: SetUpFieldMove_Strength,   msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_FLASH]:       { fieldMoveFunc: SetUpFieldMove_Flash,      msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_SURF]:        { fieldMoveFunc: SetUpFieldMove_Surf,       msgId: 'gText_CantSurfHere' },

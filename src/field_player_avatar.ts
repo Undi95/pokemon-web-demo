@@ -103,7 +103,7 @@ import {
   UnlockPlayerFieldControls,
 } from './script';
 // Musique surf (stop) : on PILOTE la lecture existante, on ne modifie pas l'engine son.
-import { Overworld_ClearSavedMusic, Overworld_PlaySpecialMapMusic } from './overworld';
+import { Overworld_ClearSavedMusic, Overworld_ChangeMusicToDefault } from './overworld';
 import { FlagGet } from './engine/script/script-vars';
 import { B_BUTTON } from '../include/gba/io_reg';
 import { GetFaceDirectionAnimNum, GetAcroWheelieDirectionAnimNum } from './event_object_movement';
@@ -1033,15 +1033,16 @@ const BOB_JUST_MON = 2;
  *    gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_SURFING; gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_ON_FOOT;
  *    gPlayerAvatar.preventStep = TRUE; taskId = CreateTask(Task_StopSurfingInit, 0xFF);
  *    gTasks[taskId].data[0] = direction; Task_StopSurfingInit(taskId);
- *  (Overworld_ClearSavedMusic/ChangeMusicToDefault = AUDIO → skip 1:1 strict, on ne touche pas au son.) */
+ *  On PILOTE la lecture existante (pas de modif engine son). */
 function CreateStopSurfingTask(direction: number): void {
   LockPlayerFieldControls();
-  // 1:1 décomp : Overworld_ClearSavedMusic() + Overworld_ChangeMusicToDefault() (= rétablit la
-  // musique de map). On PILOTE la lecture existante (pas de modif engine son). NB : la résolution
-  // de la musique de map par défaut (GetCurrLocationDefaultMusic) appartient au chantier sound.c
-  // non porté → PlaySpecialMapMusic est best-effort (même limite que le vélo), à compléter avec sound.c.
+  // 1:1 décomp field_player_avatar.c:1635-1636 : Overworld_ClearSavedMusic() +
+  // Overworld_ChangeMusicToDefault() → fond inconditionnellement vers la musique de map par
+  // défaut (GetCurrLocationDefaultMusic), IGNORANT le flag SURFING (encore posé à ce stade).
+  // ⚠️ NE PAS remettre Overworld_PlaySpecialMapMusic ici : le flag SURFING n'étant effacé qu'à la
+  // ligne suivante, PlaySpecialMapMusic re-sélectionnerait MUS_SURF → la musique de surf persiste.
   Overworld_ClearSavedMusic();
-  Overworld_PlaySpecialMapMusic();
+  Overworld_ChangeMusicToDefault();
   gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_SURFING;
   gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_ON_FOOT;
   gPlayerAvatar.preventStep = true;

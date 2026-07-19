@@ -48,7 +48,7 @@ import {
   LoadGeneralFieldEffectPalette, LoadSmallSparkleFieldEffectPalette, LoadPokeballGlowFieldEffectPalette,
   LoadHofMonitorFieldEffectPalette,
 } from './field_effect_helpers';
-import { FldEff_UseCutOnTree } from './fldeff_cut';
+import { FldEff_UseCutOnTree, FldEff_UseCutOnGrass, FldEff_CutGrass, LoadCutGrassFieldEffectPalette } from './fldeff_cut';
 import { FldEff_UseRockSmash } from './fldeff_rocksmash';
 import { FldEff_UseStrength } from './fldeff_strength';
 import { FldEff_SweetScent } from './fldeff_sweetscent';
@@ -79,7 +79,9 @@ export const gFieldEffectArguments: number[] = _sharedFieldEffectArgs;
 
 /** 1:1 décomp `FLDEFF_*` constants (include/constants/field_effects.h). */
 export const FLDEFF_EXCLAMATION_MARK_ICON      = 0;
+export const FLDEFF_USE_CUT_ON_GRASS           = 1;
 export const FLDEFF_USE_CUT_ON_TREE            = 2;
+export const FLDEFF_CUT_GRASS                  = 58;
 export const FLDEFF_SHADOW                     = 3;
 export const FLDEFF_TALL_GRASS                 = 4;
 export const FLDEFF_RIPPLE                     = 5;
@@ -257,7 +259,11 @@ const gFieldEffectScriptPointers: Partial<Record<number, FieldEffectScriptCmd[]>
   [FLDEFF_USE_SURF]:              [{ op: 'callnative', native: FldEff_UseSurf }, { op: 'end' }],
   [FLDEFF_USE_WATERFALL]:         [{ op: 'callnative', native: FldEff_UseWaterfall }, { op: 'end' }],
   [FLDEFF_USE_DIVE]:              [{ op: 'callnative', native: FldEff_UseDive }, { op: 'end' }],
+  // 1:1 data/field_effect_scripts.s:80 `field_eff_callnative FldEff_UseCutOnGrass` (Coupe party-menu sur herbe).
+  [FLDEFF_USE_CUT_ON_GRASS]:      [{ op: 'callnative', native: FldEff_UseCutOnGrass }, { op: 'end' }],
   [FLDEFF_USE_CUT_ON_TREE]:       [{ op: 'callnative', native: FldEff_UseCutOnTree }, { op: 'end' }],
+  // 1:1 data/field_effect_scripts.s:310 `field_eff_loadfadedpal_callnative gSpritePalette_CutGrass, FldEff_CutGrass`.
+  [FLDEFF_CUT_GRASS]:             [{ op: 'loadfadedpal', loadPal: LoadCutGrassFieldEffectPalette }, { op: 'callnative', native: FldEff_CutGrass }, { op: 'end' }],
   [FLDEFF_USE_ROCK_SMASH]:        [{ op: 'callnative', native: FldEff_UseRockSmash }, { op: 'end' }],
   [FLDEFF_USE_STRENGTH]:          [{ op: 'callnative', native: FldEff_UseStrength }, { op: 'end' }],
   [FLDEFF_SWEET_SCENT]:           [{ op: 'callnative', native: FldEff_SweetScent }, { op: 'end' }],

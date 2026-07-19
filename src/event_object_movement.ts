@@ -1823,6 +1823,16 @@ export function GetObjectEventIdByXY(x: number, y: number): number {
   return i;
 }
 
+/** 1:1 STRICT décomp `AllowObjectAtPosTriggerGroundEffects(s16 x, s16 y)` (event_object_movement.c:1954) :
+ *  ré-arme les ground effects (herbe/reflet…) du NPC/mon situé en (x,y). Appelé par FldEff_CutGrass
+ *  pour chaque tuile coupée (un objet debout sur l'herbe coupée doit rafraîchir son overlay). */
+export function AllowObjectAtPosTriggerGroundEffects(x: number, y: number): void {
+  const objectEventId = GetObjectEventIdByXY(x, y);
+  if (objectEventId !== OBJECT_EVENTS_COUNT) {
+    gObjectEvents[objectEventId].triggerGroundEffectsOnMove = true;
+  }
+}
+
 /** 1:1 décomp `SetObjectEventDirection` (event_object_movement.c:2361-2371).
  *
  *  ```c

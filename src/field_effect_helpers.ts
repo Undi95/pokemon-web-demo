@@ -681,6 +681,7 @@ export function FldEff_ShortGrass(rt: DecompRuntime): number {
   const pOam = rt.gba.oam[parentSprite.oamIndex];
   const result = rt.CreateSpriteAtOam({
     tileId: _shortGrassTileStart,
+    fromEnd: true,  // 1:1 décomp CreateSpriteAtEnd(FLDEFFOBJ_SHORT_GRASS, 0,0,0)
     // 1:1 : résout le slot chargé par la commande loadfadedpal du script (= template.paletteTag).
     paletteBank: IndexOfSpritePaletteTag(TAG_GENERAL_1_PAL),
     x: parentSprite.x, y: parentSprite.y,
@@ -849,6 +850,7 @@ function spawnJumpImpactEffect(rt: DecompRuntime, fldeff: number): number {
   const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], cfg.dx, cfg.dy);
   const result = rt.CreateSpriteAtOam({
     tileId: tileStart,
+    fromEnd: true,  // 1:1 décomp CreateSpriteAtEnd(FLDEFFOBJ_JUMP_*, args, 0)
     // 1:1 : résout le slot chargé par la commande loadfadedpal du script (= template.paletteTag).
     paletteBank: IndexOfSpritePaletteTag(cfg.pal === 'g0' ? TAG_GENERAL_0_PAL : TAG_GENERAL_1_PAL),
     x: world.x, y: world.y,
@@ -2880,6 +2882,7 @@ function createSplashSprite(rt: DecompRuntime, localId: number, mapNum: number, 
   const pOam = rt.gba.oam[parentSprite.oamIndex];
   const result = rt.CreateSpriteAtOam({
     tileId: _splashTileStart, paletteBank: LoadGeneralFieldEffectPalette(0),
+    fromEnd: true,  // 1:1 décomp CreateSpriteAtEnd(FLDEFFOBJ_SPLASH, 0,0,0)
     x: parentSprite.x, y: parentSprite.y,
     shape: 1, size: 0,  // 16×8
     // 1:1 : sprite->oam.priority = gSprites[objectEvent->spriteId].oam.priority.
@@ -3043,6 +3046,7 @@ export function FldEff_Ripple(rt: DecompRuntime): number {
   const subpriority = gFieldEffectArguments[2], priority = gFieldEffectArguments[3];
   const result = rt.CreateSpriteAtOam({
     tileId: _rippleTileStart,
+    fromEnd: true,  // 1:1 décomp CreateSpriteAtEnd(FLDEFFOBJ_RIPPLE, args, 2)
     // 1:1 : résout le slot chargé par la commande loadfadedpal du script (= template.paletteTag).
     paletteBank: IndexOfSpritePaletteTag(TAG_GENERAL_1_PAL),
     x: worldX, y: worldY,
@@ -3126,6 +3130,7 @@ export function FldEff_HotSpringsWater(rt: DecompRuntime): number {
   const pOam = rt.gba.oam[parentSprite.oamIndex];
   const result = rt.CreateSpriteAtOam({
     tileId: _hotSpringsTileStart,
+    fromEnd: true,  // 1:1 décomp CreateSpriteAtEnd(FLDEFFOBJ_HOT_SPRINGS_WATER, 0,0,0)
     // 1:1 : résout le slot chargé par la commande loadfadedpal du script (= template.paletteTag).
     paletteBank: IndexOfSpritePaletteTag(TAG_GENERAL_1_PAL),
     x: parentSprite.x, y: parentSprite.y,
@@ -3233,6 +3238,7 @@ export function FldEff_Ash(rt: DecompRuntime): number {
   const world = SetSpritePosToOffsetMapCoords(x, y, 8, 8);
   const result = rt.CreateSpriteAtOam({
     tileId: _ashTileStart,
+    fromEnd: true,  // 1:1 décomp CreateSpriteAtEnd(FLDEFFOBJ_ASH, x, y, args[2])
     // 1:1 : résout le slot chargé par la commande loadfadedpal du script (= template.paletteTag).
     paletteBank: IndexOfSpritePaletteTag(TAG_GENERAL_1_PAL),
     x: world.x, y: world.y,
@@ -3408,6 +3414,7 @@ export function FldEff_SandPile(rt: DecompRuntime): number {
   // 1:1 décomp `CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SAND_PILE], 0,0,0)`.
   const result = rt.CreateSpriteAtOam({
     tileId: _sandPileTileStart,
+    fromEnd: true,  // 1:1 décomp CreateSpriteAtEnd(FLDEFFOBJ_SAND_PILE, 0,0,0)
     // 1:1 : résout le slot chargé par la commande loadfadedpal du script (= template.paletteTag).
     paletteBank: IndexOfSpritePaletteTag(TAG_GENERAL_0_PAL),
     x: parentSprite.x, y: parentSprite.y,
@@ -4123,7 +4130,7 @@ function _spawnUnusedFieldEffect(rt: DecompRuntime, fldEff: number): number {
   // Lazy-load : 0 caller en jeu → on ne précharge PAS upfront (≠ gaspillage VRAM OBJ
   // permanent). Au 1er FieldEffectStart (force-spawn A/B), on amorce le préchargement et
   // on skip cette frame ; les frames suivantes spawnent. ≈ alloc à la demande du décomp.
-  if (!_deadInit) { void preloadUnusedFieldEffects(rt); return 64; }
+  if (!_deadInit) { preloadUnusedFieldEffects(rt).catch((e) => console.error('[preloadUnusedFieldEffects]', e)); return 64; }
   const tileStart = _deadTileStart.get(fldEff);
   const anims = _deadAnims[fldEff];
   if (tileStart === undefined || !anims) return 64;
@@ -4215,7 +4222,7 @@ export function preloadShadowEffect(_rt: DecompRuntime): Promise<void> {
 /** 1:1 décomp `FldEff_Shadow` (field_effect_helpers.c:233). Lit gFieldEffectArguments[0..2] =
  *  localId/mapNum/mapGroup (posés par StartFieldEffectForObjectEvent → DoShadowFieldEffect). */
 export function FldEff_Shadow(rt: DecompRuntime): number {
-  if (!_shadowInit) { void preloadShadowEffect(rt); return 64; }
+  if (!_shadowInit) { preloadShadowEffect(rt).catch((e) => console.error('[preloadShadowEffect]', e)); return 64; }
   const objectEventId = GetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
   if (objectEventId >= OBJECT_EVENTS_COUNT) return 64;
   const npc = gObjectEvents[objectEventId];
@@ -4227,6 +4234,7 @@ export function FldEff_Shadow(rt: DecompRuntime): number {
   // 1:1 : CreateSpriteAtEnd(template[shadowSize], 0, 0, 148).
   const result = rt.CreateSpriteAtOam({
     tileId: tileStart, paletteBank: 0,  // 1:1 paletteTag TAG_NONE → bank 0 (palette joueur)
+    fromEnd: true,  // 1:1 décomp CreateSpriteAtEnd(template[shadowSize], 0,0,148)
     x: 0, y: 0, shape: cfg.shape, size: cfg.size,
     priority: 2, paletteMode: 0, affineMode: 0, subpriority: 148,
   });
@@ -4320,10 +4328,16 @@ function LoadObjectReflectionPalette(npc: ObjectEvent, refl: DecompSprite, reflS
  *  InitObjectEventPalettes). Player → reflet gender-correct ; NPC spécial → slot 11 ; générique → re-patch. */
 function LoadObjectRegularReflectionPalette(meta: GfxMeta, reflSlot: number): void {
   if (meta.reflectionPaletteTag === OBJ_EVENT_PAL_TAG_NONE) return; // slot déjà préchargé (1:1)
-  if (meta.paletteSlot === PALSLOT_PLAYER) { LoadPlayerObjectReflectionPalette(meta.paletteTag, reflSlot); return; }
-  if (meta.paletteSlot === PALSLOT_NPC_SPECIAL) { LoadSpecialObjectReflectionPalette(meta.paletteTag, reflSlot); return; }
-  // 1:1 : PatchObjectPalette(GetObjectPaletteTag(reflSlot), reflSlot) → re-patche le reflet générique.
-  _patchReflectionPaletteToSlot(_genericNpcReflectionTag[meta.paletteSlot] ?? 0, reflSlot);
+  if (meta.paletteSlot === PALSLOT_PLAYER)
+    LoadPlayerObjectReflectionPalette(meta.paletteTag, reflSlot);
+  else if (meta.paletteSlot === PALSLOT_NPC_SPECIAL)
+    LoadSpecialObjectReflectionPalette(meta.paletteTag, reflSlot);
+  else
+    // 1:1 : PatchObjectPalette(GetObjectPaletteTag(reflSlot), reflSlot) → re-patche le reflet générique.
+    _patchReflectionPaletteToSlot(_genericNpcReflectionTag[meta.paletteSlot] ?? 0, reflSlot);
+  // 1:1 STRICT décomp field_effect_helpers.c:108 : teinte le slot reflet avec la météo courante
+  // (avant : omis → le reflet ignorait la teinte météo/heure de la map).
+  UpdateSpritePaletteWithWeather(reflSlot);
 }
 
 /** 1:1 STRICT décomp `LoadObjectHighBridgeReflectionPalette` (field_effect_helpers.c:114) : pont haut
@@ -4331,6 +4345,8 @@ function LoadObjectRegularReflectionPalette(meta: GfxMeta, reflSlot: number): vo
 function LoadObjectHighBridgeReflectionPalette(meta: GfxMeta, reflSlot: number): void {
   if (meta.reflectionPaletteTag === OBJ_EVENT_PAL_TAG_NONE) return;
   _patchReflectionPaletteToSlot(meta.reflectionPaletteTag, reflSlot);
+  // 1:1 STRICT décomp field_effect_helpers.c:120 : teinte le slot reflet avec la météo courante.
+  UpdateSpritePaletteWithWeather(reflSlot);
 }
 
 /** 1:1 décomp `UpdateObjectReflectionSprite` (field_effect_helpers.c:124). Callback
