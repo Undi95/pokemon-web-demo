@@ -514,7 +514,7 @@ function registerScene(): void {
     },
     {
       id: 'scene.credits', category: 'scene', label: '🎬 Générique (credits)',
-      description: 'Générique de fin (musique + slides Pokémon). SENS UNIQUE → écran-titre (soft reset). Recharger pour rejouer.',
+      description: 'Générique de fin (musique + slides Pokémon). SENS UNIQUE → reboot (copyright → intro → titre, 1:1 SoftReset). Recharger pour rejouer.',
       run: async () => {
         const r = requireFn(rt(), 'runtime');
         const [credits, hof] = await Promise.all([
@@ -528,7 +528,7 @@ function registerScene(): void {
         // sur un sprite absent → throw en boucle. On reproduit donc la MÊME précondition.
         await hof.preloadHallOfFameAssets();
         r.SetMainCallback2(asCB2(credits.CB2_StartCreditsSequence));
-        return 'Générique lancé (sens unique → écran-titre)';
+        return 'Générique lancé (sens unique → reboot copyright/intro/titre)';
       },
     },
     {

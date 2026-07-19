@@ -30,7 +30,7 @@ import { GetStringCenterAlignXOffsetWithLetterSpacing } from './international_st
 // 1:1 décomp intro_credits_graphics.c — versions game-form (signature décomp, sans `rt`)
 // vivant dans decomp-globals (= celles que l'intro utilise LIVE). Le transpileur avait choisi
 // les doublons rt-first de src/intro_credits_graphics.ts (mauvaise résolution) → re-pointé.
-import { CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroMaySprite, assetCache } from '../harness/runtime/decomp-globals';
+import { CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroMaySprite, assetCache, getRuntime } from '../harness/runtime/decomp-globals';
 import { BG_CHAR_ADDR } from '../harness/runtime/decomp-runtime';
 import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { sCreditsEntryPointerTable } from './data/credits';
@@ -480,7 +480,7 @@ export function CB2_StartCreditsSequence(): void {
   let bikeTaskId = 0;
   let pageTaskId = 0;
   _bindCreditsAssets(); // lie les assets préchargés (assetCache) aux globals — AVANT tout LoadX sync
-  _softResetToTitleStarted = false;   // (re)armement du retour-titre pour ce lancement de générique
+  _softResetRebootStarted = false;   // (re)armement du reboot post-FIN pour ce lancement de générique
   ResetGpuAndVram();
   SetVBlankCallback(null);
   InitHeap(gHeap, HEAP_SIZE);
@@ -747,56 +747,53 @@ function Task_CreditsTheEnd6(taskId: number): void {
   }
 }
 
-// Garde : Task_CreditsSoftReset tourne CHAQUE frame ; on ne doit amorcer le retour-titre
+// Garde : Task_CreditsSoftReset tourne CHAQUE frame ; on ne doit amorcer le reboot
 // (import dynamique async) qu'UNE fois. Remis à false au (re)lancement du générique.
-let _softResetToTitleStarted = false;
+let _softResetRebootStarted = false;
 
 /** 1:1 `static void Task_CreditsSoftReset(u8 taskId)` (credits.c:648-652). */
 function Task_CreditsSoftReset(taskId: number): void {
   void taskId;
   if (!gPaletteFade.active) {
-    if (_softResetToTitleStarted) return;
-    _softResetToTitleStarted = true;
+    if (_softResetRebootStarted) return;
+    _softResetRebootStarted = true;
 
     // ── Nettoyage 1:1 du reboot que DoSoftReset(RESET_ALL) fournissait ──────────────
     // Le vrai SoftReset REBOOTE la GBA : RegisterRamReset zéroie TOUTE la VRAM/OAM/palette RAM
-    // (backdrop color 0 INCLUS) AVANT que copyright→intro→titre ne redémarrent. Notre retour-titre
-    // web ne reboote pas → sans ce clear, l'état résiduel du générique fuit dans l'écran-titre PUIS
-    // le menu principal (bug user : tilemap « FIN » en VRAM, palettes du générique, et surtout la
-    // couleur de fond = backdrop palette 0 index 0 → FOND VIOLET). ResetGpuAndVram (déjà utilisé pour
-    // les transitions de scène du générique) éteint DISPCNT + clear VRAM/OAM/PLTT — mais il skippe
-    // PLTT[0] (`PLTT + 2`, convention décomp) ; on zéroie donc le backdrop en plus. Puis on remet
-    // l'état moteur (fade/sprites/palettes OBJ/fenêtres/BG) à ce qu'un boot propre fournit à
-    // CB2_InitTitleScreen. Cf. mémoire hardware-non-1to1-exemptions (SoftReset = exemption).
+    // (backdrop color 0 INCLUS) + gMain AVANT que AgbMain ne relance copyright→intro→titre. Notre
+    // web ne reboote pas la ROM → on reproduit ce RAM-reset à la main AVANT de ré-amorcer le boot,
+    // sinon l'état résiduel du générique (tilemap « FIN », palettes, tasks/sprites) fuit dans les
+    // écrans suivants. ResetGpuAndVram éteint DISPCNT + clear VRAM/OAM/PLTT (il skippe PLTT[0],
+    // `PLTT + 2` convention décomp) → on zéroie le backdrop en plus. `gMain.state = 0` = le champ
+    // que RegisterRamReset zéroie et dont CB2_InitCopyrightScreenAfterBootup a besoin pour entrer
+    // en state 0 (sinon fall-through au default → copyright non initialisé).
+    // Cf. mémoire hardware-non-1to1-exemptions (SoftReset = exemption matérielle).
     ResetGpuAndVram();
-    DmaFill16(3, 0, PLTT, 2);            // backdrop color 0 (le reboot le zéroait ; sinon fond violet résiduel)
+    DmaFill16(3, 0, PLTT, 2);            // backdrop color 0 (le reboot le zéroait ; sinon fond résiduel)
     ResetPaletteFade();
     ResetSpriteData();
     FreeAllSpritePalettes();
     FreeAllWindowBuffers();
     ResetBgsAndClearDma3BusyFlags(0);
+    gMain.state = 0;                     // reboot zéroie gMain → CB2_InitCopyrightScreenAfterBootup entre en state 0
 
     SoftReset(RESET_ALL);   // 1:1 conservé : LOG l'exemption matérielle (reset BIOS no-op web).
-    // ADAPTATION DOCUMENTÉE : SoftReset(RESET_ALL) 1:1 = reboot BIOS → le jeu se réamorce
-    // (copyright → intro → titre). Non reproductible sur web → on retourne à l'écran-titre
-    // (jamais d'écran mort). Mécanisme IDENTIQUE au fallback hall_of_fame.ts:642 : import
-    // DYNAMIQUE de title_screen (anti-bombe TDZ du graphe credits, cf. StartCredits) +
-    // SetMainCallback2(CB2_InitTitleScreen) — dont le case 1 fait ResetTasks/ResetSpriteData/
-    // FreeAllSpritePalettes + recharge les gfx titre depuis l'assetCache.
-    // On appelle preloadTitleAssets() AVANT : dans le flux réel (boot → titre → … → générique)
-    // les assets titre sont déjà en cache (no-op rapide), mais un lancement direct du générique
-    // (ex. ?debug) ne les a jamais chargés → sans ça l'écran-titre s'afficherait NOIR
-    // (LoadPalette('gTitleScreenBgPalettes') ne résout rien). Garantit « jamais d'écran mort ».
+    // REBOOT 1:1 : SoftReset(RESET_ALL) = reboot BIOS → AgbMain → CB2_InitCopyrightScreenAfterBootup.
+    // Sur web on rejoue L'AMORCE DU BOOT INITIAL — exactement ce que le host (TestOverworldScene.create,
+    // introMode) fait au power-on : registerIntroSpriteCallbacks(rt) + bootIntroSequence(rt) [= preloads
+    // async intro/titre/Birch AVANT le CB2, puis SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)].
+    // → copyright → intro → titre, chaîne 1:1 identique au démarrage du jeu (plus de saut « bricolé »
+    // direct à l'écran-titre qui masquait l'état sale). Import DYNAMIQUE (anti-bombe TDZ du graphe
+    // credits, cf. StartCredits/hall_of_fame). bootIntroSequence est idempotent (assets cachés) :
+    // no-op rapide dans le flux réel (boot→…→générique), preload complet en lancement direct (?debug).
     void (async () => {
       try {
-        const [loader, ts] = await Promise.all([
-          import('../harness/boot/intro-asset-loader'),
-          import('./title_screen'),
-        ]);
-        await loader.preloadTitleAssets();
-        SetMainCallback2(ts.CB2_InitTitleScreen as unknown as () => void);
+        const rt = getRuntime();
+        const introHost = await import('../harness/boot/intro-host');
+        introHost.registerIntroSpriteCallbacks(rt);   // idempotent (rt.spriteCallbacks Map)
+        await introHost.bootIntroSequence(rt);        // preloads + SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)
       } catch (e) {
-        console.error('[credits] retour titre (SoftReset = exemption hardware web)', e);
+        console.error('[credits] reboot post-FIN (SoftReset = exemption hardware web)', e);
       }
     })();
   }

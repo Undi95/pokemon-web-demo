@@ -1763,7 +1763,17 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   }
   // 1:1 STRICT check existing via GetSpriteTileStartByTag array primary.
   if (_GetSpriteTileStartByTag_1to1(sheet.tag) !== 0xFFFF) return;
-  const needed = bytes.length;
+  // 1:1 STRICT décomp (cf. commentaire ci-dessous) : l'ALLOCATION **et** la COPIE utilisent
+  // `sheet->size` (LoadSpriteSheet : AllocSpriteTiles(sheet->size / TILE_SIZE_4BPP) +
+  // CpuCopy16(data, dst, sheet->size)), PAS la longueur décompressée. Les sheets « rival » du
+  // générique (gSpriteSheet_CreditsRivalMay/RivalBrendan) déclarent size 0x2000 en réutilisant
+  // un gfx 0x3800 (chargement PARTIEL volontaire du décomp) : prendre bytes.length sur-allouait
+  // 448 tiles au lieu de 256 → TAG_MAY débordait, ne laissant que 96 tiles libres → TAG_BICYCLE
+  // (128 tiles) ne s'allouait plus (AllocSpriteTiles overflow) → les vélos rendaient les tiles 0
+  // (décor) avec la palette du rider = « cyclistes silhouettes » (bug user forêt du générique).
+  // Clamp à bytes.length par sécurité : une data plus courte que size ne doit pas déborder la lecture.
+  const declaredSize = (typeof sheet.size === 'number' && sheet.size > 0) ? sheet.size : bytes.length;
+  const needed = Math.min(declaredSize, bytes.length);
   const tileCount = needed >> 5;  // bytes / 32 = tiles 4bpp
   // 🩸 GUARD (2026-07-14) : une sheet à data VIDE (asset pas porté, ex. trainer-pic
   // Match Call tag 8) donnait tileCount=0 → AllocSpriteTiles(0) = sémantique décomp

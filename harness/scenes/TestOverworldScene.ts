@@ -357,6 +357,12 @@ export class TestOverworldScene extends Phaser.Scene {
     // reste à STOPPED → playTimeVBlanks/Seconds/Minutes/Hours jamais incrémentés
     // → DUREE JEU "0:00" toujours. À call AU BOOT overworld pour que le tick
     // dans decomp-runtime.tickFixed soit actif.
+    // ⚠️ FALLBACK ASYNC : ce Start est fire-and-forget → il PERDAIT la course contre
+    // le PlayTimeCounter_Reset() synchrone de applyNoIntroPreset (NewGameInit) pour
+    // ?debug/?clock (compteur STOPPED → 00:00 au Panthéon). Le preset fait désormais
+    // son PROPRE PlayTimeCounter_Start() synchrone (1:1 CB2_NewGame, boot-mode.ts) →
+    // ce chemin ne couvre plus que ?nointro-resume et ?truck (qui ne passent pas par
+    // le Start du preset). Start idempotent → double-appel sans effet pour ?debug/?clock.
     void import('../../src/play_time').then(({ PlayTimeCounter_Start }) => {
       PlayTimeCounter_Start();
       console.log('[TestOverworld] PlayTimeCounter_Start invoked');

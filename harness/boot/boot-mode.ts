@@ -27,6 +27,7 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../../src/engine/save/save-block
 import { CreateEgg, GetDaycareData } from '../../src/daycare';
 import { MALE, FEMALE } from '../runtime/decomp-globals';
 import { NewGameInit } from '../../src/engine/save/new-game-flags';
+import { PlayTimeCounter_Start } from '../../src/play_time';
 import { GetPlayerNameString } from '../../src/text';
 import { AddBagItem, DEBUG_ExpandBagToFit } from '../../src/engine/bag/bag';
 import { DIR_SOUTH, DIR_NORTH } from '../../include/global.fieldmap';
@@ -181,6 +182,13 @@ function applyNoIntroPreset(): void {
   // 1:1 décomp `RunScriptImmediately(EventScript_ResetAllMapFlags)` au tout début
   // d'une nouvelle partie. Sans ça les NPCs cachés réapparaissent.
   NewGameInit();
+  // 1:1 décomp `CB2_NewGame` (overworld.c:1610) : PlayTimeCounter_Start() APRÈS l'init
+  // nouvelle partie. NewGameInit()→PlayTimeCounter_Reset() laisse le compteur STOPPED ;
+  // le preset spawn-direct (?debug/?clock) court-circuite CB2_NewGame → sans ce Start le
+  // compteur reste STOPPED (DUREE JEU 00:00 au Panthéon). Start est idempotent (state=RUNNING,
+  // ne remet pas le temps à zéro) → robuste même si le Start fire-and-forget de la scène
+  // (TestOverworldScene.create, fallback pour ?nointro-resume/?truck) a déjà tourné.
+  PlayTimeCounter_Start();
   // Nom posé APRÈS NewGameInit, en STRING directe (PAS SetPlayerName : la charmap OW
   // n'est pas chargée au boot → encodeOwText donnerait [0,0,0,0]). GetPlayerNameString
   // gère la branche string. ?debug → 'UNDI' ; ?nointro resume garde sa vraie save (autre chemin).
