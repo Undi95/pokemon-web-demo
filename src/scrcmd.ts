@@ -146,6 +146,19 @@ export function parseValue(arg: string | undefined): number {
  *  numeric arg (= match par localId number). */
 export function findNpcByLocalId(arg: string): ObjectEvent | null {
   if (!arg) return null;
+  // 1:1 décomp `LOCALID_PLAYER` = 0xFF (event_object_movement.h) : les opcodes objet ciblant
+  // le joueur passent cette constante, et GetObjectEventIdByLocalIdAndMap la résout vers
+  // l'object event du joueur. Chez nous le byte-VM la transmet en NUMÉRIQUE ("255") alors que
+  // le slot joueur porte `localId`/`localIdRaw` = 'LOCALID_PLAYER' (string) → aucune des
+  // comparaisons ci-dessous ne matchait → `doSetObjectXY` sortait en silence.
+  // Conséquence : `setobjectxy LOCALID_PLAYER, 6, 13` du tuto Birch (Route101/scripts.inc:225)
+  // était un NO-OP → le joueur n'était jamais téléporté avant le combat → respawn et cadrage
+  // faux après le combat (bug user 2026-07-19). Vaut pour tous les opcodes objet sur le joueur.
+  if (arg === 'LOCALID_PLAYER' || arg === '255' || arg === '0xFF') {
+    for (const npc of gObjectEvents) {
+      if (npc?.active && npc.isPlayer) return npc;
+    }
+  }
   // 1:1 décomp : si VAR_*, lire la value (= un number qui matche localId).
   if (arg.startsWith('VAR_')) {
     const n = VarGetByName(arg);
