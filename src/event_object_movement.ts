@@ -8402,6 +8402,15 @@ export function ObjectEventSetGraphicsId(objectEvent: ObjectEvent, graphicsId: s
 export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime, persistedPlayerGraphicsId?: string): Promise<void> {
   if (!_graphicsCatalog) return;
   const catalog = _graphicsCatalog;
+  // 🐛 fix 2026-07-19 — LA cause du « Birch et les PNJ figés en (0,0) au retour de combat » :
+  // `_objectEventsSuspended` est levé quand un écran remplace le CB2 overworld (ChooseStarter du
+  // tuto Birch, cf. :8868) et fait `UpdateObjectEvents` SKIP TOUT (:8882) — sprites jamais
+  // repositionnés. Personne ne le rabaissait au retour : les NPC restaient donc gelés à leur
+  // position de création (0,0) pour toute la partie, et Birch n'approchait jamais.
+  // Ici = LE point de retour au field (1:1 `SpawnObjectEventsOnReturnToField`, event_object_
+  // movement.c:1715, appelé par ReturnToFieldLocal) : le CB2 overworld a repris la main, donc
+  // les object events doivent redevenir vivants. Symétrique du suspend posé au départ de l'écran.
+  _objectEventsSuspended = false;
   // 1:1 STRICT décomp event_object_movement.c:1719 ClearPlayerAvatarInfo().
   // Reset gPlayerAvatar fields (preserve objectEventId/spriteId pour notre archi).
   const { ClearPlayerAvatarInfo, SetPlayerAvatarExtraStateTransition, gPlayerAvatar } = await import('./field_player_avatar');
