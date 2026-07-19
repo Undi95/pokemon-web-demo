@@ -29,6 +29,8 @@ import { DestroySprite } from './sprite';
 /** 1:1 décomp `ScrCmd_setobjectxy` → MoveObjectEventToMapCoords (coords + sprite px). */
 export function doSetObjectXY(localIdArg: string, x: number, y: number): void {
   const npc = findNpcByLocalId(localIdArg);
+  // 🔬 SONDE tuto Birch (retirer après) : trace CHAQUE setobjectxy — arg brut, résolution, coords.
+  console.log(`[setobjectxy] arg='${localIdArg}' → ${npc ? (npc.isPlayer ? 'PLAYER' : String(npc.localId)) : 'INTROUVABLE'} x=${x} y=${y}`);
   if (!npc) return;
   npc.currentCoordsX = x + MAP_OFFSET;
   npc.currentCoordsY = y + MAP_OFFSET;
