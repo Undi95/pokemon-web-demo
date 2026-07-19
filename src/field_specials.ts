@@ -40,6 +40,11 @@ import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './overworld';
 import { Random } from './random';
 import { CheckFreePokemonStorageSpace, StorageGetCurrentBox } from './pokemon_storage_system';
 import { SetCameraPanning, SetCameraPanningCallback, InstallCameraPanAheadCallback } from './field_camera';
+import {
+  SpawnSpecialObjectEventParameterized, CameraObjectSetFollowedSpriteId,
+  RemoveObjectEventByLocalIdAndMap, gObjectEvents, ELEVATION_DEFAULT, OBJECT_EVENTS_COUNT,
+} from './event_object_movement';
+import { GetPlayerAvatarSpriteId } from './field_player_avatar';
 import { CreateTask, DestroyTask, gTasks } from './task';
 import { SE_M_STRENGTH } from '../include/constants/songs';
 
@@ -643,14 +648,58 @@ function StopCameraShake(taskId: number): void {
   (globalThis as { __SignalWaitState?: () => void }).__SignalWaitState?.();
 }
 
-/** 1:1 décomp `SpawnCameraObject` (field_specials.c:1251-...) : crée l'object event CAMERA que la
- *  caméra suit (TrySpawnObjectEvent OBJ_EVENT_GFX_CAMERA + CameraObject_Init). DÉFÉRÉ no-op
- *  (object event CAMERA non porté). */
-export function SpawnCameraObject(): number { return 0; }
+/** 1:1 décomp `LOCALID_CAMERA` (include/constants/event_objects.h:303) = 127. */
+const LOCALID_CAMERA = 127;
 
-/** 1:1 décomp `RemoveCameraObject` (field_specials.c:1263-...) : retire l'object event CAMERA.
- *  DÉFÉRÉ no-op (object event CAMERA non porté). */
-export function RemoveCameraObject(): void { /* no-op — object event CAMERA non porté */ }
+/** 1:1 décomp `void SpawnCameraObject(void)` (field_specials.c:1251-1261) :
+ *  ```c
+ *  u8 obj = SpawnSpecialObjectEventParameterized(OBJ_EVENT_GFX_BOY_1,
+ *                                                MOVEMENT_TYPE_FACE_DOWN,
+ *                                                LOCALID_CAMERA,
+ *                                                gSaveBlock1Ptr->pos.x + MAP_OFFSET,
+ *                                                gSaveBlock1Ptr->pos.y + MAP_OFFSET,
+ *                                                ELEVATION_DEFAULT);
+ *  gObjectEvents[obj].invisible = TRUE;
+ *  CameraObjectSetFollowedSpriteId(gObjectEvents[obj].spriteId);
+ *  ```
+ *  Spawn l'object event CAMERA (BOY_1 rendu INVISIBLE) au-dessus du joueur, puis redirige
+ *  le CameraObject tracker (sprite invisible suivi par la caméra field, cf. field_camera
+ *  InitCameraUpdateCallback) pour qu'il suive CET object event au lieu du joueur. Les
+ *  `applymovement LOCALID_CAMERA, …` du script (pans de cutscene) déplacent alors l'object
+ *  event → la caméra suit → travelling. Le sprite BOY_1 doit être préchargé (SYNC : notre
+ *  spawn lit le PNG en cache ; préchargé au load overworld, cf. TestOverworldScene). */
+export function SpawnCameraObject(): void {
+  const obj = SpawnSpecialObjectEventParameterized(
+    'OBJ_EVENT_GFX_BOY_1', 'MOVEMENT_TYPE_FACE_DOWN', LOCALID_CAMERA,
+    gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET, ELEVATION_DEFAULT,
+    'LOCALID_CAMERA',
+  );
+  if (obj >= OBJECT_EVENTS_COUNT) {
+    // Règle 3 : hurler si le spawn échoue (BOY_1 pas en cache → PNG non préchargé, ou
+    // aucun slot libre). Le pan caméra sera skippé (applymovement sur cible absente = no-op).
+    console.error('[SpawnCameraObject] spawn de l’object event CAMERA échoué (OBJ_EVENT_GFX_BOY_1 préchargé ?) — travelling caméra skippé');
+    return;
+  }
+  gObjectEvents[obj].invisible = true;
+  CameraObjectSetFollowedSpriteId(gObjectEvents[obj].spriteId);
+}
+
+/** 1:1 décomp `void RemoveCameraObject(void)` (field_specials.c:1263-1267) :
+ *  ```c
+ *  CameraObjectSetFollowedSpriteId(GetPlayerAvatarSpriteId());
+ *  RemoveObjectEventByLocalIdAndMap(LOCALID_CAMERA, gSaveBlock1Ptr->location.mapNum,
+ *                                   gSaveBlock1Ptr->location.mapGroup);
+ *  ```
+ *  Ré-accroche le tracker au sprite JOUEUR (CameraObjectReset snap sans saut, delta 0) PUIS
+ *  despawn l'object event CAMERA. Ordre 1:1 strict : redirection AVANT despawn (le tracker
+ *  ne pointe jamais un sprite détruit). N.B. la caméra ne « revient » pas au joueur ici : le
+ *  retour est piloté par un `applymovement LOCALID_CAMERA, …PanBack…` explicite du script. */
+export function RemoveCameraObject(): void {
+  CameraObjectSetFollowedSpriteId(GetPlayerAvatarSpriteId());
+  RemoveObjectEventByLocalIdAndMap(
+    LOCALID_CAMERA, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup,
+  );
+}
 
 
 // ─── PC turn on/off 1:1 (field_specials.c:986-1111) — ex-pc-anim.ts (lot 11) ──

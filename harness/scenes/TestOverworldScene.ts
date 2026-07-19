@@ -1219,6 +1219,13 @@ export class TestOverworldScene extends Phaser.Scene {
     void preloadWeatherAshSprites();
     void preloadWeatherFogHorizontalSprites();
     void preloadWeatherCloudSprites();  // WEATHER_SUNNY_CLOUDS (Route 119/120) — sinon CreateCloudSprites tile 0 garbage.
+    // ADAPTATION port (async assets) : précharge OBJ_EVENT_GFX_BOY_1 dans le cache PNG pour
+    // que `SpawnCameraObject` (special SYNC, field_specials.ts) puisse spawner l'object event
+    // CAMERA (BOY_1 invisible) sans await — la décomp charge le gfx depuis la ROM en SYNC. Le
+    // pack des maps légendaires (Sootopolis/SkyPillar climax) n'inclut pas BOY_1 → sans ça le
+    // travelling caméra scripté serait skippé. Cache-only (aucune alloc VRAM/palette). Règle 3.
+    void PreloadObjectEventGraphics('OBJ_EVENT_GFX_BOY_1')
+      .catch((e) => console.error('[camera-object] préchargement OBJ_EVENT_GFX_BOY_1', e));
     // ⚠️ StartWeather() + readyForInit + DoCurrentWeather() sont posés APRÈS SpawnObjectEventsOnMap
     // (ordre décomp ResumeMap : objets d'abord). Avant, StartWeather tournait ICI (avant le spawn)
     // → la palette météo (AllocSpritePalette) prenait un slot OBJ bas que les object events

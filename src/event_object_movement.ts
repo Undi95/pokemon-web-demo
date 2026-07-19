@@ -8469,6 +8469,107 @@ export function TrySpawnObjectEvent(localIdRaw: string, rt: DecompRuntime): bool
   return _spawnSingleNpcFromTemplate(tpl, mh.id, rt, _graphicsCatalog);
 }
 
+/** 1:1 décomp `u8 SpawnSpecialObjectEvent(struct ObjectEventTemplate *objectEventTemplate)`
+ *  (event_object_movement.c:1501-1508) :
+ *  ```c
+ *  u8 SpawnSpecialObjectEvent(struct ObjectEventTemplate *objectEventTemplate) {
+ *      s16 cameraX, cameraY;
+ *      GetObjectEventMovingCameraOffset(&cameraX, &cameraY);
+ *      return TrySpawnObjectEventTemplate(objectEventTemplate,
+ *                                         gSaveBlock1Ptr->location.mapNum,
+ *                                         gSaveBlock1Ptr->location.mapGroup,
+ *                                         cameraX, cameraY);
+ *  }
+ *  ```
+ *  Notre port : le flow 1:1 de `TrySpawnObjectEventTemplate` (alloc sprite/tiles/palette +
+ *  `InitObjectEventStateFromTemplate`) est inliné dans `_spawnSingleNpcFromTemplate`. On y
+ *  délègue (mapId string ≡ mapNum/mapGroup), puis on retrouve le slot par localId (le dedup
+ *  garantit l'unicité par localId sur la map courante) pour renvoyer l'objectEventId comme
+ *  la décomp. Retourne `OBJECT_EVENTS_COUNT` si échec (= sentinel décomp).
+ *
+ *  Câblage 1:1 manquant côté `_spawnSingleNpcFromTemplate` : `objectEvent->mapNum/mapGroup`
+ *  (décomp `InitObjectEventStateFromTemplate` event_object_movement.c:1305-1306, alimentés
+ *  par les args de TrySpawnObjectEventTemplate = `gSaveBlock1Ptr->location.mapNum/mapGroup`).
+ *  On les pose ici → `RemoveObjectEventByLocalIdAndMap(localId, location.mapNum, location.
+ *  mapGroup)` (RemoveCameraObject) retrouve bien l'object event (match localId+mapNum+mapGroup,
+ *  cf. GetObjectEventIdByLocalIdAndMap pour localId 127 < LOCALID_PLAYER). */
+export function SpawnSpecialObjectEvent(template: ObjectEventTemplate): number {
+  if (!_graphicsCatalog || !gMapHeader) return OBJECT_EVENTS_COUNT;
+  const currentMapId = gMapHeader.id;
+  const rt = getRuntime();
+  const ok = _spawnSingleNpcFromTemplate(template, currentMapId, rt, _graphicsCatalog);
+  if (!ok) return OBJECT_EVENTS_COUNT;
+  const idx = gObjectEvents.findIndex(
+    o => o.active && o.mapId === currentMapId && o.localId === template.localId,
+  );
+  if (idx < 0) return OBJECT_EVENTS_COUNT;
+  const npc = gObjectEvents[idx];
+  // 1:1 décomp InitObjectEventStateFromTemplate:1305-1306 (via TrySpawnObjectEventTemplate args).
+  npc.mapNum = gSaveBlock1Ptr.location.mapNum;
+  npc.mapGroup = gSaveBlock1Ptr.location.mapGroup;
+  // Positionne le sprite à sa coord MONDE DÈS le spawn (= 1:1 décomp : TrySetupObjectEventSprite
+  // pose sprite->x/y via SetObjectEventSpritePosToMapCoords, event_object_movement.c:1456-1464 ;
+  // cf. aussi le spawn joueur field_player_avatar.ts qui fait `sprite.x = worldX`). Sans ça,
+  // `_spawnSingleNpcFromTemplate` laisse sprite.x/y = 0 jusqu'au prochain UpdateObjectEvents
+  // (invisible pour un NPC ordinaire) → mais l'object event CAMERA est immédiatement suivi par
+  // le CameraObject tracker (CameraObjectSetFollowedSpriteId) : le tracker se snap sur x=0 puis
+  // voit un delta d'une frame = worldX (~120 px) → SAUT caméra au début de chaque travelling.
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites[npc.spriteId];
+    if (sprite) {
+      sprite.coordOffsetEnabled = true;
+      sprite.x = npc.worldX + npc.visualOffsetX;
+      sprite.y = npc.worldY + npc.visualOffsetY;
+    }
+  }
+  return idx;
+}
+
+/** 1:1 décomp `u8 SpawnSpecialObjectEventParameterized(u8 graphicsId, u8 movementBehavior,
+ *  u8 localId, s16 x, s16 y, u8 elevation)` (event_object_movement.c:1510-1528) :
+ *  ```c
+ *      struct ObjectEventTemplate objectEventTemplate;
+ *      x -= MAP_OFFSET;
+ *      y -= MAP_OFFSET;
+ *      objectEventTemplate.localId = localId;
+ *      objectEventTemplate.graphicsId = graphicsId;
+ *      objectEventTemplate.kind = OBJ_KIND_NORMAL;
+ *      objectEventTemplate.x = x; objectEventTemplate.y = y;
+ *      objectEventTemplate.elevation = elevation;
+ *      objectEventTemplate.movementType = movementBehavior;
+ *      objectEventTemplate.movementRangeX = 0; objectEventTemplate.movementRangeY = 0;
+ *      objectEventTemplate.trainerType = TRAINER_TYPE_NONE;
+ *      objectEventTemplate.trainerRange_berryTreeId = 0;
+ *      return SpawnSpecialObjectEvent(&objectEventTemplate);
+ *  ```
+ *  Adaptation port : `graphicsId`/`movementBehavior` sont des strings (OBJ_EVENT_GFX_* /
+ *  MOVEMENT_TYPE_*) ; `localIdRaw` optionnel pour la résolution `applymovement` par nom
+ *  (movement-system `_resolveTarget` matche localIdRaw OU localId numérique). */
+export function SpawnSpecialObjectEventParameterized(
+  graphicsId: string, movementBehavior: string, localId: number,
+  x: number, y: number, elevation: number, localIdRaw = '',
+): number {
+  const template: ObjectEventTemplate = {
+    localId,
+    localIdRaw,
+    graphicsId: 0,
+    graphicsIdRaw: graphicsId,
+    kind: 0,                     // OBJ_KIND_NORMAL
+    x: x - MAP_OFFSET,           // 1:1 décomp : x -= MAP_OFFSET
+    y: y - MAP_OFFSET,
+    elevation,
+    movementType: 0,
+    movementTypeRaw: movementBehavior,
+    movementRangeX: 0,
+    movementRangeY: 0,
+    trainerType: 0,              // TRAINER_TYPE_NONE
+    trainerRange_berryTreeId: 0,
+    script: '',
+    flagId: '0',
+  };
+  return SpawnSpecialObjectEvent(template);
+}
+
 /** 1:1 décomp `void RemoveObjectEventByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)`
  *  (event_object_movement.c:1389-1397) :
  *    if (!TryGetObjectEventIdByLocalIdAndMap(...)) {

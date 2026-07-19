@@ -985,8 +985,8 @@ registerSpecial('IsWirelessAdapterConnected', () => 0);
 
 /** Cinematic camera (= e.g. Rayquaza scene, Steven battle). */
 registerSpecial('ShakeCamera', ShakeCamera);  // impl 1:1 (no-op différé) → src/field_specials.ts
-registerSpecial('SpawnCameraObject', SpawnCameraObject);  // impl 1:1 (no-op différé) → src/field_specials.ts
-registerSpecial('RemoveCameraObject', RemoveCameraObject);  // impl 1:1 (no-op différé) → src/field_specials.ts
+registerSpecial('SpawnCameraObject', SpawnCameraObject);  // impl 1:1 → src/field_specials.ts (object event CAMERA + tracker)
+registerSpecial('RemoveCameraObject', RemoveCameraObject);  // impl 1:1 → src/field_specials.ts
 
 /** Trainer Fan Club (Lilycove, post-game). */
 /** 1:1 décomp `IsFanClubMemberFanOfPlayer` (field_specials.c:4117-4124) :
