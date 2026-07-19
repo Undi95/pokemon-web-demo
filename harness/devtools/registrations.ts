@@ -276,11 +276,6 @@ function registerJeu(): void {
       run: () => String((g().dev as { debugMap?: (n: number) => string } | undefined)?.debugMap?.(3) ?? 'dev.debugMap absent'),
     },
     {
-      id: 'jeu.rayquaza', category: 'jeu', label: '🐉 Cinématique Rayquaza', ui: 'grid',
-      description: 'Joue la cinématique Rayquaza (Sootopolis) — __rayTest(1) depuis l\'overworld',
-      run: () => { (g() as { __rayTest?: (n: number) => void }).__rayTest?.(1); return 'Cinématique lancée'; },
-    },
-    {
       id: 'jeu.goto', category: 'jeu', label: '🎯 Goto map',
       description: 'TP arbitraire — __devGotoMap(map, x, y) ; la case doit être WALKABLE',
       args: [
@@ -462,6 +457,119 @@ function registerCombat(): void {
         const v = Number(id);
         g().__forcedBattleTransition = v >= 0 ? v : undefined;
         return v >= 0 ? `transition forcée : ${v}` : 'transition normale';
+      },
+    },
+  ]);
+}
+
+// ─── SCÈNE (cinématiques / écrans-scènes solo — hors intro copyright/Birch) ───
+// Chaque bouton lance une scène par son CHEMIN RÉEL (même CB2 / entrée que le jeu),
+// jamais une state-machine maison. Les modules 1:1 sont chargés en import()
+// DYNAMIQUE au clic (posés au boot → cache instantané) : zéro import statique de
+// src/ ajouté au panel (aucune arête de cycle, cf. find-import-cycle.cjs), zéro
+// touche aux fichiers 1:1. `__rayTest` reste le pont dev historique de Rayquaza.
+
+function registerScene(): void {
+  // Cast local : les CB2 des scènes (() => void) vers le type nominal attendu par
+  // SetMainCallback2 (CB2Callback) — même adaptation que evolution_scene.ts:988.
+  const asCB2 = (cb: () => void): Parameters<DecompRuntime['SetMainCallback2']>[0] =>
+    cb as unknown as Parameters<DecompRuntime['SetMainCallback2']>[0];
+
+  registerCommands([
+    {
+      // Déplacé depuis jeu.rayquaza (mono-bouton __rayTest(1)) → grille par scène.
+      // animId 1:1 rayquaza_scene.ts:1353 : 0=duo-pré 1=duo 2=envol 3=descente 4=charge 5=chasse.
+      id: 'scene.rayquaza', category: 'scene', label: '🐉 Rayquaza', ui: 'grid',
+      description: 'Cinématique Rayquaza (Sootopolis) — __rayTest(n) depuis l\'overworld ; retour auto au field',
+      args: [{
+        name: 'anim', kind: 'select', options: [
+          { value: 0, label: '0 · Duo (pré-combat)' },
+          { value: 1, label: '1 · Duo (complet)' },
+          { value: 2, label: '2 · Envol' },
+          { value: 3, label: '3 · Descente' },
+          { value: 4, label: '4 · Charge' },
+          { value: 5, label: '5 · Chasse' },
+        ],
+      }],
+      run: ({ anim }) => {
+        const f = (g() as { __rayTest?: (n?: number, e?: boolean) => void }).__rayTest;
+        requireFn(f, '__rayTest (boot ?debug)')(Number(anim));
+        return `Rayquaza — scène ${Number(anim)} lancée (retour auto field)`;
+      },
+    },
+    {
+      // Chemin réel : GameClear (post_battle_event_funcs.c:88) pose CB2_DoHallOfFameScreen
+      // après preloadHallOfFameAssets(). On rejoue ce couple sans les mutations de GameClear
+      // (flag Champion / warp continue). Le CB2 SAUVEGARDE (Task_Hof_TrySaveData → TrySavingData) :
+      // ⚠ effet durable en jeu réel ; no-op quand la save est verrouillée (?debug/?nointro).
+      id: 'scene.hof', category: 'scene', label: '🏆 Hall of Fame ⚠ save',
+      description: 'Panthéon avec l\'équipe courante (CB2_DoHallOfFameScreen). ⚠ SAUVEGARDE (no-op si save verrouillée). SENS UNIQUE → générique.',
+      run: async () => {
+        const r = requireFn(rt(), 'runtime');
+        const hof = await import('../../src/hall_of_fame');
+        hof.preloadHallOfFameAssets().catch((e) => console.error('[devtools v2] hof preload', e));
+        r.SetMainCallback2(asCB2(hof.CB2_DoHallOfFameScreen));
+        return 'Panthéon lancé (⚠ save · sens unique → générique)';
+      },
+    },
+    {
+      id: 'scene.credits', category: 'scene', label: '🎬 Générique (credits)',
+      description: 'Générique de fin (musique + slides Pokémon). SENS UNIQUE → écran-titre (soft reset). Recharger pour rejouer.',
+      run: async () => {
+        const r = requireFn(rt(), 'runtime');
+        const [credits, hof] = await Promise.all([
+          import('../../src/credits'),
+          import('../../src/hall_of_fame'),
+        ]);
+        // Le générique n'a qu'UNE entrée réelle dans le jeu : après le Panthéon, où
+        // preloadHallOfFameAssets() a déjà chargé À LA FOIS les assets du générique (il
+        // appelle preloadCreditsAssets en interne) ET les front-pics de l'équipe montrés
+        // par les slides. Sans ces pics, CreateCreditsMonSprite (credits.ts:1382) écrit
+        // sur un sprite absent → throw en boucle. On reproduit donc la MÊME précondition.
+        await hof.preloadHallOfFameAssets();
+        r.SetMainCallback2(asCB2(credits.CB2_StartCreditsSequence));
+        return 'Générique lancé (sens unique → écran-titre)';
+      },
+    },
+    {
+      // Entrée FIELD 1:1 BeginEvolutionScene (party_menu). postEvoSpecies = espèce COURANTE
+      // du slot 0 → morph sur place, SANS changer l'équipe (SetMonData same-value = no-op) ;
+      // canStopEvo=TRUE → B annule. Retour au field via gCB2_AfterEvolution = CB2_ReturnToField_Manual.
+      id: 'scene.evolution', category: 'scene', label: '🧬 Évolution (slot 0)',
+      description: 'Scène d\'évolution sur le Pokémon du slot 0 (morph sur place, sans changer l\'équipe). B = annuler. Retour auto au field.',
+      run: async () => {
+        if (!rt()) return 'Évolution : runtime indisponible';
+        const [evo, ow, party, pkm, con] = await Promise.all([
+          import('../../src/evolution_scene'),
+          import('../../src/overworld'),
+          import('../../src/engine/battle/party-storage'),
+          import('../../src/pokemon'),
+          import('../../include/pokemon'),
+        ]);
+        const mon = party.gPlayerParty[0];
+        if (!mon) return 'Évolution : aucun Pokémon en slot 0';
+        const species = pkm.GetMonData(mon, con.MON_DATA_SPECIES) as number;
+        if (!species) return 'Évolution : slot 0 sans espèce valide';
+        evo.SetCB2AfterEvolution(ow.CB2_ReturnToField_Manual);
+        evo.BeginEvolutionScene(mon, species, true, 0);
+        return `Évolution lancée (slot 0, espèce ${species} — B = annuler)`;
+      },
+    },
+    {
+      // OpenWallClock(mode) : CB2 swap + savedCallback = CB2_ReturnToFieldLocal_Manual (retour field auto).
+      id: 'scene.wallclock', category: 'scene', label: '🕰 Horloge murale', ui: 'grid',
+      description: 'Écran de l\'horloge murale (flèches = régler, A = valider, B = sortir) ; retour auto au field.',
+      args: [{
+        name: 'mode', kind: 'select', options: [
+          { value: 'SET', label: 'SET · régler l\'heure' },
+          { value: 'VIEW', label: 'VIEW · consulter (RTC)' },
+        ],
+      }],
+      run: async ({ mode }) => {
+        const { OpenWallClock } = await import('../../src/wallclock');
+        const m = String(mode) === 'VIEW' ? 'VIEW' : 'SET';
+        OpenWallClock(m);
+        return `Horloge murale (${m}) — A = valider · B = sortir`;
       },
     },
   ]);
@@ -1217,6 +1325,7 @@ export function registerAllDevtools(): void {
   registerJeu();
   registerJoueur();
   registerCombat();
+  registerScene();
   registerScripts();
   registerGfx();
   registerAudio();
