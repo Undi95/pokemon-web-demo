@@ -49,10 +49,48 @@ ROADMAP.md
 *_NOTES.md
 *_SCRATCH.md
 
-# Rapports d'audit JSON = artefacts régénérables (scripts/audit-*.cjs, cartograph…).
-# Les synthèses .md/.txt restent trackées ; les .json se régénèrent à la demande.
-audit-reports/**/*.json
+# ─────────────────────────────────────────────────────────────────────────────
+# Outillage & documentation INTERNES — gardés en local, hors du repo public.
+# (les fichiers restent sur le disque ; seuls exclus du suivi Git)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Doc de travail interne (plans FILE-OPUS, audits, héritage Fable5, checklists…)
+docs/
+audit-reports/
+CLAUDE.md
+.claude/
+
+# Scripts d'AUDIT / PROBE / ANALYSE 1:1 internes (vérification de fidélité au
+# décomp). NON nécessaires au build ni à la génération d'assets : les pipelines
+# extract-* / gen-* / compile-* / render-* / transpile-callbacks restent trackés,
+# ainsi que les scripts référencés par package.json.
+scripts/audit-*.cjs
+scripts/audit-*.mjs
+scripts/probe-*.mjs
+scripts/check-*.mjs
+scripts/validate-*
+scripts/analyze-*
+scripts/sweep-*
+scripts/qualify-*
+scripts/classify-*
+scripts/gfx-verify-*
+scripts/list-*
+scripts/cartograph-1to1.cjs
+scripts/find-import-cycle.cjs
+scripts/transpile-c.cjs
+scripts/decomp-index.cjs
+scripts/build-ts-symbol-index.cjs
+scripts/build-helper-bridge-manifest.mjs
+scripts/map-battle-dupes.cjs
+scripts/shop-callgraph-completeness.cjs
+scripts/reroute-from-bridge.cjs
+scripts/wf-spine-decycle-map.js
+scripts/dump-mist-pal.cjs
+scripts/apply-pokemon-c-qualifications.cjs
+scripts/m4a-oracle/
+scripts/m4a/analyze-wav.mjs
+scripts/m4a/spectrum-analyze.mjs
+scripts/m4a/M4A_DECOMP_SPEC.md
+
+# (obsolète : audit-reports/ est désormais ignoré en entier ci-dessus)
 audit-coverage.json
-scripts/m4a-oracle/*.jsonl
-scripts/m4a-oracle/*.bin
-scripts/m4a-oracle/*.wav
