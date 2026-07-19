@@ -731,7 +731,20 @@ function HallOfFame_PrintPlayerInfo(_unused1: number, _unused2: number): void {
   let width = GetStringRightAlignXOffset(FONT_NORMAL, playerName, 0x70);
   AddTextPrinterParameterized3(1, FONT_NORMAL, width, 1, sPlayerInfoTextColors, TEXT_SKIP_DRAW, playerName);
 
-  const trainerId = (gSaveBlock2Ptr.playerTrainerId[0]) | (gSaveBlock2Ptr.playerTrainerId[1] << 8);
+  // 1:1 décomp c:1211 : `trainerId = (playerTrainerId[0]) | (playerTrainerId[1] << 8)`
+  //   = les 16 bits BAS de l'ID 32-bit (ID dresseur PUBLIC affiché "NºID XXXXX").
+  // Adaptation modèle (cf. new_game.ts:InitPlayerTrainerId + save-blocks.ts `playerTrainerId: number`) :
+  //   notre SB2.playerTrainerId est un u32 little-endian (≡ u8[4] décomp), PAS un tableau d'octets
+  //   → l'accès `[0]`/`[1]` rendait `undefined` (⇒ NºID toujours 00000, bug screenshot user).
+  //   Conversion 1:1-équivalente = `(u32 & 0xFFFF)`, IDENTIQUE à trainer_card.ts:349-356 et au
+  //   chemin mon-info ci-dessus (`currMon.tid & 0xFFFF`). Fallback array = défensif (legacy u8[4]).
+  const rawTid = gSaveBlock2Ptr.playerTrainerId as number | number[];
+  const tidU32 = (typeof rawTid === 'number'
+    ? (rawTid >>> 0)
+    : Array.isArray(rawTid)
+      ? ((((rawTid[3] ?? 0) << 24) | ((rawTid[2] ?? 0) << 16) | ((rawTid[1] ?? 0) << 8) | (rawTid[0] ?? 0)) >>> 0)
+      : 0);
+  const trainerId = tidU32 & 0xFFFF;
   AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 0x11, sPlayerInfoTextColors, 0, encodeOwText(getString('gText_IDNumber')));
   text[0] = ((trainerId % 100000) / 10000 | 0) + CHAR_0;
   text[1] = ((trainerId % 10000) / 1000 | 0) + CHAR_0;
