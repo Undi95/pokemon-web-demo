@@ -26,33 +26,15 @@ export function makeSpecialInlineFlowPoll(name: string): (() => boolean) | null 
     case 'ChooseStarter': {
       let ready = false;
       let flow: { tick: () => boolean } | null = null;
-      let signaled = false;
       void import('./starter_choose').then((m) => { flow = m.startChooseStarterFlow(); ready = true; });
-      return () => {
-        if (!ready || !flow) return false;
-        const done = flow.tick();
-        // `special ChooseStarter` est `waitstate=1` (specials.inc:175) → l'image byte-VM porte
-        // `special ChooseStarter; waitstate`. Contrairement aux autres flows-UI (region map / PC
-        // qui « terminent » à la FERMETURE de l'overlay et libèrent eux-mêmes le waitstate), le
-        // flow ChooseStarter « termine » quand le FIRST_BATTLE DÉMARRE (starter_choose : YES →
-        // CB2_GiveStarter → StartFirstBattle → _done=true), pas quand il FINIT. Le `waitstate`
-        // qui suit ne s'exécute donc qu'AU RETOUR du combat — or aucun chemin de retour combat ne
-        // le libère (le décomp le libère via CB2_EndFirstBattle → CB2_ReturnToFieldContinueScript →
-        // FieldCB_ContinueScriptHandleMusic → ScriptContext_Enable). Notre `ScrCmd_waitstate` polle
-        // `consumeWaitStateSignal()` : on latch le signal ICI, à la complétion du flow (AVANT le
-        // combat). `_waitStateSignaled` (module scrcmd) SURVIT au combat — aucun field-script ne
-        // tourne pour le consommer entre-temps — et le `waitstate` post-combat le consomme, reprenant
-        // le script Birch (`applymovement LOCALID_ROUTE101_BIRCH` → « tu m'as sauvé » → warp labo).
-        // Sans ce latch : waitstate jamais libéré → FREEZE Route 101 + résidu cadre msgbox à la fin
-        // du tuto Birch (bug latent : le chemin nouvelle-partie n'avait pas été rejoué).
-        if (done && !signaled) {
-          signaled = true;
-          const sig = (globalThis as { __SignalWaitState?: () => void }).__SignalWaitState;
-          if (sig) sig();
-          else console.error('[ChooseStarter] pont __SignalWaitState absent — waitstate post-combat non libéré (freeze tuto Birch)');
-        }
-        return done;
-      };
+      // `special ChooseStarter` est `waitstate=1` (specials.inc:175) : le flow « termine » quand
+      // le FIRST_BATTLE démarre → le `waitstate` suivant ne s'exécute qu'AU RETOUR du combat.
+      // Sa libération est émise par _restoreOverworldFromMenu (TestOverworldScene) à la FIN de
+      // la restauration field — 1:1 CB2_EndFirstBattle → CB2_ReturnToFieldContinueScript… →
+      // FieldCB_ContinueScriptHandleMusic → ScriptContext_Enable. (Un latch précoce ICI, posé
+      // avant le combat, libérait le script PENDANT la restauration → warp du tuto exécuté à
+      // moitié : location posée, objets purgés, map jamais rechargée — bug user 2026-07-19.)
+      return () => (ready && flow ? flow.tick() : false);
     }
     // Birch tutorial : CB2_GiveStarter → CB2_StartFirstBattle (BATTLE_TYPE_FIRST_BATTLE).
     case 'StartBirchTutorialBattle': {
