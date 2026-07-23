@@ -1240,7 +1240,13 @@ import {
   MetatileBehavior_IsSurfableWaterOrUnderwater as _MB_IsSurfableWaterOrUnderwater_BSH,
   MetatileBehavior_IsDeepOrOceanWater as _MB_IsDeepOrOceanWater_BSH,
   MetatileBehavior_IsMountain as _MB_IsMountain_BSH,
+  MetatileBehavior_GetBridgeType as _MB_GetBridgeType_BSH,
+  MetatileBehavior_IsBridgeOverWater as _MB_IsBridgeOverWater_BSH,
 } from './metatile_behavior';
+import { TestPlayerAvatarFlags as _TestPlayerAvatarFlags_BSH } from './field_player_avatar';
+import { PLAYER_AVATAR_FLAG_SURFING as _PLAYER_AVATAR_FLAG_SURFING_BSH } from '../include/global.fieldmap';
+import { GetSavedWeather as _GetSavedWeather_BSH } from './field_weather_effect';
+import { WEATHER_SANDSTORM as _WEATHER_SANDSTORM_BSH } from '../include/constants/weather';
 import {
   GetMonData as _GetMonData_BSH, SetMonData as _SetMonData_BSH,
   createEmptyPokemon as _createEmptyPokemon_BSH, CreateMon as _CreateMon_BSH,
@@ -1462,6 +1468,22 @@ export function BattleSetup_GetEnvironmentId(): number {
   if (_MB_IsDeepOrOceanWater_BSH(tileBehavior)) return BATTLE_ENVIRONMENT_WATER;
   if (_MB_IsSurfableWaterOrUnderwater_BSH(tileBehavior)) return BATTLE_ENVIRONMENT_POND;
   if (_MB_IsMountain_BSH(tileBehavior)) return BATTLE_ENVIRONMENT_MOUNTAIN;
+  // 1:1 décomp battle_setup.c:680-693 (queue manquante = POUS-6, mauvais fond
+  // sur surf-pont / Route 113 cendre / tempête de sable).
+  if (_TestPlayerAvatarFlags_BSH(_PLAYER_AVATAR_FLAG_SURFING_BSH)) {
+    // Is BRIDGE_TYPE_POND_*? (BRIDGE_TYPE_OCEAN = 0, cf. metatile_behavior.c).
+    const BRIDGE_TYPE_OCEAN = 0;
+    if (_MB_GetBridgeType_BSH(tileBehavior) !== BRIDGE_TYPE_OCEAN)
+      return BATTLE_ENVIRONMENT_POND;
+    if (_MB_IsBridgeOverWater_BSH(tileBehavior) === true)
+      return BATTLE_ENVIRONMENT_WATER;
+  }
+  // 1:1 : `gSaveBlock1Ptr->location.mapGroup/mapNum == MAP_GROUP/NUM(MAP_ROUTE113)`.
+  if (gSaveBlock1Ptr.location.mapGroup === MAP_GROUP(MAP_CONSTANTS.MAP_ROUTE113)
+   && gSaveBlock1Ptr.location.mapNum === MAP_NUM(MAP_CONSTANTS.MAP_ROUTE113))
+    return BATTLE_ENVIRONMENT_SAND;
+  if (_GetSavedWeather_BSH() === _WEATHER_SANDSTORM_BSH)
+    return BATTLE_ENVIRONMENT_SAND;
 
   return BATTLE_ENVIRONMENT_PLAIN;
 }
