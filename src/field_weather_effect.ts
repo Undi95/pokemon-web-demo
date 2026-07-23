@@ -33,7 +33,11 @@ import {
 
 import { SetGpuReg } from './gpu_regs';
 import { CreateTask, DestroyTask } from './task';
-import { REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../harness/runtime/decomp-runtime';
+import { REG_OFFSET_BLDALPHA, DISPLAY_WIDTH, DISPLAY_HEIGHT } from '../harness/runtime/decomp-runtime';
+import { Random } from './random';
+import { ISO_RANDOMIZE2 } from '../include/random';
+import { IsSEPlaying } from '../harness/runtime/decomp-globals';
+import { SE_RAIN, SE_THUNDERSTORM, SE_DOWNPOUR } from '../include/constants/songs';
 import { LoadSpriteSheet } from './sprite';
 import { loadIndexedPngStrict } from '../harness/gba/png-loader';
 import { setFieldEffectAnims } from './field_effect_helpers';
@@ -48,12 +52,18 @@ import {
   GFXTAG_ASH,
   GFXTAG_FOG_H,
   GFXTAG_CLOUD,
+  GFXTAG_RAIN,
   LoadCustomWeatherSpritePalette,
   Weather_SetBlendCoeffs,
   Weather_SetTargetBlendCoeffs,
   Weather_UpdateBlend,
   SetNextWeather,
   SetCurrentAndNextWeather,
+  SetRainStrengthFromSoundEffect,
+  ApplyWeatherColorMapIfIdle,
+  ApplyWeatherColorMapIfIdle_Gradual,
+  WEATHER_PAL_STATE_CHANGING_WEATHER,
+  WEATHER_PAL_STATE_IDLE,
   _registerWeatherFuncs,
 } from './field_weather';
 import { MAP_OFFSET } from './fieldmap';
@@ -86,6 +96,7 @@ const WEATHER_ROUTE123_CYCLE = 21;
 
 const NUM_ASH_SPRITES = 20;
 const MAX_SPRITES = 64;
+const MAX_RAIN_SPRITES = 24; // constants/field_weather.h
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Abnormal weather (field_weather_effect.c:2437-2505)
@@ -914,4 +925,585 @@ _registerWeatherFuncs(WEATHER_VOLCANIC_ASH, {
   main: Ash_Main,
   initAll: Ash_InitAll,
   finish: Ash_Finish,
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  WEATHER_RAIN (field_weather_effect.c:353-755)
+//  Gouttes 16×32 (OBJ_NORMAL) en Q28.4 fixed-point : chute diagonale (mouvement
+//  sRainSpriteMovement) puis anim de splash au sol, boucle. targetRainSpriteCount
+//  gouttes visibles (10 pour la pluie, 16 thunderstorm, 24 downpour). Palette =
+//  fog (PALTAG_WEATHER = contrastColorMapSpritePalIndex, comme fog/ash).
+//  ⚠️ AUDIO SKIP : SetRainStrengthFromSoundEffect n'émet aucun son (rainStrength only).
+// ════════════════════════════════════════════════════════════════════════════
+
+const RAIN_PNG = '/decomp/em/weather/rain.png';
+
+/** 1:1 décomp `sRainSpriteCoords[]` (field_weather_effect.c:363). */
+const sRainSpriteCoords: ReadonlyArray<{ x: number; y: number }> = [
+  { x: 0, y: 0 }, { x: 0, y: 160 }, { x: 0, y: 64 }, { x: 144, y: 224 },
+  { x: 144, y: 128 }, { x: 32, y: 32 }, { x: 32, y: 192 }, { x: 32, y: 96 },
+  { x: 72, y: 128 }, { x: 72, y: 32 }, { x: 72, y: 192 }, { x: 216, y: 96 },
+  { x: 216, y: 0 }, { x: 104, y: 160 }, { x: 104, y: 64 }, { x: 104, y: 224 },
+  { x: 144, y: 0 }, { x: 144, y: 160 }, { x: 144, y: 64 }, { x: 32, y: 224 },
+  { x: 32, y: 128 }, { x: 72, y: 32 }, { x: 72, y: 192 }, { x: 48, y: 96 },
+];
+
+/** 1:1 décomp `sRainSpriteAnimCmds[]` (field_weather_effect.c:408-435) : 3 anims
+ *  (fall boucle, splash normal, splash lourd). imageValue = offset TILE. */
+const sRainSpriteAnimCmds: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  // sRainSpriteFallAnimCmd
+  [ANIMCMD_FRAME(0, 16), ANIMCMD_JUMP(0)],
+  // sRainSpriteSplashAnimCmd
+  [ANIMCMD_FRAME(8, 3), ANIMCMD_FRAME(32, 2), ANIMCMD_FRAME(40, 2), ANIMCMD_END],
+  // sRainSpriteHeavySplashAnimCmd
+  [ANIMCMD_FRAME(8, 3), ANIMCMD_FRAME(16, 3), ANIMCMD_FRAME(24, 4), ANIMCMD_END],
+];
+
+/** 1:1 décomp `sRainSpriteMovement[][2]` (field_weather_effect.c:449) — Q28.4 fixed-point. */
+const sRainSpriteMovement: ReadonlyArray<ReadonlyArray<number>> = [
+  [-0x68, 0xD0],
+  [-0xA0, 0x140],
+];
+
+/** 1:1 décomp `sRainSpriteFallingDurations[][2]` (field_weather_effect.c:458) :
+ *  [0] = frames de chute avant splash ; [1] = attente max initiale. */
+const sRainSpriteFallingDurations: ReadonlyArray<ReadonlyArray<number>> = [
+  [18, 7],
+  [12, 10],
+];
+
+let _rainTileStart = -1;
+let _rainCharData: Uint8Array | null = null;
+let _rainInit = false;
+let _rainInitPromise: Promise<void> | null = null;
+
+/** Préchargement plateforme du sprite sheet rain (le décomp l'a en INCBIN compile-time :
+ *  gWeatherRainTiles). rain.png = 16×192 (2 tiles de large) → layout PNG row-major = OBJ 1D
+ *  16×32 direct (chaque sprite = 2×4 tiles empilés). Palette = fog (chargée par StartWeather,
+ *  comme ash/fog). À appeler avant StartWeather (comme preloadWeatherAshSprites). */
+export async function preloadWeatherRainSprites(): Promise<void> {
+  if (_rainInit) return;
+  if (_rainInitPromise) return _rainInitPromise;
+  _rainInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(RAIN_PNG, 4);
+    _rainCharData = png.charData;
+    _rainInit = true;
+  })();
+  return _rainInitPromise;
+}
+
+/** 1:1 décomp `Rain_InitVars(void)` (field_weather_effect.c:471). */
+function Rain_InitVars(): void {
+  gWeatherPtr.initStep = 0;
+  gWeatherPtr.weatherGfxLoaded = 0;
+  gWeatherPtr.rainSpriteVisibleCounter = 0;
+  gWeatherPtr.rainSpriteVisibleDelay = 8;
+  gWeatherPtr.isDownpour = 0;
+  gWeatherPtr.targetRainSpriteCount = 10;
+  gWeatherPtr.targetColorMapIndex = 3;
+  gWeatherPtr.colorMapStepDelay = 20;
+  SetRainStrengthFromSoundEffect(SE_RAIN);
+}
+
+/** 1:1 décomp `Rain_InitAll(void)` (field_weather_effect.c:484). */
+function Rain_InitAll(): void {
+  Rain_InitVars();
+  while (!gWeatherPtr.weatherGfxLoaded) Rain_Main();
+}
+
+/** 1:1 décomp `Rain_Main(void)` (field_weather_effect.c:491). */
+function Rain_Main(): void {
+  switch (gWeatherPtr.initStep) {
+    case 0:
+      LoadRainSpriteSheet();
+      gWeatherPtr.initStep++;
+      break;
+    case 1:
+      if (!CreateRainSprite()) gWeatherPtr.initStep++;
+      break;
+    case 2:
+      if (!UpdateVisibleRainSprites()) {
+        gWeatherPtr.weatherGfxLoaded = 1;
+        gWeatherPtr.initStep++;
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `Rain_Finish(void)` (field_weather_effect.c:513). */
+function Rain_Finish(): boolean {
+  switch (gWeatherPtr.finishStep) {
+    case 0:
+      if (gWeatherPtr.nextWeather === WEATHER_RAIN
+       || gWeatherPtr.nextWeather === WEATHER_RAIN_THUNDERSTORM
+       || gWeatherPtr.nextWeather === WEATHER_DOWNPOUR) {
+        gWeatherPtr.finishStep = 0xFF;
+        return false;
+      } else {
+        gWeatherPtr.targetRainSpriteCount = 0;
+        gWeatherPtr.finishStep++;
+      }
+    // fall through
+    case 1:
+      if (!UpdateVisibleRainSprites()) {
+        DestroyRainSprites();
+        gWeatherPtr.finishStep++;
+        return false;
+      }
+      return true;
+  }
+  return false;
+}
+
+// data: tCounter=data[0], tRandom=data[1], tPosX=data[2], tPosY=data[3],
+//       tState=data[4], tActive=data[5], tWaiting=data[6].
+
+/** 1:1 décomp `StartRainSpriteFall(struct Sprite *sprite)` (field_weather_effect.c:551). */
+function StartRainSpriteFall(sprite: DecompSprite): void {
+  let rand: number;
+  let numFallingFrames: number;
+  let tileX: number;
+  let tileY: number;
+
+  if (sprite.data[1] === 0) sprite.data[1] = 361;
+
+  rand = ISO_RANDOMIZE2(sprite.data[1]);
+  sprite.data[1] = ((rand & 0x7FFF0000) >> 16) % 600;
+
+  numFallingFrames = sRainSpriteFallingDurations[gWeatherPtr.isDownpour][0];
+
+  tileX = sprite.data[1] % 30;
+  sprite.data[2] = tileX * 8; // Useless assignment, leftover from before fixed-point values were used
+
+  tileY = (sprite.data[1] / 30) | 0;
+  sprite.data[3] = tileY * 8; // Useless assignment, leftover from before fixed-point values were used
+
+  sprite.data[2] = tileX;
+  sprite.data[2] <<= 7; // This is tileX * 8, using a fixed-point value with 4 decimal places
+
+  sprite.data[3] = tileY;
+  sprite.data[3] <<= 7; // This is tileX * 8, using a fixed-point value with 4 decimal places
+
+  // "Rewind" the rain sprites, from their ending position.
+  sprite.data[2] -= sRainSpriteMovement[gWeatherPtr.isDownpour][0] * numFallingFrames;
+  sprite.data[3] -= sRainSpriteMovement[gWeatherPtr.isDownpour][1] * numFallingFrames;
+
+  _rt().StartSpriteAnim(sprite.spriteId, 0);
+  sprite.data[4] = 0;
+  sprite.coordOffsetEnabled = false;
+  sprite.data[0] = numFallingFrames;
+}
+
+/** 1:1 décomp `UpdateRainSprite(struct Sprite *sprite)` (field_weather_effect.c:588). */
+function UpdateRainSprite(sprite: DecompSprite): void {
+  const rt = _rt();
+  if (sprite.data[4] === 0) {
+    // Raindrop is in its "falling" motion.
+    sprite.data[2] += sRainSpriteMovement[gWeatherPtr.isDownpour][0];
+    sprite.data[3] += sRainSpriteMovement[gWeatherPtr.isDownpour][1];
+    sprite.x = sprite.data[2] >> 4;
+    sprite.y = sprite.data[3] >> 4;
+
+    if (sprite.data[5]
+     && (sprite.x >= -8 && sprite.x <= DISPLAY_WIDTH + 8)
+     && sprite.y >= -16 && sprite.y <= DISPLAY_HEIGHT + 16)
+      sprite.invisible = false;
+    else
+      sprite.invisible = true;
+
+    if (--sprite.data[0] === 0) {
+      // Make raindrop splash on the ground
+      rt.StartSpriteAnim(sprite.spriteId, gWeatherPtr.isDownpour + 1);
+      sprite.data[4] = 1;
+      sprite.x -= rt.gSpriteCoordOffsetX;
+      sprite.y -= rt.gSpriteCoordOffsetY;
+      sprite.coordOffsetEnabled = true;
+    }
+  } else if (sprite.animEnded) {
+    // The splashing animation ended.
+    sprite.invisible = true;
+    StartRainSpriteFall(sprite);
+  }
+}
+
+/** 1:1 décomp `WaitRainSprite(struct Sprite *sprite)` (field_weather_effect.c:623). */
+function WaitRainSprite(sprite: DecompSprite): void {
+  if (sprite.data[0] === 0) {
+    StartRainSpriteFall(sprite);
+    sprite.callback = UpdateRainSprite;
+  } else {
+    sprite.data[0]--;
+  }
+}
+
+/** 1:1 décomp `InitRainSpriteMovement(struct Sprite *sprite, u16 val)` (field_weather_effect.c:636). */
+function InitRainSpriteMovement(sprite: DecompSprite, val: number): void {
+  const numFallingFrames = sRainSpriteFallingDurations[gWeatherPtr.isDownpour][0];
+  let numAdvanceRng = (val / (sRainSpriteFallingDurations[gWeatherPtr.isDownpour][1] + numFallingFrames)) | 0;
+  let frameVal = val % (sRainSpriteFallingDurations[gWeatherPtr.isDownpour][1] + numFallingFrames);
+
+  // 1:1 : while (--numAdvanceRng != 0xFFFF) — u16 underflow.
+  for (;;) {
+    numAdvanceRng = (numAdvanceRng - 1) & 0xFFFF;
+    if (numAdvanceRng === 0xFFFF) break;
+    StartRainSpriteFall(sprite);
+  }
+
+  if (frameVal < numFallingFrames) {
+    // 1:1 : while (--frameVal != 0xFFFF) — u16 underflow.
+    for (;;) {
+      frameVal = (frameVal - 1) & 0xFFFF;
+      if (frameVal === 0xFFFF) break;
+      UpdateRainSprite(sprite);
+    }
+
+    sprite.data[6] = 0;
+  } else {
+    sprite.data[0] = frameVal - numFallingFrames;
+    sprite.invisible = true;
+    sprite.data[6] = 1;
+  }
+}
+
+/** 1:1 décomp `LoadRainSpriteSheet(void)` (field_weather_effect.c:660). */
+function LoadRainSpriteSheet(): void {
+  if (!_rainCharData) {
+    // Asset pas préchargé : sans ça Rain_InitAll boucle à l'infini (while !weatherGfxLoaded).
+    console.error('[field_weather_effect] rain.png non préchargé — appeler preloadWeatherRainSprites() avant StartWeather.');
+    _rainTileStart = 0;
+    return;
+  }
+  _rainTileStart = LoadSpriteSheet({ data: _rainCharData, size: _rainCharData.length, tag: GFXTAG_RAIN });
+}
+
+/** 1:1 décomp `CreateRainSprite(void)` (field_weather_effect.c:665). */
+function CreateRainSprite(): boolean {
+  const rt = _rt();
+  let spriteIndex: number;
+
+  if (gWeatherPtr.rainSpriteCount === MAX_RAIN_SPRITES) return false;
+
+  spriteIndex = gWeatherPtr.rainSpriteCount;
+  // 1:1 : CreateSpriteAtEnd(&sRainSpriteTemplate, coords.x, coords.y, 78).
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: _rainTileStart,
+    paletteBank: gWeatherPtr.contrastColorMapSpritePalIndex,
+    x: sRainSpriteCoords[spriteIndex].x, y: sRainSpriteCoords[spriteIndex].y,
+    shape: 2, size: 2,           // SPRITE_SHAPE/SIZE(16x32)
+    priority: 1,                 // 1:1 oam.priority = 1
+    paletteMode: 0, affineMode: 0,
+    subpriority: 78,
+    fromEnd: true,               // CreateSpriteAtEnd
+  });
+
+  if (spriteId !== MAX_SPRITES) {
+    const sprite = rt.gSprites[spriteId]!;
+    sprite.callback = UpdateRainSprite;
+    setFieldEffectAnims(sprite, sRainSpriteAnimCmds, _rainTileStart);
+    sprite.data[5] = 0;                        // tActive = FALSE
+    sprite.data[1] = spriteIndex * 145;        // tRandom
+    while (sprite.data[1] >= 600) sprite.data[1] -= 600;
+
+    StartRainSpriteFall(sprite);
+    InitRainSpriteMovement(sprite, spriteIndex * 9);
+    sprite.invisible = true;
+    gWeatherPtr.sprites.s1.rainSprites[spriteIndex] = sprite;
+  } else {
+    gWeatherPtr.sprites.s1.rainSprites[spriteIndex] = null;
+  }
+
+  if (++gWeatherPtr.rainSpriteCount === MAX_RAIN_SPRITES) {
+    for (let i = 0; i < MAX_RAIN_SPRITES; i++) {
+      const s = gWeatherPtr.sprites.s1.rainSprites[i] as DecompSprite | null;
+      if (s) {
+        if (!s.data[6]) s.callback = UpdateRainSprite;
+        else s.callback = WaitRainSprite;
+      }
+    }
+
+    return false;
+  }
+
+  return true;
+}
+
+/** 1:1 décomp `UpdateVisibleRainSprites(void)` (field_weather_effect.c:714). */
+function UpdateVisibleRainSprites(): boolean {
+  if (gWeatherPtr.curRainSpriteIndex === gWeatherPtr.targetRainSpriteCount) return false;
+
+  if (++gWeatherPtr.rainSpriteVisibleCounter > gWeatherPtr.rainSpriteVisibleDelay) {
+    gWeatherPtr.rainSpriteVisibleCounter = 0;
+    if (gWeatherPtr.curRainSpriteIndex < gWeatherPtr.targetRainSpriteCount) {
+      (gWeatherPtr.sprites.s1.rainSprites[gWeatherPtr.curRainSpriteIndex++] as DecompSprite).data[5] = 1;
+    } else {
+      gWeatherPtr.curRainSpriteIndex--;
+      (gWeatherPtr.sprites.s1.rainSprites[gWeatherPtr.curRainSpriteIndex] as DecompSprite).data[5] = 0;
+      (gWeatherPtr.sprites.s1.rainSprites[gWeatherPtr.curRainSpriteIndex] as DecompSprite).invisible = true;
+    }
+  }
+  return true;
+}
+
+/** 1:1 décomp `DestroyRainSprites(void)` (field_weather_effect.c:736). */
+function DestroyRainSprites(): void {
+  for (let i = 0; i < gWeatherPtr.rainSpriteCount; i++) {
+    const s = gWeatherPtr.sprites.s1.rainSprites[i] as DecompSprite | null;
+    if (s !== null) DestroySprite(s.spriteId);
+  }
+  gWeatherPtr.rainSpriteCount = 0;
+  FreeSpriteTilesByTag(GFXTAG_RAIN);
+}
+
+// 1:1 décomp sWeatherFuncs (field_weather.c) :
+//   [WEATHER_RAIN] = {Rain_InitVars, Rain_Main, Rain_InitAll, Rain_Finish}
+_registerWeatherFuncs(WEATHER_RAIN, {
+  initVars: Rain_InitVars,
+  main: Rain_Main,
+  initAll: Rain_InitAll,
+  finish: Rain_Finish,
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  WEATHER_RAIN_THUNDERSTORM + WEATHER_DOWNPOUR (field_weather_effect.c:1010-1272)
+//  Réutilisent tout le système Rain (sprites/gfx) + une state-machine d'éclairs qui
+//  flashe la color map (ApplyWeatherColorMapIfIdle) et enfile le tonnerre.
+//  ⚠️ AUDIO SKIP : EnqueueThunder/UpdateThunderSound gardent la logique d'état (RNG 1:1)
+//  mais n'émettent aucun son (PlaySE remplacé par no-op commenté).
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1:1 décomp enum THUNDER_STATE_* (field_weather_effect.c:1014).
+const THUNDER_STATE_LOAD_RAIN = 0;
+const THUNDER_STATE_CREATE_RAIN = 1;
+const THUNDER_STATE_INIT_RAIN = 2;
+const THUNDER_STATE_WAIT_CHANGE = 3;
+const THUNDER_STATE_NEW_CYCLE = 4;
+const THUNDER_STATE_NEW_CYCLE_WAIT = 5;
+const THUNDER_STATE_INIT_CYCLE_1 = 6;
+const THUNDER_STATE_INIT_CYCLE_2 = 7;
+const THUNDER_STATE_SHORT_BOLT = 8;
+const THUNDER_STATE_TRY_NEW_BOLT = 9;
+const THUNDER_STATE_WAIT_BOLT_SHORT = 10;
+const THUNDER_STATE_INIT_BOLT_LONG = 11;
+const THUNDER_STATE_WAIT_BOLT_LONG = 12;
+const THUNDER_STATE_FADE_BOLT_LONG = 13;
+const THUNDER_STATE_END_BOLT_LONG = 14;
+
+/** 1:1 décomp `Thunderstorm_InitVars(void)` (field_weather_effect.c:1037). */
+function Thunderstorm_InitVars(): void {
+  gWeatherPtr.initStep = THUNDER_STATE_LOAD_RAIN;
+  gWeatherPtr.weatherGfxLoaded = 0;
+  gWeatherPtr.rainSpriteVisibleCounter = 0;
+  gWeatherPtr.rainSpriteVisibleDelay = 4;
+  gWeatherPtr.isDownpour = 0;
+  gWeatherPtr.targetRainSpriteCount = 16;
+  gWeatherPtr.targetColorMapIndex = 3;
+  gWeatherPtr.colorMapStepDelay = 20;
+  gWeatherPtr.weatherGfxLoaded = 0;  // duplicate assignment
+  gWeatherPtr.thunderEnqueued = false;
+  SetRainStrengthFromSoundEffect(SE_THUNDERSTORM);
+}
+
+/** 1:1 décomp `Thunderstorm_InitAll(void)` (field_weather_effect.c:1052). */
+function Thunderstorm_InitAll(): void {
+  Thunderstorm_InitVars();
+  while (gWeatherPtr.weatherGfxLoaded === 0) Thunderstorm_Main();
+}
+
+/** 1:1 décomp `Downpour_InitVars(void)` (field_weather_effect.c:1066). */
+function Downpour_InitVars(): void {
+  gWeatherPtr.initStep = THUNDER_STATE_LOAD_RAIN;
+  gWeatherPtr.weatherGfxLoaded = 0;
+  gWeatherPtr.rainSpriteVisibleCounter = 0;
+  gWeatherPtr.rainSpriteVisibleDelay = 4;
+  gWeatherPtr.isDownpour = 1;
+  gWeatherPtr.targetRainSpriteCount = 24;
+  gWeatherPtr.targetColorMapIndex = 3;
+  gWeatherPtr.colorMapStepDelay = 20;
+  gWeatherPtr.weatherGfxLoaded = 0;  // duplicate assignment
+  SetRainStrengthFromSoundEffect(SE_DOWNPOUR);
+}
+
+/** 1:1 décomp `Downpour_InitAll(void)` (field_weather_effect.c:1080). */
+function Downpour_InitAll(): void {
+  Downpour_InitVars();
+  while (gWeatherPtr.weatherGfxLoaded === 0) Thunderstorm_Main();
+}
+
+/** 1:1 décomp `Thunderstorm_Main(void)` (field_weather_effect.c:1092).
+ *  Pattern d'un cycle : (SHORT_BOLT){1,2}(LONG_BOLT)? ; tonnerre au dernier éclair. */
+function Thunderstorm_Main(): void {
+  UpdateThunderSound();
+  switch (gWeatherPtr.initStep) {
+    case THUNDER_STATE_LOAD_RAIN:
+      LoadRainSpriteSheet();
+      gWeatherPtr.initStep++;
+      break;
+    case THUNDER_STATE_CREATE_RAIN:
+      if (!CreateRainSprite()) gWeatherPtr.initStep++;
+      break;
+    case THUNDER_STATE_INIT_RAIN:
+      if (!UpdateVisibleRainSprites()) {
+        gWeatherPtr.weatherGfxLoaded = 1;
+        gWeatherPtr.initStep++;
+      }
+      break;
+    case THUNDER_STATE_WAIT_CHANGE:
+      if (gWeatherPtr.palProcessingState !== WEATHER_PAL_STATE_CHANGING_WEATHER)
+        gWeatherPtr.initStep = THUNDER_STATE_INIT_CYCLE_1;
+      break;
+    case THUNDER_STATE_NEW_CYCLE:
+      gWeatherPtr.thunderAllowEnd = true;
+      gWeatherPtr.thunderTimer = (Random() % 360) + 360;
+      gWeatherPtr.initStep++;
+    // fall through
+    case THUNDER_STATE_NEW_CYCLE_WAIT:
+      // Wait between 360-720 frames before starting a new cycle.
+      if (--gWeatherPtr.thunderTimer === 0) gWeatherPtr.initStep++;
+      break;
+    case THUNDER_STATE_INIT_CYCLE_1:
+      gWeatherPtr.thunderAllowEnd = true;
+      gWeatherPtr.thunderLongBolt = (Random() % 2) !== 0;
+      gWeatherPtr.initStep++;
+      break;
+    case THUNDER_STATE_INIT_CYCLE_2:
+      gWeatherPtr.thunderShortBolts = (Random() & 1) + 1;
+      gWeatherPtr.initStep++;
+    // fall through
+    case THUNDER_STATE_SHORT_BOLT:
+      // Short bolt of lightning strikes.
+      ApplyWeatherColorMapIfIdle(19);
+      // If final lightning bolt, enqueue thunder.
+      if (!gWeatherPtr.thunderLongBolt && gWeatherPtr.thunderShortBolts === 1)
+        EnqueueThunder(20);
+
+      gWeatherPtr.thunderTimer = (Random() % 3) + 6;
+      gWeatherPtr.initStep++;
+      break;
+    case THUNDER_STATE_TRY_NEW_BOLT:
+      if (--gWeatherPtr.thunderTimer === 0) {
+        // Short bolt of lightning ends.
+        ApplyWeatherColorMapIfIdle(3);
+        gWeatherPtr.thunderAllowEnd = true;
+        if (--gWeatherPtr.thunderShortBolts !== 0) {
+          // Wait a little, then do another short bolt.
+          gWeatherPtr.thunderTimer = (Random() % 16) + 60;
+          gWeatherPtr.initStep = THUNDER_STATE_WAIT_BOLT_SHORT;
+        } else if (!gWeatherPtr.thunderLongBolt) {
+          // No more bolts, restart loop.
+          gWeatherPtr.initStep = THUNDER_STATE_NEW_CYCLE;
+        } else {
+          // Set up long bolt.
+          gWeatherPtr.initStep = THUNDER_STATE_INIT_BOLT_LONG;
+        }
+      }
+      break;
+    case THUNDER_STATE_WAIT_BOLT_SHORT:
+      if (--gWeatherPtr.thunderTimer === 0) gWeatherPtr.initStep = THUNDER_STATE_SHORT_BOLT;
+      break;
+    case THUNDER_STATE_INIT_BOLT_LONG:
+      gWeatherPtr.thunderTimer = (Random() % 16) + 60;
+      gWeatherPtr.initStep++;
+      break;
+    case THUNDER_STATE_WAIT_BOLT_LONG:
+      if (--gWeatherPtr.thunderTimer === 0) {
+        // Do long bolt. Enqueue thunder with a potentially longer delay.
+        EnqueueThunder(100);
+        ApplyWeatherColorMapIfIdle(19);
+        gWeatherPtr.thunderTimer = (Random() & 0xF) + 30;
+        gWeatherPtr.initStep++;
+      }
+      break;
+    case THUNDER_STATE_FADE_BOLT_LONG:
+      if (--gWeatherPtr.thunderTimer === 0) {
+        // Fade long bolt out over time.
+        ApplyWeatherColorMapIfIdle_Gradual(19, 3, 5);
+        gWeatherPtr.initStep++;
+      }
+      break;
+    case THUNDER_STATE_END_BOLT_LONG:
+      if (gWeatherPtr.palProcessingState === WEATHER_PAL_STATE_IDLE) {
+        gWeatherPtr.thunderAllowEnd = true;
+        gWeatherPtr.initStep = THUNDER_STATE_NEW_CYCLE;
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `Thunderstorm_Finish(void)` (field_weather_effect.c:1205). */
+function Thunderstorm_Finish(): boolean {
+  switch (gWeatherPtr.finishStep) {
+    case 0:
+      gWeatherPtr.thunderAllowEnd = false;
+      gWeatherPtr.finishStep++;
+    // fall through
+    case 1:
+      Thunderstorm_Main();
+      if (gWeatherPtr.thunderAllowEnd) {
+        if (gWeatherPtr.nextWeather === WEATHER_RAIN
+         || gWeatherPtr.nextWeather === WEATHER_RAIN_THUNDERSTORM
+         || gWeatherPtr.nextWeather === WEATHER_DOWNPOUR)
+          return false;
+
+        gWeatherPtr.targetRainSpriteCount = 0;
+        gWeatherPtr.finishStep++;
+      }
+      break;
+    case 2:
+      if (!UpdateVisibleRainSprites()) {
+        DestroyRainSprites();
+        gWeatherPtr.thunderEnqueued = false;
+        gWeatherPtr.finishStep++;
+        return false;
+      }
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+/** 1:1 décomp `EnqueueThunder(u16 waitFrames)` (field_weather_effect.c:1242).
+ *  Enqueue a thunder sound effect for at most `waitFrames` frames from now. */
+function EnqueueThunder(waitFrames: number): void {
+  if (!gWeatherPtr.thunderEnqueued) {
+    gWeatherPtr.thunderSETimer = Random() % waitFrames;
+    gWeatherPtr.thunderEnqueued = true;
+  }
+}
+
+/** 1:1 décomp `UpdateThunderSound(void)` (field_weather_effect.c:1251).
+ *  ⚠️ AUDIO SKIP : les 2 PlaySE(SE_THUNDER/SE_THUNDER2) sont retirés, mais le Random()
+ *  qui les sélectionne est CONSERVÉ (déterminisme RNG 1:1) ainsi que la logique d'état. */
+function UpdateThunderSound(): void {
+  if (gWeatherPtr.thunderEnqueued === true) {
+    if (gWeatherPtr.thunderSETimer === 0) {
+      if (IsSEPlaying()) return;
+
+      if (Random() & 1) {
+        // AUDIO SKIP : PlaySE(SE_THUNDER)
+      } else {
+        // AUDIO SKIP : PlaySE(SE_THUNDER2)
+      }
+
+      gWeatherPtr.thunderEnqueued = false;
+    } else {
+      gWeatherPtr.thunderSETimer--;
+    }
+  }
+}
+
+// 1:1 décomp sWeatherFuncs (field_weather.c) :
+//   [WEATHER_RAIN_THUNDERSTORM] = {Thunderstorm_InitVars, Thunderstorm_Main, Thunderstorm_InitAll, Thunderstorm_Finish}
+//   [WEATHER_DOWNPOUR]          = {Downpour_InitVars,     Thunderstorm_Main, Downpour_InitAll,     Thunderstorm_Finish}
+_registerWeatherFuncs(WEATHER_RAIN_THUNDERSTORM, {
+  initVars: Thunderstorm_InitVars,
+  main: Thunderstorm_Main,
+  initAll: Thunderstorm_InitAll,
+  finish: Thunderstorm_Finish,
+});
+_registerWeatherFuncs(WEATHER_DOWNPOUR, {
+  initVars: Downpour_InitVars,
+  main: Thunderstorm_Main,
+  initAll: Downpour_InitAll,
+  finish: Thunderstorm_Finish,
 });
