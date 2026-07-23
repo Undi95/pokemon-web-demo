@@ -50,6 +50,9 @@ import {
   MUS_ENCOUNTER_COOL, MUS_ENCOUNTER_AQUA, MUS_ENCOUNTER_MAGMA, MUS_ENCOUNTER_SWIMMER,
   MUS_ENCOUNTER_TWINS, MUS_ENCOUNTER_ELITE_FOUR, MUS_ENCOUNTER_HIKER, MUS_ENCOUNTER_INTERVIEWER,
   MUS_ENCOUNTER_RICH, MUS_ENCOUNTER_SUSPICIOUS,
+  // VIS-22 : musiques des combats légendaires (BattleSetup_StartLegendaryBattle :513).
+  MUS_VS_KYOGRE_GROUDON, MUS_VS_RAYQUAZA, MUS_VS_MEW, MUS_VS_REGI,
+  MUS_RG_VS_DEOXYS, MUS_RG_VS_LEGEND,
 } from '../include/constants/songs';
 import { FlagSet, FlagClear, FlagGet, gSpecialVar, gSelectedObjectEvent } from './engine/script/script-vars';
 import { parseValue } from './scrcmd';
@@ -1231,7 +1234,25 @@ import { setBattleTypeFlags as _setBattleTypeFlags_BSH } from './engine/battle/s
 import {
   BATTLE_TYPE_FIRST_BATTLE as _BATTLE_TYPE_FIRST_BATTLE_BSH,
   BATTLE_TYPE_TRAINER as _BATTLE_TYPE_TRAINER_BSH,
+  // VIS-22 : flags des combats légendaires/roamer (battle_setup.c:421-600).
+  BATTLE_TYPE_ROAMER as _BATTLE_TYPE_ROAMER_BSH,
+  BATTLE_TYPE_LEGENDARY as _BATTLE_TYPE_LEGENDARY_BSH,
+  BATTLE_TYPE_KYOGRE_GROUDON as _BATTLE_TYPE_KYOGRE_GROUDON_BSH,
+  BATTLE_TYPE_REGI as _BATTLE_TYPE_REGI_BSH,
+  BATTLE_TYPE_GROUDON as _BATTLE_TYPE_GROUDON_BSH,
+  BATTLE_TYPE_KYOGRE as _BATTLE_TYPE_KYOGRE_BSH,
+  BATTLE_TYPE_RAYQUAZA as _BATTLE_TYPE_RAYQUAZA_BSH,
 } from '../include/battle';
+import {
+  MON_DATA_SPECIES as _MON_DATA_SPECIES_BSH,
+} from '../include/pokemon';
+import {
+  SPECIES_GROUDON as _SPECIES_GROUDON_BSH, SPECIES_KYOGRE as _SPECIES_KYOGRE_BSH,
+  SPECIES_RAYQUAZA as _SPECIES_RAYQUAZA_BSH, SPECIES_DEOXYS as _SPECIES_DEOXYS_BSH,
+  SPECIES_LUGIA as _SPECIES_LUGIA_BSH, SPECIES_HO_OH as _SPECIES_HO_OH_BSH,
+  SPECIES_MEW as _SPECIES_MEW_BSH, SPECIES_REGIROCK as _SPECIES_REGIROCK_BSH,
+  SPECIES_REGICE as _SPECIES_REGICE_BSH, SPECIES_REGISTEEL as _SPECIES_REGISTEEL_BSH,
+} from '../include/constants/species';
 import {
   MetatileBehavior_IsTallGrass as _MB_IsTallGrass_BSH,
   MetatileBehavior_IsLongGrass as _MB_IsLongGrass_BSH,
@@ -1339,6 +1360,151 @@ export function BattleSetup_StartScriptedWildBattle(): void {
   // (IncrementDailyWildBattles = dette TV wave.)
   ((globalThis as Record<string, unknown>).__WildBattleStatsHook as (() => void) | undefined)?.();
 }
+
+// ─── Combats légendaires / roamer (battle_setup.c:421-600) — VIS-22 1:1 ──────
+// Transcription ligne-à-ligne de BattleSetup_StartRoamerBattle (:421),
+// BattleSetup_StartLatiBattle (:501), BattleSetup_StartLegendaryBattle (:513),
+// StartGroudonKyogreBattle (:552), StartRegiBattle (:569). Chaque fn = 1:1 :
+// gBattleTypeFlags spécifique + `CreateBattleStartTask(transition, song)`. Le foyer
+// CreateBattleStartTask + Task_BattleStart + PlayMapChosenOrBattleBGM(song) est
+// substitué par `_bootDecompBattleLoop_BSH(true, { transition, song })` (MÊME
+// substitution que BattleSetup_StartTrainerBattle / DoSpecialTrainerBattle Steven :
+// bootDecompBattleLoop pose la transition d'entrée + PlayBattleBGM + savedCallback
+// retour OW = CB2_EndScriptedWildBattle). gEnemyParty[0] est posé EN AMONT par
+// `setwildbattle SPECIES_X, level` (ScrCmd_setwildbattle → CreateScriptedWildMon).
+// LockPlayerFieldControls (décomp :515…) : le script tient déjà le lock field (comme
+// BattleSetup_StartScriptedWildBattle ci-dessus qui l'omet aussi) → non re-appelé.
+
+/** 1:1 décomp `VERSION_RUBY` = 2 / `VERSION_EMERALD` = 3 (global.h:9-10). */
+const VERSION_RUBY = 2;
+const VERSION_EMERALD = 3;
+
+/** 1:1 décomp `void BattleSetup_StartRoamerBattle(void)` (battle_setup.c:421-434).
+ *  gBattleTypeFlags = BATTLE_TYPE_ROAMER + CreateBattleStartTask(GetWildBattleTransition(), 0).
+ *  ⚠️ INERTE : le système roamer (CreateRoamerMonObject qui peuple gEnemyParty depuis
+ *  gSaveBlock1Ptr->roamer) n'est PAS porté (post-Ligue ; roamer.ts = seeding partiel) et
+ *  AUCUN special ne câble cette fn (le combat roamer démarre via field code non porté).
+ *  Transcrite pour complétude 1:1 ; sans gEnemyParty roamer valide elle reste dormante. */
+export function BattleSetup_StartRoamerBattle(): void {
+  _setBattleTypeFlags_BSH(_BATTLE_TYPE_ROAMER_BSH >>> 0);
+  _bootDecompBattleLoop_BSH(true, { transition: GetWildBattleTransition(), song: 0 });
+  WildBattleStatsHook();
+}
+
+/** 1:1 décomp `void BattleSetup_StartLatiBattle(void)` (battle_setup.c:501-511).
+ *  gBattleTypeFlags = BATTLE_TYPE_LEGENDARY + CreateBattleStartTask(GetWildBattleTransition(), 0).
+ *  song = 0 → GetBattleBGM() = MUS_VS_WILD (BATTLE_TYPE_LEGENDARY seul n'est PAS détecté
+ *  par GetBattleBGM, seuls KYOGRE_GROUDON/REGI le sont — 1:1). Latias/Latios roaming. */
+export function BattleSetup_StartLatiBattle(): void {
+  _setBattleTypeFlags_BSH(_BATTLE_TYPE_LEGENDARY_BSH >>> 0);
+  _bootDecompBattleLoop_BSH(true, { transition: GetWildBattleTransition(), song: 0 });
+  WildBattleStatsHook();
+}
+
+/** 1:1 décomp `void BattleSetup_StartLegendaryBattle(void)` (battle_setup.c:513-550) :
+ *  gBattleTypeFlags = BATTLE_TYPE_LEGENDARY, puis switch(GetMonData(gEnemyParty[0], SPECIES)) :
+ *  Groudon/Kyogre/Rayquaza posent un flag dédié + transition/musique propres ; Deoxys/Lugia/
+ *  Ho-Oh/Mew = transition+musique sans flag. Câblé par `special BattleSetup_StartLegendaryBattle`
+ *  (Groudon/Rayquaza : TerraCave_End, SkyPillar_Top). */
+export function BattleSetup_StartLegendaryBattle(): void {
+  let flags = _BATTLE_TYPE_LEGENDARY_BSH >>> 0;
+  let transition: number;
+  let song: number;
+
+  switch (_GetMonData_BSH(_gEnemyParty_BSH[0], _MON_DATA_SPECIES_BSH) as number) {
+    default:
+    case _SPECIES_GROUDON_BSH:
+      flags |= _BATTLE_TYPE_GROUDON_BSH;
+      transition = _B_TRANSITION_BSH.B_TRANSITION_GROUDON;
+      song = MUS_VS_KYOGRE_GROUDON;
+      break;
+    case _SPECIES_KYOGRE_BSH:
+      flags |= _BATTLE_TYPE_KYOGRE_BSH;
+      transition = _B_TRANSITION_BSH.B_TRANSITION_KYOGRE;
+      song = MUS_VS_KYOGRE_GROUDON;
+      break;
+    case _SPECIES_RAYQUAZA_BSH:
+      flags |= _BATTLE_TYPE_RAYQUAZA_BSH;
+      transition = _B_TRANSITION_BSH.B_TRANSITION_RAYQUAZA;
+      song = MUS_VS_RAYQUAZA;
+      break;
+    case _SPECIES_DEOXYS_BSH:
+      transition = _B_TRANSITION_BSH.B_TRANSITION_BLUR;
+      song = MUS_RG_VS_DEOXYS;
+      break;
+    case _SPECIES_LUGIA_BSH:
+    case _SPECIES_HO_OH_BSH:
+      transition = _B_TRANSITION_BSH.B_TRANSITION_BLUR;
+      song = MUS_RG_VS_LEGEND;
+      break;
+    case _SPECIES_MEW_BSH:
+      transition = _B_TRANSITION_BSH.B_TRANSITION_GRID_SQUARES;
+      song = MUS_VS_MEW;
+      break;
+  }
+
+  // 1:1 : gBattleTypeFlags est posé (avec le flag d'espèce) AVANT CreateBattleStartTask
+  // (bootDecompBattleLoop lit gBattleTypeFlags pour l'intro/BGM).
+  _setBattleTypeFlags_BSH(flags >>> 0);
+  _bootDecompBattleLoop_BSH(true, { transition, song });
+  WildBattleStatsHook();
+}
+
+/** 1:1 décomp `void StartGroudonKyogreBattle(void)` (battle_setup.c:552-567) :
+ *  gBattleTypeFlags = BATTLE_TYPE_LEGENDARY | BATTLE_TYPE_KYOGRE_GROUDON, transition
+ *  ANGLED_WIPES (RUBY/Groudon) ou RIPPLE (Emerald/Kyogre), musique MUS_VS_KYOGRE_GROUDON.
+ *  Câblé par `special StartGroudonKyogreBattle`. gGameVersion (globalThis) = EMERALD (3)
+ *  ici → branche RIPPLE. */
+export function StartGroudonKyogreBattle(): void {
+  _setBattleTypeFlags_BSH((_BATTLE_TYPE_LEGENDARY_BSH | _BATTLE_TYPE_KYOGRE_GROUDON_BSH) >>> 0);
+
+  const gGameVersion = ((globalThis as { gGameVersion?: number }).gGameVersion) ?? VERSION_EMERALD;
+  let transition: number;
+  if (gGameVersion === VERSION_RUBY)
+    transition = _B_TRANSITION_BSH.B_TRANSITION_ANGLED_WIPES; // GROUDON
+  else
+    transition = _B_TRANSITION_BSH.B_TRANSITION_RIPPLE; // KYOGRE
+
+  _bootDecompBattleLoop_BSH(true, { transition, song: MUS_VS_KYOGRE_GROUDON });
+  WildBattleStatsHook();
+}
+
+/** 1:1 décomp `void StartRegiBattle(void)` (battle_setup.c:569-600) :
+ *  gBattleTypeFlags = BATTLE_TYPE_LEGENDARY | BATTLE_TYPE_REGI, transition par espèce
+ *  (REGIROCK/REGICE/REGISTEEL, défaut GRID_SQUARES), musique MUS_VS_REGI.
+ *  Câblé par `special StartRegiBattle` (IslandCave/DesertRuins/AncientTomb). */
+export function StartRegiBattle(): void {
+  _setBattleTypeFlags_BSH((_BATTLE_TYPE_LEGENDARY_BSH | _BATTLE_TYPE_REGI_BSH) >>> 0);
+
+  const species = _GetMonData_BSH(_gEnemyParty_BSH[0], _MON_DATA_SPECIES_BSH) as number;
+  let transitionId: number;
+  switch (species) {
+    case _SPECIES_REGIROCK_BSH:
+      transitionId = _B_TRANSITION_BSH.B_TRANSITION_REGIROCK;
+      break;
+    case _SPECIES_REGICE_BSH:
+      transitionId = _B_TRANSITION_BSH.B_TRANSITION_REGICE;
+      break;
+    case _SPECIES_REGISTEEL_BSH:
+      transitionId = _B_TRANSITION_BSH.B_TRANSITION_REGISTEEL;
+      break;
+    default:
+      transitionId = _B_TRANSITION_BSH.B_TRANSITION_GRID_SQUARES;
+      break;
+  }
+  _bootDecompBattleLoop_BSH(true, { transition: transitionId, song: MUS_VS_REGI });
+  WildBattleStatsHook();
+}
+
+// Câblage des specials 1:1 (remplacent les stubs `() => 0` de specials-registry.ts).
+// Modèle = DoSpecialTrainerBattle Steven (plain special qui boote via bootDecompBattleLoop) :
+// le `waitstate` de la macro `special … waitstate=1` est relâché par
+// ReturnToFieldFromBattleOrMenu au retour du combat (1:1 CB2_EndScriptedWildBattle →
+// CB2_ReturnToFieldContinueScriptPlayMapMusic → ScriptContext_Enable).
+registerSpecial('BattleSetup_StartLegendaryBattle', () => { BattleSetup_StartLegendaryBattle(); });
+registerSpecial('StartGroudonKyogreBattle', () => { StartGroudonKyogreBattle(); });
+registerSpecial('StartRegiBattle', () => { StartRegiBattle(); });
+registerSpecial('BattleSetup_StartLatiBattle', () => { BattleSetup_StartLatiBattle(); });
 
 /** 1:1 décomp `CB2_StartFirstBattle` (battle_setup.c:930-948) — entrée du 1er combat
  *  (tutoriel Birch, Zigzagoon Lv2). `gBattleTypeFlags = BATTLE_TYPE_FIRST_BATTLE` +

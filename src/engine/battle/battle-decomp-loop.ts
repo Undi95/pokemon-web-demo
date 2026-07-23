@@ -227,13 +227,18 @@ function _getBattleBGM(): number {
 /** 1:1 décomp `PlayBattleBGM()` (pokemon.c:6459) : stop la musique OW (ResetMapMusic
  *  + m4aMPlayAllStop) puis joue la BGM de combat. On sauve d'abord la chanson OW
  *  courante pour la reprendre au retour. loop=true (1:1 voie V, markers .mid). */
-function _playBattleBGM(): void {
+function _playBattleBGM(song?: number): void {
   // Blindage (retour user « plus de sons » 2026-06-11) : si une etape throw
   // (getCurrentSongId sur etat audio pas pret ?), les suivantes tournent —
   // la BGM combat ne doit JAMAIS sauter en silence.
   try { _savedOwSong = getCurrentSongId(); } catch (e) { _savedOwSong = null; console.warn('[battle-bgm] getCurrentSongId KO', e); }
   try { m4aMPlayAllStop(); } catch (e) { console.warn('[battle-bgm] m4aMPlayAllStop KO', e); }
-  try { m4aSongNumStart(_getBattleBGM(), true); } catch (e) { console.warn('[battle-bgm] m4aSongNumStart KO', e); }
+  // 1:1 décomp `PlayMapChosenOrBattleBGM(songId)` (pokemon.c:6466) : songId != 0 →
+  // PlayNewMapMusic(songId) ; songId == 0 → PlayNewMapMusic(GetBattleBGM()). Les combats
+  // légendaires (BattleSetup_StartLegendaryBattle :513) passent une chanson EXPLICITE
+  // (MUS_VS_RAYQUAZA/MEW/RG_VS_DEOXYS/…) car GetBattleBGM ne détecte que les flags
+  // KYOGRE_GROUDON/REGI → Rayquaza/Deoxys/Lugia/HoOh/Mew tomberaient sinon sur MUS_VS_WILD.
+  try { m4aSongNumStart(song ? song : _getBattleBGM(), true); } catch (e) { console.warn('[battle-bgm] m4aSongNumStart KO', e); }
 }
 
 /** 1:1 décomp `Task_BattleStart` (battle_setup.c) + `Task_BattleTransition`
@@ -376,7 +381,10 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
   }
 }
 
-export function bootDecompBattleLoop(returnToOverworld = false): void {
+export function bootDecompBattleLoop(
+  returnToOverworld = false,
+  opts?: { transition?: number; song?: number },
+): void {
   // Side-effect modules (T3/T4) en DYNAMIQUE : un import statique provoquait
   // la TDZ ST_OAM_AFFINE_DOUBLE (cycle ESM via pokeball) -> l'app ne bootait
   // plus. Charges ici = poses avant tout usage en combat.
@@ -604,7 +612,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     // stop la musique OW + joue la BGM de combat (loop). Gaté sur le boot IN-GAME
     // (dev `'` / vraies rencontres) ; les probes harness (returnToOverworld=false) ne
     // jouent pas de musique. Reprise OW au retour (ci-dessous).
-    _playBattleBGM();
+    _playBattleBGM(opts?.song);
     let restored = false;
     _setMainSavedCallback(() => {
       if (restored) return;
@@ -706,11 +714,17 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     } | undefined;
     // 1:1 décomp CB2_GiveStarter (battle_setup.c) : le 1er combat (tutoriel Birch) force
     // `BattleTransition_Start(B_TRANSITION_BLUR)` (pixelisation) — pas la transition wild.
-    const transition = isFirstBattle
-      ? B_TRANSITION.B_TRANSITION_BLUR
-      : (isTrainer && helpers?.GetTrainerBattleTransition)
-        ? helpers.GetTrainerBattleTransition()
-        : _GetWildBattleTransition();
+    // 1:1 décomp : les combats légendaires (BattleSetup_StartLegendaryBattle/StartRegiBattle/
+    // StartGroudonKyogreBattle :513-600) choisissent une transition EXPLICITE par espèce
+    // (B_TRANSITION_GROUDON/KYOGRE/RAYQUAZA/REGI…) passée via opts.transition — sinon la
+    // sélection wild/trainer standard (GetWildBattleTransition / GetTrainerBattleTransition).
+    const transition = (opts?.transition != null)
+      ? opts.transition
+      : isFirstBattle
+        ? B_TRANSITION.B_TRANSITION_BLUR
+        : (isTrainer && helpers?.GetTrainerBattleTransition)
+          ? helpers.GetTrainerBattleTransition()
+          : _GetWildBattleTransition();
     getRuntime()?.SetMainCallback2?.(_makeBattleStartTransitionCB2(cb, transition) as never);
     return;
   }

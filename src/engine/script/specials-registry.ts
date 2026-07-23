@@ -1029,7 +1029,9 @@ registerSpecial('Script_TryGainNewFanFromCounter', Script_TryGainNewFanFromCount
 // DoSpecialTrainerBattle — porté 1:1 (case SPECIAL_BATTLE_STEVEN) dans src/battle_tower.ts
 // (jalon multi Steven). Rebranché sur la vraie fn (retiré du stub `() => 0`).
 registerSpecial('DoSpecialTrainerBattle', DoSpecialTrainerBattle);
-registerSpecial('BattleSetup_StartLegendaryBattle', () => 0);
+// 'BattleSetup_StartLegendaryBattle' — porté 1:1 (battle_setup.c:513) dans battle_setup.ts
+// (VIS-22 : Groudon/Kyogre/Rayquaza/Deoxys/Lugia/Ho-Oh/Mew). Stub `() => 0` RETIRÉ
+// (double registration = clobber du vrai handler).
 // 'PlayTrainerEncounterMusic' — porté 1:1 (battle_setup.c:1440) dans battle_setup.ts
 // (routage song table). No-op RETIRÉ (double registration = clobber).
 
@@ -1455,7 +1457,9 @@ registerSpecial('StorePlayerCoordsInVars', StorePlayerCoordsInVars);  // impl 1:
 /** Misc post-game stubs (= return 0/no-op pour éviter NaN VAR_RESULT) :
  *  Battle Frontier, Museum, Mirage Island, Painting, etc. */
 const _STUB_RETURN_0_SPECIALS = [
-  'StartRegiBattle', 'MoveElevator',
+  // 'StartRegiBattle' — porté 1:1 (battle_setup.c:569) dans battle_setup.ts (VIS-22 :
+  //   Regirock/Regice/Registeel), registerSpecial ci-dessus (retiré du stub-loop = anti-clobber).
+  'MoveElevator',
   // 'GetFrontierBattlePoints' — porté 1:1 décomp field_specials.c:2962 ci-bas (batch B39).
   'UpdateBattlePointsWindow',
   // 'CountPlayerMuseumPaintings' — porté 1:1 décomp contest_util.c:2380 ci-bas (batch B33).
@@ -1880,7 +1884,8 @@ registerSpecial('SetPacifidlogTMReceivedDay', SetPacifidlogTMReceivedDay);  // i
 const _SESSION_131_DECOMP_SPECIALS = [
   // 'Bag_ChooseBerry' — géré dans le dispatcher script-opcodes-special.ts (waitstate=1).
   'AccessHallOfFamePC', 'BattlePyramidChooseMonHeldItems',
-  'BattleSetup_StartLatiBattle',
+  // 'BattleSetup_StartLatiBattle' — porté 1:1 (battle_setup.c:501) dans battle_setup.ts
+  //   (VIS-22 : Latias/Latios roaming), registerSpecial ci-dessus (retiré du stub-loop).
   // 'BattleSetup_StartRematchBattle' — porté 1:1 T-B : intercepté par l'opcode
   // `special` (script-opcodes-special.ts, suspend/reprise du script) + boot dans
   // src/game/battle_setup.ts (_bootRematchBattleForScript).
@@ -2149,7 +2154,9 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'ShowTrainerIntroSpeech' — porté 1:1 décomp battle_setup.c:1378 (game/battle_setup.ts).
   'ShowWirelessCommunicationScreen',
   'SpawnLinkPartnerObjectEvent', 'StartDroughtWeatherBlend',
-  'StartGroudonKyogreBattle', 'StartMirageTowerDisintegration',
+  // 'StartGroudonKyogreBattle' — porté 1:1 (battle_setup.c:552) dans battle_setup.ts (VIS-22),
+  //   registerSpecial ci-dessus (retiré du stub-loop = anti-clobber).
+  'StartMirageTowerDisintegration',
   'StartMirageTowerFossilFallAndSink', 'StartMirageTowerShake',
   'StartPlayerDescendMirageTower', 'StopMapMusic',
   // 'StoreSelectedPokemonInDaycare' — porté 1:1 décomp daycare.c:190 (bloc PENSION ci-bas).
