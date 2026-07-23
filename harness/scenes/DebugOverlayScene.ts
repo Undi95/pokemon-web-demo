@@ -123,7 +123,7 @@ export class DebugOverlayScene extends Phaser.Scene {
         }).__decompBattleLoop;
         if (dl) {
           // Sync DÉFENSIF de gSaveBlock1.pos à la position courante du joueur avant
-          // de booter. Le retour post-combat (_restoreOverworldFromMenu) spawn le
+          // de booter. Le retour post-combat (ReturnToFieldFromBattleOrMenu) spawn le
           // joueur à gSaveBlock1.pos. EN JEU NORMAL c'est déjà bon : gSaveBlock1.pos
           // suit la marche (CameraMove, field-camera.ts:633 mute _camPos = alias
           // gSaveBlock1Ptr.pos à chaque pas) — vérifié runtime (marche (5,9)→(5,12),

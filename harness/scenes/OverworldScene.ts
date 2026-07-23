@@ -21,6 +21,7 @@ import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, Fr
 import { startM4aNativeAudio } from '../m4a/native';
 import { ResetSpriteData } from '../../src/sprite';
 import { CB2_NewGame, CB2_ContinueSavedGame, primeFieldInitDeps } from '../../src/overworld';
+import { SetOverworldHost } from '../../src/engine/overworld-host';
 // Boot intro réutilisable (host unifié intro+OW — LE boot par défaut depuis 2026-07-10).
 import { registerIntroSpriteCallbacks, bootIntroSequence } from '../boot/intro-host';
 import { exposeGbaGlobals } from '../runtime/gba-global-scope';
@@ -297,7 +298,7 @@ export class OverworldScene extends Phaser.Scene {
    *  compris → le scroll BG reste correct pendant les transitions (warp + sortie
    *  de menu). UNE seule fonction partagée = 1:1 (la décomp n'a qu'un
    *  VBlankCB_Field) + évite d'éditer un chemin sans l'autre. */
-  private readonly _fieldVBlankCB = (): void => {
+  readonly _fieldVBlankCB = (): void => {
     FieldUpdateBgTilemapScroll(this.rt);
     TransferTilesetAnimsBuffer(this.rt);
   };
@@ -882,130 +883,13 @@ export class OverworldScene extends Phaser.Scene {
       // restaurer ce closure quand le state machine décomp completes (= 1:1
       // `SetMainCallback2(CB2_Overworld)` après ReturnToFieldLocal returns TRUE).
       (globalThis as Record<string, unknown>)._overworldMainCB2 = MainCB2_Overworld;
-      // Expose un helper de restauration utilisé par CB2_ReturnToFieldLocal_Manual
-      // après option menu Sortir. 1:1 décomp `ReturnToFieldLocal` flow (=
-      // ResetScreenForMapLoad → ResumeMap → InitObjectEventsReturnToField →
-      // SetCameraToTrackPlayer → InitViewGraphics) compactés en une seule
-      // opération qui re-init les BG configs + re-render le map + re-spawn
-      // les NPCs. Async car loadAndInitMap fetch tilesets/palettes.
-      (globalThis as Record<string, unknown>)._restoreOverworldFromMenu = async (): Promise<void> => {
-        if (!gMapHeader) {
-          console.warn('[restoreOverworldFromMenu] no gMapHeader, abort');
-          return;
-        }
-        console.log(`[restoreOverworldFromMenu] mapId=${gMapHeader.id} pos=(${gSaveBlock1Ptr.pos.x},${gSaveBlock1Ptr.pos.y}) facing=${GetPlayerFacingDirection()}`);
-        // 1:1 décomp `InitOverworldBgs` (overworld.c) : re-config BG0/1/2/3 via
-        // `sOverworldBgTemplates`. CB2_InitOptionMenu state 1 fait
-        // `InitBgsFromTemplates(0, sOptionMenuBgTemplates)` → BG0 charBase=1
-        // mapBase=31 (= different from overworld charBase=2). Sans re-config
-        // les BG slots, post-menu BG0 charBase reste à 1 → start menu/dialog
-        // tiles rendered depuis mauvaise charBase area = garbage visuel.
-        // Values 1:1 sOverworldBgTemplates (overworld.c:266-304).
-        const bg0c = self.rt.gba.bg(0).config;
-        bg0c.charBaseIndex = 2; bg0c.mapBaseIndex = 31; bg0c.screenSize = 0;
-        bg0c.paletteMode = 0; bg0c.priority = 0; bg0c.visible = true;
-        bg0c.hofs = 0; bg0c.vofs = 0;
-        const bg1c = self.rt.gba.bg(1).config;
-        bg1c.charBaseIndex = 0; bg1c.mapBaseIndex = 29; bg1c.screenSize = 0;
-        bg1c.paletteMode = 0; bg1c.priority = 1; bg1c.visible = true;
-        bg1c.hofs = 0; bg1c.vofs = 0;
-        const bg2c = self.rt.gba.bg(2).config;
-        bg2c.charBaseIndex = 0; bg2c.mapBaseIndex = 28; bg2c.screenSize = 0;
-        bg2c.paletteMode = 0; bg2c.priority = 2; bg2c.visible = true;
-        bg2c.hofs = 0; bg2c.vofs = 0;
-        const bg3c = self.rt.gba.bg(3).config;
-        bg3c.charBaseIndex = 0; bg3c.mapBaseIndex = 30; bg3c.screenSize = 0;
-        bg3c.paletteMode = 0; bg3c.priority = 3; bg3c.visible = true;
-        bg3c.hofs = 0; bg3c.vofs = 0;
-        self.rt.SetGpuReg(REG_OFFSET_DISPCNT,
-          DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP |
-          DISPCNT_BG0_ON | DISPCNT_BG1_ON | DISPCNT_BG2_ON | DISPCNT_BG3_ON);
-        // 1:1 décomp `ReturnToFieldLocal` (overworld.c:1961) state machine combiné :
-        //   - state 0 : ResetScreenForMapLoad + ResumeMap + InitObjectEventsReturnToField
-        //   - state 1 : InitViewGraphics (= setup BG regs + DrawWholeMapView)
-        // Notre `loadAndInitMap` fait l'équivalent en 1 fonction async.
-        // 1:1 décomp `CB2_ReturnToFieldContinueScript*` : ce restore est le
-        // chemin "retour-au-field-CONTINUE" (post-combat / post-menu). Or
-        // loadAndInitMap fait `ScriptContext_Init()` (reset total) — correct
-        // pour boot/warp mais ça WIPE le ScriptContext suspendu qui pilote
-        // le tuto Birch (`special ChooseStarter` → native flow). Bug : après
-        // combat WIN, overworld restauré MAIS script Birch détruit → ne
-        // reprend jamais à `applymovement BIRCH` = HANG rapporté. Fix 1:1 :
-        // snapshot AVANT, restore APRÈS = le script suspendu survit au
-        // re-init field et reprend exactement où il était. No-op si aucun
-        // script en vol (option menu/sac : status SHUTDOWN).
-        const _scriptSnap = ScriptContext_Snapshot();
-        // Un script byte-VM était-il SUSPENDU à travers ce détour (combat/menu) ? Sondé AVANT
-        // le wipe de loadAndInitMap (diag() post-restore mentirait).
-        const _vmDiag = ((globalThis as Record<string, unknown>).__byteVm as
-          { diag?: () => { status?: string } } | undefined)?.diag?.();
-        const _scriptWasSuspended = !!_vmDiag?.status && _vmDiag.status !== 'SHUTDOWN';
-        // 1:1 STRICT décomp `ReturnToFieldLocal` (overworld.c:1961) — utilise
-        // SpawnObjectEventsOnReturnToField au lieu de TrySpawnObjectEvents.
-        // returnToField=true preserve gObjectEvents (= currentCoords post-
-        // script comme MOM-à-chair après PetalburgGymReport).
-        await self.loadAndInitMap(gMapHeader.id, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, GetPlayerFacingDirection(), false, true);
-        ScriptContext_Restore(_scriptSnap);
-        // 1:1 décomp CB2_ReturnToFieldContinueScript[PlayMapMusic] (overworld.c) : le script
-        // suspendu ne reprend qu'au `ScriptContext_Enable` du FieldCB, une fois le field
-        // ENTIÈREMENT restauré — c'est ICI, après restore. Libère le `waitstate` sur lequel
-        // le script s'était suspendu (tuto Birch : `special ChooseStarter; waitstate` —
-        // le flow « termine » au DÉMARRAGE du combat, le waitstate attend donc ce retour).
-        // Émis SEULEMENT si un script était réellement suspendu (sinon on latcherait un
-        // signal fantôme à chaque fermeture de menu → libération à tort d'un waitstate futur).
-        // Fix du warp-à-moitié post-tuto (2026-07-19) : l'ancien latch précoce (special_flows,
-        // posé AVANT le combat) libérait le script PENDANT cette restauration → son `warp`
-        // partait dans un field non prêt (location posée, objets purgés, map jamais rechargée).
-        if (_scriptWasSuspended) {
-          const _sig = (globalThis as Record<string, unknown>).__SignalWaitState as (() => void) | undefined;
-          if (_sig) _sig();
-          else console.error('[restoreOverworldFromMenu] pont __SignalWaitState absent — script suspendu jamais repris (freeze)');
-        }
-        // Clear BG0 tilemap (= mapBase 31, 2KB) après loadAndInitMap : option menu
-        // CB2_InitOptionMenu state 8 fait `PutWindowTilemap(WIN_OPTIONS)` qui écrit
-        // dans BG0 mapBase 31 (= bg=0, baseBlock=0x36, 26×14 tiles). Au close,
-        // `FreeAllWindowBuffers` free les structs windows mais PAS le VRAM tilemap
-        // qui contient encore les entries WIN_OPTIONS pointing aux option menu
-        // tile IDs. Sans ce clear, post-menu BG0 affiche du garbled (= "STYLE
-        // COMBAT" / "CHOIX" / "SON" etc visible en arrière-plan via mapBase entries).
-        // Sur ROM ce résidu n'est pas observé probablement à cause du timing
-        // VBlank / fade-in qui masque, mais pour notre engine on doit explicitly
-        // wipe pour garantir clean rendering.
-        const bg0Cfg = self.rt.gba.bg(0).config;
-        const bg0MapStart = bg0Cfg.mapBaseIndex * 2048;
-        const vram = self.rt.gba.vram;
-        for (let i = 0; i < 2048; i++) vram[bg0MapStart + i] = 0;
-        // Invariante moteur « tile 0 = vide réservé » (précédent : garble dresseur
-        // `8c820d7a9`) : la fly map charge sa carte 8bpp au charBase 2 DÈS l'offset 0
-        // → le tile 0 (celui que le tilemap BG0 tout-0 ci-dessus répète plein écran)
-        // devient un morceau OPAQUE de carte → colonnes verticales sur tout l'écran
-        // pendant le fade-in du retour (bug user 2026-07-18, frame gelée dev.pause :
-        // char2Tile0NonZero=32/32, tilemap BG0 0/1024). Sur GBA l'invariante tient
-        // par convention des tilesets GF (tile 0 vide) ; notre pipeline PNG la casse
-        // → on la RESTAURE ici, sous le noir, avant le fade-in.
-        const bg0CharStart = bg0Cfg.charBaseIndex * 0x4000;
-        for (let i = 0; i < 32; i++) vram[bg0CharStart + i] = 0;
-        // Re-set VBlankCallback (= option menu / bag / battle ont posé un autre
-        // VBlank, voire NULL). 1:1 décomp `SetFieldVBlankCallback` appelé par
-        // `CB2_ReturnToFieldLocal`. ⚠️ DOIT être le MÊME `_fieldVBlankCB` que le
-        // boot, sinon `FieldUpdateBgTilemapScroll` ne tourne pas au retour de menu
-        // → registres BG VOFS=0 → map rendue ~3 cases trop haut (bug reproduit en
-        // ouvrant le sac/pokémon puis en ressortant).
-        self.rt.SetVBlankCallback(self._fieldVBlankCB);
-        // 1:1 décomp `CB2_ReturnToField` finit par `SetMainCallback2(CB2_Overworld)` :
-        // rendre la main à la boucle OW. SANS ça, callback2 reste = le savedCallback
-        // one-shot du retour combat (ReturnFromBattleToOverworld) → l'OW est rendu UNE
-        // fois mais FIGÉ (PlayerStep + CameraUpdate sont pilotés par callback2, cf.
-        // update() l.728). = le maillon manquant du retour combat voie L (la voie
-        // option-menu le fait déjà via _overworldMainCB2). La caméra se recentre alors
-        // sur le joueur (le « 2 cases en haut » = caméra figée non recentrée).
-        self.rt.gMain.callback2 = MainCB2_Overworld;
-        // 1:1 décomp `GroundEffect_SpawnOnTallGrass` : si le joueur revient au field
-        // (sortie combat/menu) sur une tuile d'herbe haute, ré-affiche l'overlay
-        // statique (sinon « dessus » l'herbe sans overlay jusqu'à bouger).
-        TrySpawnTallGrassOnReturnToField(self.rt, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
-        console.log('[restoreOverworldFromMenu] done');
-      };
+      // Enregistre cette scène comme HOST overworld. La rustine de restauration
+      // (ex-`_restoreOverworldFromMenu` posée ici, = 1:1 CB2_ReturnToField) a été
+      // rapatriée dans src/overworld.ts (`ReturnToFieldFromBattleOrMenu`) ; elle
+      // consomme rt / loadAndInitMap / _fieldVBlankCB de cette scène via
+      // GetOverworldHost(). CB2_ReturnToFieldLocal_Manual (case 1) et battle-decomp-loop
+      // l'appellent désormais directement / via le registre-feuille overworld-host.
+      SetOverworldHost(this);
 
       this.statusText?.setText(`Bourg-en-Vol ${header.mapLayout.width}x${header.mapLayout.height} (arrows = walk)`);
       this.booted = true;
@@ -1084,7 +968,7 @@ export class OverworldScene extends Phaser.Scene {
    *  @param spawnDir   Player facing direction (DIR_*)
    *  @returns The loaded MapHeader (= so caller can read warps for player coords).
    */
-  private async loadAndInitMap(
+  async loadAndInitMap(
     mapId: string, spawnX: number, spawnY: number, spawnDir: number,
     initFromSavedGame = false,
     /** 1:1 STRICT décomp `ReturnToFieldLocal` (overworld.c:1961) vs

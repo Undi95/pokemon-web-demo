@@ -327,7 +327,7 @@ export function ScriptContext_Enable(): void {
 
 // ─── Snapshot / Restore du ScriptContext global ──────────────────────────────
 // Préserve le contexte SUSPENDU (scriptPtr + nativePtr + pile + data + status) à travers
-// un re-init complet du field. `_restoreOverworldFromMenu` fait loadAndInitMap →
+// un re-init complet du field. `ReturnToFieldFromBattleOrMenu` fait loadAndInitMap →
 // ScriptContext_Init (reset TOTAL) ; sans snapshot/restore, le script déclencheur en
 // attente (= `pokemart` waitstate, `special ChooseStarter`, `special Bag_ChooseBerry`)
 // serait détruit et ne reprendrait jamais.

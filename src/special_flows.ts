@@ -29,7 +29,7 @@ export function makeSpecialInlineFlowPoll(name: string): (() => boolean) | null 
       void import('./starter_choose').then((m) => { flow = m.startChooseStarterFlow(); ready = true; });
       // `special ChooseStarter` est `waitstate=1` (specials.inc:175) : le flow « termine » quand
       // le FIRST_BATTLE démarre → le `waitstate` suivant ne s'exécute qu'AU RETOUR du combat.
-      // Sa libération est émise par _restoreOverworldFromMenu (OverworldScene) à la FIN de
+      // Sa libération est émise par ReturnToFieldFromBattleOrMenu (src/overworld.ts) à la FIN de
       // la restauration field — 1:1 CB2_EndFirstBattle → CB2_ReturnToFieldContinueScript… →
       // FieldCB_ContinueScriptHandleMusic → ScriptContext_Enable. (Un latch précoce ICI, posé
       // avant le combat, libérait le script PENDANT la restauration → warp du tuto exécuté à

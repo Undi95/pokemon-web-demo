@@ -25,6 +25,9 @@ import { getRuntime, m4aSongNumStart, m4aMPlayAllStop, getCurrentSongId, FillPal
 import { DestroySprite } from '../../sprite';
 import { MAX_SPRITES } from '../../../harness/runtime/decomp-runtime';
 import { FadeScreen, FADE_FROM_BLACK } from '../../field_weather';
+// Rustine retour-OW : lue via le registre-feuille overworld-host (un import statique
+// de src/overworld.ts fermerait le cycle overworld → … → wild_encounter → battle-decomp-loop).
+import { GetReturnToFieldFn } from '../overworld-host';
 import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags, gTrainerBattleOpponent_A } from './state';
 import { getRecentOpcodes } from './script-interpreter';
 import {
@@ -591,7 +594,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
   // `SetMainCallback2(gMain.savedCallback)`. Lancée hors encounter (touche dev '),
   // la voie L n'a PAS de savedCallback posé → à la fin du combat, la boucle reste
   // affichée = FREEZE (pas de retour OW, signalé user). On pose un CB2 de retour qui
-  // re-init le field via `_restoreOverworldFromMenu` (= 1:1 CB2_ReturnToField, ce que
+  // re-init le field via `ReturnToFieldFromBattleOrMenu` (= 1:1 CB2_ReturnToField, ce que
   // fait aussi battle-flow voie V au cleanup : re-load tilesets/palettes/sprites OW
   // après le VRAM wipe du combat). One-shot (le restore réétablit le rendu OW).
   // ⚠️ returnToOverworld DÉFAUT false → le harness (probe jetable qui restaure ses
@@ -635,7 +638,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
           });
         }
       } catch (e) { console.warn('[whiteout] net-effect KO', e); }
-      const restore = (globalThis as Record<string, unknown>)._restoreOverworldFromMenu as (() => Promise<void>) | undefined;
+      const restore = GetReturnToFieldFn();
       if (typeof restore === 'function') {
         // Reprend la BGM OW (sauvée par _playBattleBGM) après le re-init du field
         // (= 1:1 décomp CB2_ReturnToField → Overworld_PlaySpecialMapMusic).
@@ -672,10 +675,10 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
             //   2) `FadeInFromBlack()` (field_screen_effect.c:95) = `FillPalBufferBlack()` +
             //      `FadeScreen(FADE_FROM_BLACK, 0)` → fondu DEPUIS le noir laissé par
             //      `BeginFastPaletteFade(3)` en fin de combat (HandleEndTurn_FinishBattle).
-            //   Sans ça, `_restoreOverworldFromMenu` a réécrit gPlttBufferFaded en couleurs
+            //   Sans ça, `ReturnToFieldFromBattleOrMenu` a réécrit gPlttBufferFaded en couleurs
             //   vives (LoadMapTilesetPalettes) → la 1re frame MainCB2_Overworld les flush =
             //   POP instantané. Le fade ici = ordre 1:1 (musique PUIS FadeInFromBlack).
-            // ⚠️ SPÉCIFIQUE au retour COMBAT : PAS dans `_restoreOverworldFromMenu` (partagé
+            // ⚠️ SPÉCIFIQUE au retour COMBAT : PAS dans `ReturnToFieldFromBattleOrMenu` (partagé
             //   bag/option-menu qui, 1:1 décomp, n'ont PAS de fade-in). Pattern identique aux
             //   chemins resume (OverworldScene:436-442) / warp.
             if (_savedOwSong) m4aSongNumStart(_savedOwSong, true);
@@ -687,9 +690,9 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
               FadeScreen(FADE_FROM_BLACK, 0);
             }
           })
-          .catch((e) => console.error('[decomp-loop] _restoreOverworldFromMenu THREW:', e));
+          .catch((e) => console.error('[decomp-loop] ReturnToFieldFromBattleOrMenu THREW:', e));
       } else {
-        console.warn('[decomp-loop] retour OW : _restoreOverworldFromMenu non exposé — combat sans retour');
+        console.warn('[decomp-loop] retour OW : ReturnToFieldFromBattleOrMenu non exposé — combat sans retour');
       }
     });
     // 1:1 décomp : wild → CreateBattleStartTask(GetWildBattleTransition()) (battle_setup.c:414) ;

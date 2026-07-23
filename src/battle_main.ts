@@ -4251,7 +4251,7 @@ function ResetSpriteData(): void {
   // aussi decomp-bridge.ResetSpriteData). Essentiel au retour de combat : clear
   // OAM + tiles + sprites, sinon les sprites de combat (mon + healthbox) gardent
   // leurs entrées OAM et RENDENT ENCORE dans l'OW (user-flag : sprites + palette
-  // combat qui leakent). Le re-spawn OW (_restoreOverworldFromMenu) re-crée
+  // combat qui leakent). Le re-spawn OW (ReturnToFieldFromBattleOrMenu) re-crée
   // ensuite les sprites OW = 1:1.
   _ResetSpriteDataImpl();
 }
