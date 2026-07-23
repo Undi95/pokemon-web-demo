@@ -21,9 +21,11 @@
 
 import {
   CreateSprite, DestroySprite, AllocOamMatrix,
+  SetOamMatrixRotationScaling, CalcCenterToCornerVec,
   LoadSpritePalette as _sprLoadSpritePalette,
   IndexOfSpritePaletteTag as _sprIndexOfSpritePaletteTag,
 } from './sprite';
+import { ST_OAM_AFFINE_DOUBLE } from '../include/sprite';
 import {
   getRuntime, BlendPalettes, PALETTES_ALL,
   gScanlineEffectRegBuffers, ScanlineEffect_Clear,
@@ -36,6 +38,8 @@ import {
   REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_WIN0V, REG_OFFSET_WIN0H,
   REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
   REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON, REG_OFFSET_MOSAIC,
+  REG_OFFSET_BG0CNT, REG_OFFSET_BG0VOFS,
+  BGCNT_CHARBASE, BGCNT_SCREENBASE, BGCNT_TXT256x512, DISPCNT_BG0_ON,
 } from '../harness/runtime/decomp-runtime';
 import { DISPLAY_HEIGHT } from '../include/gba/defines';
 // Modules coeur/feuilles de la charpente (task/palette/trig/gpu_regs/field_camera/
@@ -45,11 +49,11 @@ import { DISPLAY_HEIGHT } from '../include/gba/defines';
 import { CreateTask, DestroyTask, gTasks } from './task';
 import { TASK_NONE } from '../include/task';
 import { Cos, Sin as _swSin } from './trig';
-import { BeginNormalPaletteFade, gPaletteFade } from './palette';
+import { BeginNormalPaletteFade, gPaletteFade, PALETTES_BG, PALETTES_OBJECTS } from './palette';
 import { SetVBlankCallback } from './main';
 import { SetGpuReg } from './gpu_regs';
-import { EnableInterrupts } from '../harness/runtime/decomp-helpers';
-import { ENUM_B_1 } from '../include/battle_transition';
+import { EnableInterrupts, ClearGpuRegBits } from '../harness/runtime/decomp-helpers';
+import { ENUM_B_1, ENUM_MUGSHOT_0 } from '../include/battle_transition';
 import { GetCameraOffsetWithPan } from './field_camera';
 import { SetWeatherScreenFadeOut } from './field_weather';
 
@@ -2160,6 +2164,976 @@ function Task_Regice(taskId: number): void { while (sRegice_Funcs[gTasks[taskId]
 function Task_Registeel(taskId: number): void { while (sRegisteel_Funcs[gTasks[taskId].data[0]](taskId)); }
 function Task_Regirock(taskId: number): void { while (sRegirock_Funcs[gTasks[taskId].data[0]](taskId)); }
 
+//------------------------------------------------------------------------
+// FAMILLE WeatherDuo / WeatherTrio (Kyogre / Groudon / Rayquaza) — VIS-23
+// battle_transition.c:1370-1748 (Kyogre) · 3365-3573 (Groudon/Rayquaza)
+//------------------------------------------------------------------------
+// Kyogre/Groudon = flash de palette pur sur BG0 (aucune fenêtre, aucun VBlank
+// custom) : WeatherTrio_BgFadeBlack fade les palettes BG→noir, l'image (kyogre/
+// groudon) est chargée tileset+tilemap, puis PaletteFlash/Brighten ré-illuminent
+// la bank 15 progressivement, FramesCountdown patiente, WeatherDuo_FadeOut fond
+// les OBJ+bank15 au noir, WeatherDuo_End → FadeScreenBlack. Assets extraits
+// présents (kyogre/groudon .png+.bin + *_pt1/pt2.pal). Chargement fail-open
+// IDENTIQUE à Aqua (asset KO → BG vide mais state-machine timer/fade se termine).
+// #define tTimer data[1] (Kyogre/Groudon) · tEndDelay data[8] (partagé PatternWeave).
+
+/** Écrit une sous-palette (16 couleurs, index `subPal`) d'une multi-palette dans
+ *  gPlttBufferFaded bank 15 (= LoadPalette(&pal[subPal*16], BG_PLTT_ID(15))),
+ *  1:1 le pattern _loadTransitionPalBank15 (offset multi-sub-pal). */
+function _loadTransitionPalBank15Off(pal: Uint16Array | null, subPal: number): void {
+  const rtPal = (getRuntime() as unknown as { gPlttBufferFaded?: Uint16Array }).gPlttBufferFaded;
+  if (rtPal && pal) {
+    const start = subPal * 16;
+    if (start >= 0 && start + 16 <= pal.length) rtPal.set(pal.subarray(start, start + 16), 15 * 16);
+  }
+}
+
+/** 1:1 `WeatherTrio_BgFadeBlack` (:1679). Fond les palettes BG au noir. */
+function WeatherTrio_BgFadeBlack(taskId: number): boolean {
+  BeginNormalPaletteFade(PALETTES_BG, 1, 0, 16, RGB_BLACK);
+  gTasks[taskId].data[0]++;
+  return false;
+}
+
+/** 1:1 `WeatherTrio_WaitFade` (:1686). */
+function WeatherTrio_WaitFade(taskId: number): boolean {
+  if (!gPaletteFade.active) gTasks[taskId].data[0]++;
+  return false;
+}
+
+/** 1:1 `WeatherDuo_FadeOut` (:1589). Fond OBJ + bank 15 au noir. */
+function WeatherDuo_FadeOut(taskId: number): boolean {
+  BeginNormalPaletteFade(PALETTES_OBJECTS | (1 << 15), 1, 0, 16, RGB_BLACK);
+  gTasks[taskId].data[0]++;
+  return false;
+}
+
+/** 1:1 `WeatherDuo_End` (:1596). */
+function WeatherDuo_End(taskId: number): boolean {
+  if (!gPaletteFade.active) {
+    _setHBlank(null);   // DmaStop(0)
+    FadeScreenBlack();
+    DestroyTask(FindTaskIdByFunc((gTasks[taskId] as unknown as { funcRef: CoreTaskFn }).funcRef));
+  }
+  return false;
+}
+
+// ─── Assets Kyogre / Groudon (même voie tolérante que Aqua) ──────────────────
+let _kyogreTiles: Uint8Array | null = null;
+let _kyogreMap: Uint16Array | null = null;
+let _kyogre1Pal: Uint16Array | null = null;   // kyogre_pt1.pal (multi sub-pal, flash)
+let _kyogre2Pal: Uint16Array | null = null;   // kyogre_pt2.pal (multi sub-pal, brighten)
+let _kyogreReady = false;
+async function _ensureKyogreAssets(): Promise<void> {
+  if (_kyogreReady) return;
+  try {
+    const { loadGbaPal } = await import('../harness/gba/png-loader');
+    const gfx = await loadIndexedPng('/decomp/em/battle_transitions/kyogre.png');
+    _kyogreTiles = gfx.charData;
+    const resp = await fetch('/decomp/em/battle_transitions/kyogre.bin');
+    if (!resp.ok) throw new Error(`kyogre.bin HTTP ${resp.status}`);
+    _kyogreMap = new Uint16Array(await resp.arrayBuffer());
+    _kyogre1Pal = await loadGbaPal('/decomp/em/battle_transitions/kyogre_pt1.pal');
+    _kyogre2Pal = await loadGbaPal('/decomp/em/battle_transitions/kyogre_pt2.pal');
+  } catch (e) {
+    console.error('[battle_transition] _ensureKyogreAssets KO — transition Kyogre dégradée SANS gel', e);
+  } finally {
+    _kyogreReady = true;
+  }
+}
+let _groudonTiles: Uint8Array | null = null;
+let _groudonMap: Uint16Array | null = null;
+let _groudon1Pal: Uint16Array | null = null;
+let _groudon2Pal: Uint16Array | null = null;
+let _groudonReady = false;
+async function _ensureGroudonAssets(): Promise<void> {
+  if (_groudonReady) return;
+  try {
+    const { loadGbaPal } = await import('../harness/gba/png-loader');
+    const gfx = await loadIndexedPng('/decomp/em/battle_transitions/groudon.png');
+    _groudonTiles = gfx.charData;
+    const resp = await fetch('/decomp/em/battle_transitions/groudon.bin');
+    if (!resp.ok) throw new Error(`groudon.bin HTTP ${resp.status}`);
+    _groudonMap = new Uint16Array(await resp.arrayBuffer());
+    _groudon1Pal = await loadGbaPal('/decomp/em/battle_transitions/groudon_pt1.pal');
+    _groudon2Pal = await loadGbaPal('/decomp/em/battle_transitions/groudon_pt2.pal');
+  } catch (e) {
+    console.error('[battle_transition] _ensureGroudonAssets KO — transition Groudon dégradée SANS gel', e);
+  } finally {
+    _groudonReady = true;
+  }
+}
+
+/** 1:1 `Kyogre_Init` (:1542). Charge tileset+tilemap (NB : pas d'InitTransitionData
+ *  — Kyogre ne touche ni fenêtre ni sTransitionData). Asset-gate 1:1 Aqua_Init. */
+function Kyogre_Init(taskId: number): boolean {
+  if (!_kyogreReady) {
+    _ensureKyogreAssets().catch((e) => console.error('[battle_transition] assets Kyogre KO', e));
+    return false;
+  }
+  const d = gTasks[taskId].data;
+  const rt = _coreRt();
+  if (rt) {
+    rt.gba.bg(0).tilemap.fill(0);   // CpuFill16(0, tilemap, BG_SCREEN_SIZE)
+    if (_kyogreTiles) rt.gba.bg(0).vram.set(_kyogreTiles, 0);   // LZ77UnCompVram tileset
+    if (_kyogreMap) {
+      const tm = rt.gba.bg(0).tilemap;
+      tm.set(_kyogreMap.subarray(0, Math.min(_kyogreMap.length, tm.length)), 0);   // LZ77UnCompVram tilemap
+    }
+  }
+  d[0]++;
+  return false;
+}
+
+/** 1:1 `Kyogre_PaletteFlash` (:1555). offset = (tTimer%30)/3 → sub-pal kyogre_pt1. */
+function Kyogre_PaletteFlash(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (d[1] % 3 === 0) {
+    const offset = Math.floor((d[1] % 30) / 3);
+    _loadTransitionPalBank15Off(_kyogre1Pal, offset);
+  }
+  d[1]++;
+  if (d[1] > 58) { d[0]++; d[1] = 0; }
+  return false;
+}
+
+/** 1:1 `Kyogre_PaletteBrighten` (:1572). offset = tTimer/5 → sub-pal kyogre_pt2. */
+function Kyogre_PaletteBrighten(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (d[1] % 5 === 0) {
+    const offset = Math.floor(d[1] / 5);
+    _loadTransitionPalBank15Off(_kyogre2Pal, offset);
+  }
+  d[1]++;
+  if (d[1] > 68) { d[0]++; d[1] = 0; d[8] = 30; }   // tEndDelay = 30
+  return false;
+}
+
+/** 1:1 `Groudon_Init` (:3376). */
+function Groudon_Init(taskId: number): boolean {
+  if (!_groudonReady) {
+    _ensureGroudonAssets().catch((e) => console.error('[battle_transition] assets Groudon KO', e));
+    return false;
+  }
+  const d = gTasks[taskId].data;
+  const rt = _coreRt();
+  if (rt) {
+    rt.gba.bg(0).tilemap.fill(0);
+    if (_groudonTiles) rt.gba.bg(0).vram.set(_groudonTiles, 0);
+    if (_groudonMap) {
+      const tm = rt.gba.bg(0).tilemap;
+      tm.set(_groudonMap.subarray(0, Math.min(_groudonMap.length, tm.length)), 0);
+    }
+  }
+  d[0]++;
+  d[1] = 0;   // tTimer = 0
+  return false;
+}
+
+/** 1:1 `Groudon_PaletteFlash` (:3390). */
+function Groudon_PaletteFlash(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (d[1] % 3 === 0) {
+    const offset = Math.floor((d[1] % 30) / 3);
+    _loadTransitionPalBank15Off(_groudon1Pal, offset);
+  }
+  d[1]++;
+  if (d[1] > 58) { d[0]++; d[1] = 0; }
+  return false;
+}
+
+/** 1:1 `Groudon_PaletteBrighten` (:3406). */
+function Groudon_PaletteBrighten(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (d[1] % 5 === 0) {
+    const offset = Math.floor(d[1] / 5);
+    _loadTransitionPalBank15Off(_groudon2Pal, offset);
+  }
+  d[1]++;
+  if (d[1] > 68) { d[0]++; d[1] = 0; d[8] = 30; }
+  return false;
+}
+
+/** 1:1 `sKyogre_Funcs` (:482). */
+const sKyogre_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  WeatherTrio_BgFadeBlack, WeatherTrio_WaitFade, Kyogre_Init,
+  Kyogre_PaletteFlash, Kyogre_PaletteBrighten, FramesCountdown,
+  WeatherDuo_FadeOut, WeatherDuo_End,
+];
+/** 1:1 `sGroudon_Funcs` (:703). */
+const sGroudon_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  WeatherTrio_BgFadeBlack, WeatherTrio_WaitFade, Groudon_Init,
+  Groudon_PaletteFlash, Groudon_PaletteBrighten, FramesCountdown,
+  WeatherDuo_FadeOut, WeatherDuo_End,
+];
+/** 1:1 `Task_Kyogre` (:1370) / `Task_Groudon` (:3371). */
+function Task_Kyogre(taskId: number): void { while (sKyogre_Funcs[gTasks[taskId].data[0]](taskId)); }
+function Task_Groudon(taskId: number): void { while (sGroudon_Funcs[gTasks[taskId].data[0]](taskId)); }
+
+//------------------------------------------------------------------------
+// B_TRANSITION_RAYQUAZA (battle_transition.c:3426-3573)
+//------------------------------------------------------------------------
+// #define tTimer data[1] · tGrowSpeed data[2] (partagé Blackhole) · tFlag data[7]
+// (partagé Blackhole). Rayquaza scrolle un BG 256x512 (anneau) via BG0VOFS par-
+// scanline, puis TriRing bascule sur le masque circulaire (Blackhole_Vibrate/
+// GrowEnd réutilisés). DETTE MOTEUR : BGCNT_TXT256x512 + charbase/screenbase +
+// BG0VOFS par-scanline = layout VRAM que notre moteur n'émule pas byte-exact
+// (tilemap fixe) → l'anneau peut rendre dégradé ; la state-machine se termine
+// TOUJOURS (TriRing → masque circulaire → FadeScreenBlack), donc AUCUN gel.
+// À valider/affiner EN JEU (session partagée). Précédent BG0VOFS par-scanline :
+// config.vofs (adaptation du DmaSet REG_BG0VOFS, sœur de HBlankCB_Wave hofs).
+
+let _rayquazaTiles: Uint8Array | null = null;
+let _rayquazaMap: Uint16Array | null = null;
+let _rayquazaPal: Uint16Array | null = null;
+let _rayquazaReady = false;
+async function _ensureRayquazaAssets(): Promise<void> {
+  if (_rayquazaReady) return;
+  try {
+    const { loadGbaPal } = await import('../harness/gba/png-loader');
+    const gfx = await loadIndexedPng('/decomp/em/battle_transitions/rayquaza.png');
+    _rayquazaTiles = gfx.charData;
+    const resp = await fetch('/decomp/em/battle_transitions/rayquaza.bin');
+    if (!resp.ok) throw new Error(`rayquaza.bin HTTP ${resp.status}`);
+    _rayquazaMap = new Uint16Array(await resp.arrayBuffer());
+    _rayquazaPal = await loadGbaPal('/decomp/em/battle_transitions/rayquaza.pal');
+  } catch (e) {
+    console.error('[battle_transition] _ensureRayquazaAssets KO — transition Rayquaza dégradée SANS gel', e);
+  } finally {
+    _rayquazaReady = true;
+  }
+}
+
+/** 1:1 `Rayquaza_Init` (:3439). Asset-gate 1:1 Aqua_Init. */
+function Rayquaza_Init(taskId: number): boolean {
+  if (!_rayquazaReady) {
+    _ensureRayquazaAssets().catch((e) => console.error('[battle_transition] assets Rayquaza KO', e));
+    return false;
+  }
+  const d = gTasks[taskId].data;
+  InitTransitionData();
+  ScanlineEffect_Clear();
+  SetGpuReg(REG_OFFSET_BG0CNT, BGCNT_CHARBASE(2) | BGCNT_SCREENBASE(26) | BGCNT_TXT256x512);
+  const rt = _coreRt();
+  if (rt) {
+    rt.gba.bg(0).tilemap.fill(0);                                  // CpuFill16(0, tilemap, BG_SCREEN_SIZE)
+    if (_rayquazaTiles) rt.gba.bg(0).vram.set(_rayquazaTiles.subarray(0, Math.min(_rayquazaTiles.length, 0x2000)), 0);   // CpuCopy16 0x2000
+  }
+  sTransitionData!.counter = 0;
+  d[0]++;
+  _loadTransitionPalBank15Off(_rayquazaPal, 5);   // LoadPalette(&sRayquaza_Palette[80], BG_PLTT_ID(15)) — 80 = 5*16
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) {
+    gScanlineEffectRegBuffers[0][i] = 0;
+    gScanlineEffectRegBuffers[1][i] = 0x100;
+  }
+  SetVBlankCallback(VBlankCB_Rayquaza);
+  return false;
+}
+
+/** 1:1 `Rayquaza_SetGfx` (:3466). */
+function Rayquaza_SetGfx(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const rt = _coreRt();
+  if (rt && _rayquazaMap) {
+    const tm = rt.gba.bg(0).tilemap;
+    tm.set(_rayquazaMap.subarray(0, Math.min(_rayquazaMap.length, tm.length)), 0);   // CpuCopy16 tilemap
+  }
+  d[0]++;
+  return false;
+}
+
+/** 1:1 `Rayquaza_PaletteFlash` (:3476). value = tTimer/4 → sub-pal (value+5). */
+function Rayquaza_PaletteFlash(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (d[1] % 4 === 0) {
+    const value = Math.floor(d[1] / 4);
+    _loadTransitionPalBank15Off(_rayquazaPal, value + 5);
+  }
+  d[1]++;
+  if (d[1] > 40) { d[0]++; d[1] = 0; }
+  return false;
+}
+
+/** 1:1 `Rayquaza_FadeToBlack` (:3493). */
+function Rayquaza_FadeToBlack(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  d[1]++;
+  if (d[1] > 20) {
+    d[0]++;
+    d[1] = 0;
+    BeginNormalPaletteFade(PALETTES_OBJECTS | (1 << 15), 2, 0, 16, RGB_BLACK);
+  }
+  return false;
+}
+
+/** 1:1 `Rayquaza_WaitFade` (:3505). */
+function Rayquaza_WaitFade(taskId: number): boolean {
+  if (!gPaletteFade.active) {
+    sTransitionData!.counter = 1;
+    gTasks[taskId].data[0]++;
+  }
+  return false;
+}
+
+/** 1:1 `Rayquaza_SetBlack` (:3515). */
+function Rayquaza_SetBlack(taskId: number): boolean {
+  BlendPalettes(PALETTES_BG & ~(1 << 15), 8, RGB_BLACK);
+  BlendPalettes(PALETTES_OBJECTS | (1 << 15), 0, RGB_BLACK);
+  gTasks[taskId].data[0]++;
+  return false;
+}
+
+/** 1:1 `Rayquaza_TriRing` (:3524). value = tTimer/3 → sub-pal (value+0), puis à
+ *  tTimer>=40 bascule sur le masque circulaire (VBlankCB_CircularMask). */
+function Rayquaza_TriRing(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (d[1] % 3 === 0) {
+    const value = Math.floor(d[1] / 3);
+    _loadTransitionPalBank15Off(_rayquazaPal, value + 0);
+  }
+  d[1]++;
+  if (d[1] >= 40) {
+    sTransitionData!.WININ = 0;
+    sTransitionData!.WINOUT = WINOUT_WIN01_ALL;
+    sTransitionData!.WIN0H = DISPLAY_WIDTH;
+    sTransitionData!.WIN0V = DISPLAY_HEIGHT;
+    for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = 0;
+    SetVBlankCallback(VBlankCB_CircularMask);
+    _coreEnableWin0();   // adaptation (précédent ClockwiseWipe_Init:1470) — masque circulaire = WIN0 ON
+    d[0]++;
+    d[2] = 1 << 8;   // tGrowSpeed
+    d[7] = 0;        // tFlag = FALSE
+    ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG0_ON);
+  }
+  return false;
+}
+
+/** 1:1 `VBlankCB_Rayquaza` (:3554). DmaSet buffers[counter] → REG_BG0VOFS par-scanline. */
+function VBlankCB_Rayquaza(): void {
+  _setHBlank(null);   // DmaStop(0)
+  VBlankCB_BattleTransition();
+  _setHBlank(HBlankCB_Rayquaza);   // = DmaSet(0, dmaSrc, &REG_BG0VOFS, B_TRANS_DMA_FLAGS)
+}
+
+/** BG0VOFS par-scanline (adaptation du DmaSet HBlank-repeat ; précédent
+ *  HBlankCB_Wave hofs). dmaSrc : counter===1 → buffers[1], sinon buffers[0]. */
+function HBlankCB_Rayquaza(y: number): void {
+  if (y >= DISPLAY_HEIGHT) return;
+  const rt = _coreRt(); if (!rt) return;
+  const c = sTransitionData ? sTransitionData.counter : 0;
+  const src = c === 1 ? gScanlineEffectRegBuffers[1] : gScanlineEffectRegBuffers[0];
+  rt.gba.bg(0).config.vofs = src[y];
+}
+
+//-----------------------------------------------------------
+// B_TRANSITION_BLACKHOLE + B_TRANSITION_BLACKHOLE_PULSATE
+// (battle_transition.c:3024-3180)
+//-----------------------------------------------------------
+// #define tRadius data[1] · tGrowSpeed data[2] · tSinIndex data[5] ·
+// tVibrateId data[6] · tAmplitude data[6] · tFlag data[7]. AUCUN asset : masque
+// circulaire pur (SetCircularMask/VBlankCB_CircularMask déjà portés).
+
+/** 1:1 `sBlackhole_Vibrations[]` (:618). */
+const sBlackhole_Vibrations: readonly number[] = [-6, 4];
+
+/** 1:1 `Blackhole_Init` (:3046). Partagé par les deux transitions. */
+function Blackhole_Init(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  InitTransitionData();
+  ScanlineEffect_Clear();
+  sTransitionData!.WININ = 0;
+  sTransitionData!.WINOUT = WINOUT_WIN01_ALL;
+  sTransitionData!.WIN0H = DISPLAY_WIDTH;
+  sTransitionData!.WIN0V = DISPLAY_HEIGHT;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = 0;
+  SetVBlankCallback(VBlankCB_CircularMask);
+  _coreEnableWin0();   // adaptation (précédent ClockwiseWipe_Init:1470) — masque circulaire = WIN0 ON
+  d[0]++;
+  d[1] = 1;        // tRadius
+  d[2] = 1 << 8;   // tGrowSpeed
+  d[7] = 0;        // tFlag = FALSE
+  return false;
+}
+
+/** 1:1 `Blackhole_GrowEnd` (:3071). Partagé Blackhole/Rayquaza. */
+function Blackhole_GrowEnd(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (d[7] === 1) {   // tFlag == TRUE
+    _setHBlank(null);   // DmaStop(0)
+    SetVBlankCallback(null);
+    DestroyTask(FindTaskIdByFunc((gTasks[taskId] as unknown as { funcRef: CoreTaskFn }).funcRef));
+  } else {
+    sTransitionData!.VBlank_DMA = 0;
+    if (d[2] < 1024) d[2] += 128;                     // tGrowSpeed
+    if (d[1] < DISPLAY_HEIGHT) d[1] += d[2] >> 8;     // tRadius
+    if (d[1] > DISPLAY_HEIGHT) d[1] = DISPLAY_HEIGHT;
+    SetCircularMask(gScanlineEffectRegBuffers[0], DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, d[1]);
+    if (d[1] === DISPLAY_HEIGHT) {
+      d[7] = 1;   // tFlag = TRUE
+      FadeScreenBlack();
+    } else {
+      sTransitionData!.VBlank_DMA++;
+    }
+  }
+  return false;
+}
+
+/** 1:1 `Blackhole_Vibrate` (:3103). Partagé Blackhole/Rayquaza. */
+function Blackhole_Vibrate(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  if (d[7] === 0) {   // tFlag == FALSE
+    d[7]++;
+    d[1] = 48;        // tRadius
+    d[6] = 0;         // tVibrateId
+  }
+  d[1] += sBlackhole_Vibrations[d[6]];
+  d[6] = (d[6] + 1) % sBlackhole_Vibrations.length;
+  SetCircularMask(gScanlineEffectRegBuffers[0], DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, d[1]);
+  if (d[1] < 9) {
+    d[0]++;
+    d[7] = 0;   // tFlag = FALSE
+  }
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `BlackholePulsate_Main` (:3125). */
+function BlackholePulsate_Main(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  if (d[7] === 0) {   // tFlag == FALSE
+    d[7]++;
+    d[5] = 2;   // tSinIndex
+    d[6] = 2;   // tAmplitude
+  }
+  if (d[1] > DISPLAY_HEIGHT) d[1] = DISPLAY_HEIGHT;
+  SetCircularMask(gScanlineEffectRegBuffers[0], DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, d[1]);
+  if (d[1] === DISPLAY_HEIGHT) {
+    _setHBlank(null);   // DmaStop(0)
+    FadeScreenBlack();
+    DestroyTask(FindTaskIdByFunc((gTasks[taskId] as unknown as { funcRef: CoreTaskFn }).funcRef));
+  }
+  const index = d[5];   // tSinIndex (u16)
+  let amplitude: number;
+  if ((d[5] & 0xFF) <= 128) {
+    amplitude = d[6];
+    d[5] += 8;
+  } else {
+    amplitude = d[6] - 1;
+    d[5] += 16;
+  }
+  d[1] += _swSin(index & 0xFF, amplitude);
+  if (d[1] <= 0) d[1] = 1;
+  if (d[5] >= 0xFF) {
+    d[5] >>= 8;
+    d[6]++;
+  }
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `sBlackhole_Funcs` (:603). */
+const sBlackhole_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  Blackhole_Init, Blackhole_Vibrate, Blackhole_GrowEnd,
+];
+/** 1:1 `sBlackholePulsate_Funcs` (:610). */
+const sBlackholePulsate_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  Blackhole_Init, BlackholePulsate_Main,
+];
+/** 1:1 `sRayquaza_Funcs` (:715). */
+const sRayquaza_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  WeatherTrio_BgFadeBlack, WeatherTrio_WaitFade, Rayquaza_Init, Rayquaza_SetGfx,
+  Rayquaza_PaletteFlash, Rayquaza_FadeToBlack, Rayquaza_WaitFade, Rayquaza_SetBlack,
+  Rayquaza_TriRing, Blackhole_Vibrate, Blackhole_GrowEnd,
+];
+/** 1:1 `Task_Blackhole` (:3035) / `Task_BlackholePulsate` (:3040) / `Task_Rayquaza` (:3434). */
+function Task_Blackhole(taskId: number): void { while (sBlackhole_Funcs[gTasks[taskId].data[0]](taskId)); }
+function Task_BlackholePulsate(taskId: number): void { while (sBlackholePulsate_Funcs[gTasks[taskId].data[0]](taskId)); }
+function Task_Rayquaza(taskId: number): void { while (sRayquaza_Funcs[gTasks[taskId].data[0]](taskId)); }
+
+//----------------------------------------------------------------
+// MUGSHOTS — B_TRANSITION_SIDNEY/PHOEBE/GLACIA/DRAKE/CHAMPION
+// (battle_transition.c:2243-2713) — Élite 4 + Champion, 1 par combat du Panthéon
+//----------------------------------------------------------------
+// ⚠️ INERTE (non câblé dans sTasks_Main) — bloqué sur un SOUS-SYSTÈME non porté :
+//   • CreateTrainerSprite (trainer_pokemon_sprites.c : DecompressTrainerFrontPic +
+//     LoadCompressedSpriteSheet + palette OBJ) — PAS porté en fonction décomp
+//     réutilisable (seul un CreateTrainerSprite bespoke à signature différente
+//     existe dans main_menu.ts).
+//   • PlayerGenderToFrontTrainerPicId (pokemon.c) — idem non porté (seul un
+//     variant _Debug dans hall_of_fame.ts).
+//   • Les 2 sprites dresseur doivent être TICKÉS pendant le CB2 custom de la
+//     transition (comme _tickTrailSprites) — hook à ajouter.
+// La MACHINERIE 1:1 ci-dessous (bannière HBlank, fondu blanc→noir, VBlank/HBlank
+// CBs, tables, sprite CBs) est transcrite EN ENTIER ; le pilote doit (1) porter/
+// brancher CreateTrainerSprite + PlayerGenderToFrontTrainerPicId, (2) ticker les
+// mugshot sprites, (3) ajouter sTasks_Main[B_TRANSITION_SIDNEY..CHAMPION].
+// Sans les vrais sprites, Mugshot_WaitStartPlayerSlide gèlerait (attend
+// IsTrainerPicSlideDone) → NE PAS câbler tant que ci-dessus non fait.
+//
+// #define tSinIndex data[1] · tTopBannerX data[2] · tBottomBannerX data[3] ·
+//   tTimer data[3] (réutilisé) · tFadeSpread data[4] · tOpponentSpriteId data[13] ·
+//   tPlayerSpriteId data[14] · tMugshotId data[15]
+// sprite : sState data[0] · sSlideSpeed data[1] · sSlideAccel data[2] ·
+//   sDone data[6] · sSlideDir data[7]
+
+const SE_MUGSHOT = 104;   // 1:1 include/constants/songs.h (SE_MUGSHOT) — cf song-table.ts
+const MUGSHOT_SHAPE_64x32 = 1;   // SPRITE_SHAPE(64x32) = ST_OAM_H_RECTANGLE (types.h:118)
+const MUGSHOT_SIZE_64x32 = 3;    // SPRITE_SIZE(64x32) = ST_OAM_SIZE_3 (types.h:117)
+// io_reg.h : WININ_WIN0_ALL déjà défini (0x3F). WINOUT WIN01 par-couche :
+const WINOUT_WIN01_BG1 = 1 << 1, WINOUT_WIN01_BG2 = 1 << 2, WINOUT_WIN01_BG3 = 1 << 3;
+const WINOUT_WIN01_OBJ = 1 << 4, WINOUT_WIN01_CLR = 1 << 5;   // io_reg.h:568-573
+
+/** Sprite mugshot (données lâches — cf. TrailSprite). */
+interface MugshotSprite {
+  x: number; data: number[];
+  oam: { affineMode: number; matrixNum: number; shape: number; size: number };
+  centerToCornerVecX?: number; centerToCornerVecY?: number;
+  callback: ((s: MugshotSprite) => void) | null;
+}
+
+/** Deps mugshot NON portées, routées par bridge (inert : jamais appelées tant que
+ *  non câblé). Le pilote branche __battleTransitionMugshotDeps une fois
+ *  CreateTrainerSprite / PlayerGenderToFrontTrainerPicId portés. */
+function _mugshotDeps(): {
+  CreateTrainerSprite?: (picId: number, x: number, y: number, sub: number) => number;
+  PlayerGenderToFrontTrainerPicId?: (gender: number) => number;
+  playerGender?: number;
+  playSE?: (se: number) => void;
+} {
+  const g = (globalThis as Record<string, unknown>).__battleTransitionMugshotDeps;
+  return (g as ReturnType<typeof _mugshotDeps>) ?? {};
+}
+function _mugshotPlayerGender(): number {
+  const rt = getRuntime() as unknown as { gSaveBlock2Ptr?: { playerGender?: number } };
+  return rt?.gSaveBlock2Ptr?.playerGender ?? _mugshotDeps().playerGender ?? 0;
+}
+function _mugshotGSprites(): Array<MugshotSprite | undefined> | undefined {
+  return (getRuntime() as unknown as { gSprites?: Array<MugshotSprite | undefined> }).gSprites;
+}
+
+// ─── Data mugshot 1:1 (battle_transition.c:544-916) ─────────────────────────
+/** 1:1 `sMugshotsTrainerPicIDsTable` (:544) — TRAINER_PIC_ELITE_FOUR_* / CHAMPION_WALLACE.
+ *  Résolus par le pilote (enum trainer pic) — placeholders index Mugshot par défaut. */
+const sMugshotsTrainerPicIDsTable: readonly number[] = [
+  // [SIDNEY, PHOEBE, GLACIA, DRAKE, CHAMPION] → TRAINER_PIC_* (à mapper par le pilote)
+  0, 0, 0, 0, 0,
+];
+/** 1:1 `sMugshotsOpponentRotationScales[MUGSHOTS_COUNT][2]` (:552). */
+const sMugshotsOpponentRotationScales: ReadonlyArray<readonly [number, number]> = [
+  [0x200, 0x200], [0x200, 0x200], [0x1B0, 0x1B0], [0x1A0, 0x1A0], [0x188, 0x188],
+];
+/** 1:1 `sMugshotsOpponentCoords[MUGSHOTS_COUNT][2]` (:560). */
+const sMugshotsOpponentCoords: ReadonlyArray<readonly [number, number]> = [
+  [0, 0], [0, 0], [-4, 4], [0, 5], [-8, 7],
+];
+/** 1:1 `sTrainerPicSlideSpeeds[2]` / `sTrainerPicSlideAccels[2]` (:582). */
+const sTrainerPicSlideSpeeds: readonly number[] = [12, -12];
+const sTrainerPicSlideAccels: readonly number[] = [-1, 1];
+
+// ─── Assets mugshot (elite_four_bg tileset + tilemap ; palettes BG/joueur) ───
+let _mugshotTiles: Uint8Array | null = null;    // sEliteFour_Tileset (elite_four_bg.png, 15 tiles)
+let _mugshotMap: Uint16Array | null = null;     // sMugshotsTilemap (elite_four_bg_map.bin, 640 u16)
+let _mugshotOppPals: (Uint16Array | null)[] = [null, null, null, null, null];   // sidney/phoebe/glacia/drake/wallace
+let _mugshotPlayerPals: (Uint16Array | null)[] = [null, null];                  // brendan/may
+let _mugshotReady = false;
+async function _ensureMugshotAssets(): Promise<void> {
+  if (_mugshotReady) return;
+  try {
+    const { loadGbaPal } = await import('../harness/gba/png-loader');
+    const gfx = await loadIndexedPng('/decomp/em/battle_transitions/elite_four_bg.png');
+    _mugshotTiles = gfx.charData;
+    const resp = await fetch('/decomp/em/battle_transitions/elite_four_bg_map.bin');
+    if (!resp.ok) throw new Error(`elite_four_bg_map.bin HTTP ${resp.status}`);
+    _mugshotMap = new Uint16Array(await resp.arrayBuffer());
+    const base = '/decomp/em/battle_transitions/';
+    _mugshotOppPals = await Promise.all(
+      ['sidney_bg.pal', 'phoebe_bg.pal', 'glacia_bg.pal', 'drake_bg.pal', 'wallace_bg.pal'].map((n) => loadGbaPal(base + n)),
+    );
+    _mugshotPlayerPals = await Promise.all(['brendan_bg.pal', 'may_bg.pal'].map((n) => loadGbaPal(base + n)));
+  } catch (e) {
+    console.error('[battle_transition] _ensureMugshotAssets KO — mugshot dégradé SANS gel', e);
+  } finally {
+    _mugshotReady = true;
+  }
+}
+
+/** 1:1 `Task_Sidney`..`Task_Champion` (:2266-2294) : posent tMugshotId + DoMugshotTransition. */
+function Task_Sidney(taskId: number): void { gTasks[taskId].data[15] = ENUM_MUGSHOT_0.MUGSHOT_SIDNEY; DoMugshotTransition(taskId); }
+function Task_Phoebe(taskId: number): void { gTasks[taskId].data[15] = ENUM_MUGSHOT_0.MUGSHOT_PHOEBE; DoMugshotTransition(taskId); }
+function Task_Glacia(taskId: number): void { gTasks[taskId].data[15] = ENUM_MUGSHOT_0.MUGSHOT_GLACIA; DoMugshotTransition(taskId); }
+function Task_Drake(taskId: number): void { gTasks[taskId].data[15] = ENUM_MUGSHOT_0.MUGSHOT_DRAKE; DoMugshotTransition(taskId); }
+function Task_Champion(taskId: number): void { gTasks[taskId].data[15] = ENUM_MUGSHOT_0.MUGSHOT_CHAMPION; DoMugshotTransition(taskId); }
+
+/** 1:1 `DoMugshotTransition` (:2296). */
+function DoMugshotTransition(taskId: number): void { while (sMugshot_Funcs[gTasks[taskId].data[0]](taskId)); }
+
+/** 1:1 `Mugshot_Init` (:2301). Asset-gate 1:1 Aqua_Init. */
+function Mugshot_Init(taskId: number): boolean {
+  if (!_mugshotReady) {
+    _ensureMugshotAssets().catch((e) => console.error('[battle_transition] assets Mugshot KO', e));
+    return false;
+  }
+  const d = gTasks[taskId].data;
+  InitTransitionData();
+  ScanlineEffect_Clear();
+  Mugshots_CreateTrainerPics(taskId);
+  d[1] = 0;                    // tSinIndex
+  d[2] = 1;                    // tTopBannerX
+  d[3] = DISPLAY_WIDTH - 1;    // tBottomBannerX
+  sTransitionData!.WININ = WININ_WIN0_ALL;
+  sTransitionData!.WINOUT = WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_BG3 | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR;
+  sTransitionData!.WIN0V = DISPLAY_HEIGHT;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = ((DISPLAY_WIDTH << 8) | (DISPLAY_WIDTH + 1)) & 0xFFFF;
+  SetVBlankCallback(VBlankCB_Mugshots);
+  _coreEnableWin0();   // adaptation (précédent ClockwiseWipe_Init:1470) — bannière WIN0
+  d[0]++;   // tState++
+  return false;
+}
+
+/** 1:1 `Mugshot_SetGfx` (:2325). */
+function Mugshot_SetGfx(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const rt = _coreRt();
+  if (rt) {
+    if (_mugshotTiles) rt.gba.bg(0).vram.set(_mugshotTiles.subarray(0, Math.min(_mugshotTiles.length, 0xF0 * 2)), 0);   // CpuSet(sEliteFour_Tileset, tileset, 0xF0)
+    // LoadPalette(sOpponentMugshotsPals[tMugshotId], BG_PLTT_ID(15)) — 16 couleurs.
+    _loadTransitionPalBank15(_mugshotOppPals[d[15]] ?? null);
+    // LoadPalette(sPlayerMugshotsPals[gender], BG_PLTT_ID(15) + 10, PLTT_SIZEOF(6)) — 6 couleurs.
+    const rtPal = (getRuntime() as unknown as { gPlttBufferFaded?: Uint16Array }).gPlttBufferFaded;
+    const pPal = _mugshotPlayerPals[_mugshotPlayerGender()];
+    if (rtPal && pPal) rtPal.set(pPal.subarray(0, 6), 15 * 16 + 10);
+    // SET_TILE(tilemap, i, j, *mugshotsMap) sur 20×32 → tile | (0xF0<<8).
+    if (_mugshotMap) {
+      const tilemap = rt.gba.bg(0).tilemap;
+      let k = 0;
+      for (let i = 0; i < 20; i++) {
+        for (let j = 0; j < 32; j++, k++) {
+          if (k < _mugshotMap.length) tilemap[i * 32 + j] = (_mugshotMap[k] | (0xF0 << 8)) & 0xFFFF;
+        }
+      }
+    }
+  }
+  EnableInterrupts(INTR_FLAG_HBLANK);
+  _setHBlank(HBlankCB_Mugshots);   // SetHBlankCallback(HBlankCB_Mugshots)
+  d[0]++;
+  return false;
+}
+
+/** 1:1 `Mugshot_ShowBanner` (:2350). */
+function Mugshot_ShowBanner(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  let toStore = 0;
+  let sinIndex = d[1];   // tSinIndex
+  d[1] += 16;
+  let i = 0;
+  // Top banner
+  for (; i < DISPLAY_HEIGHT / 2; i++, toStore++, sinIndex += 16) {
+    let x = d[2] + _swSin(sinIndex & 0xFF, 16);
+    if (x < 0) x = 1;
+    if (x > DISPLAY_WIDTH) x = DISPLAY_WIDTH;
+    gScanlineEffectRegBuffers[0][toStore] = x & 0xFFFF;
+  }
+  // Bottom banner
+  for (; i < DISPLAY_HEIGHT; i++, toStore++, sinIndex += 16) {
+    let x = d[3] - _swSin(sinIndex & 0xFF, 16);
+    if (x < 0) x = 0;
+    if (x > DISPLAY_WIDTH - 1) x = DISPLAY_WIDTH - 1;
+    gScanlineEffectRegBuffers[0][toStore] = ((x << 8) | DISPLAY_WIDTH) & 0xFFFF;
+  }
+  d[2] += 8;   // tTopBannerX
+  d[3] -= 8;   // tBottomBannerX
+  if (d[2] > DISPLAY_WIDTH) d[2] = DISPLAY_WIDTH;
+  if (d[3] < 0) d[3] = 0;
+  // mergedValue = *(s32 *)(&tTopBannerX) = (tBottomBannerX << 16) | (tTopBannerX & 0xFFFF).
+  // == DISPLAY_WIDTH ⇔ tTopBannerX==240 && tBottomBannerX==0 (1:1 :2394).
+  const mergedValue = ((d[3] << 16) | (d[2] & 0xFFFF)) | 0;
+  if (mergedValue === DISPLAY_WIDTH) d[0]++;
+  sTransitionData!.BG0HOFS_Lower -= 8;
+  sTransitionData!.BG0HOFS_Upper += 8;
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `Mugshot_StartOpponentSlide` (:2404). */
+function Mugshot_StartOpponentSlide(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[0][i] = DISPLAY_WIDTH;
+  d[0]++;
+  d[1] = 0;   // tSinIndex
+  d[2] = 0;   // tTopBannerX
+  d[3] = 0;   // tBottomBannerX
+  sTransitionData!.BG0HOFS_Lower -= 8;
+  sTransitionData!.BG0HOFS_Upper += 8;
+  SetTrainerPicSlideDirection(d[13], 0);   // tOpponentSpriteId
+  SetTrainerPicSlideDirection(d[14], 1);   // tPlayerSpriteId
+  IncrementTrainerPicState(d[13]);
+  const deps = _mugshotDeps();
+  (deps.playSE ?? ((se: number) => { void se; }))(SE_MUGSHOT);   // PlaySE(SE_MUGSHOT)
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `Mugshot_WaitStartPlayerSlide` (:2436). */
+function Mugshot_WaitStartPlayerSlide(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.BG0HOFS_Lower -= 8;
+  sTransitionData!.BG0HOFS_Upper += 8;
+  if (IsTrainerPicSlideDone(d[13])) {
+    d[0]++;
+    IncrementTrainerPicState(d[14]);
+  }
+  return false;
+}
+
+/** 1:1 `Mugshot_WaitPlayerSlide` (:2450). */
+function Mugshot_WaitPlayerSlide(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.BG0HOFS_Lower -= 8;
+  sTransitionData!.BG0HOFS_Upper += 8;
+  if (IsTrainerPicSlideDone(d[14])) {
+    sTransitionData!.VBlank_DMA = 0;
+    SetVBlankCallback(null);
+    _setHBlank(null);   // DmaStop(0)
+    for (let i = 0; i < DISPLAY_HEIGHT; i++) { gScanlineEffectRegBuffers[0][i] = 0; gScanlineEffectRegBuffers[1][i] = 0; }
+    SetGpuReg(REG_OFFSET_WIN0H, DISPLAY_WIDTH);
+    SetGpuReg(REG_OFFSET_BLDY, 0);
+    d[0]++;
+    d[3] = 0;   // tTimer (réutilise data[3])
+    d[4] = 0;   // tFadeSpread
+    sTransitionData!.BLDCNT = BLDCNT_TGT1_ALL | BLDCNT_EFFECT_LIGHTEN;
+    SetVBlankCallback(VBlankCB_MugshotsFadeOut);
+  }
+  return false;
+}
+
+/** 1:1 `Mugshot_GradualWhiteFade` (:2473). */
+function Mugshot_GradualWhiteFade(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  let active = true;
+  sTransitionData!.BG0HOFS_Lower -= 8;
+  sTransitionData!.BG0HOFS_Upper += 8;
+  if (d[4] < DISPLAY_HEIGHT / 2) d[4] += 2;      // tFadeSpread
+  if (d[4] > DISPLAY_HEIGHT / 2) d[4] = DISPLAY_HEIGHT / 2;
+  d[3]++;   // tTimer
+  if (d[3] & 1) {
+    active = false;
+    for (let i = 0; i <= d[4]; i++) {
+      const index1 = DISPLAY_HEIGHT / 2 - i;
+      const index2 = DISPLAY_HEIGHT / 2 + i;
+      if (gScanlineEffectRegBuffers[0][index1] <= 15) { active = true; gScanlineEffectRegBuffers[0][index1]++; }
+      if (gScanlineEffectRegBuffers[0][index2] <= 15) { active = true; gScanlineEffectRegBuffers[0][index2]++; }
+    }
+  }
+  if (d[4] === DISPLAY_HEIGHT / 2 && !active) d[0]++;
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `Mugshot_InitFadeWhiteToBlack` (:2518). */
+function Mugshot_InitFadeWhiteToBlack(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  BlendPalettes(PALETTES_ALL, 16, RGB_WHITE);
+  sTransitionData!.BLDCNT = 0xFF;
+  d[3] = 0;   // tTimer
+  d[0]++;
+  return true;
+}
+
+/** 1:1 `Mugshot_FadeToBlack` (:2529). */
+function Mugshot_FadeToBlack(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  sTransitionData!.VBlank_DMA = 0;
+  d[3]++;   // tTimer
+  // memset(gScanlineEffectRegBuffers[0], tTimer, DISPLAY_HEIGHT * 2) : octets → u16 (b<<8)|b.
+  const b = d[3] & 0xFF;
+  const v = ((b << 8) | b) & 0xFFFF;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[0][i] = v;
+  if (d[3] > 15) d[0]++;
+  sTransitionData!.VBlank_DMA++;
+  return false;
+}
+
+/** 1:1 `Mugshot_End` (:2542). */
+function Mugshot_End(taskId: number): boolean {
+  _setHBlank(null);   // DmaStop(0)
+  FadeScreenBlack();
+  DestroyTask(FindTaskIdByFunc((gTasks[taskId] as unknown as { funcRef: CoreTaskFn }).funcRef));
+  return false;
+}
+
+/** 1:1 `VBlankCB_Mugshots` (:2550). */
+function VBlankCB_Mugshots(): void {
+  _setHBlank(null);   // DmaStop(0)
+  VBlankCB_BattleTransition();
+  if (sTransitionData && sTransitionData.VBlank_DMA !== 0) {
+    for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+  }
+  const rt = _coreRt();
+  if (sTransitionData && rt) {
+    rt.gba.bg(0).config.vofs = sTransitionData.BG0VOFS;   // REG_BG0VOFS = BG0VOFS
+    SetGpuReg(REG_OFFSET_WININ, sTransitionData.WININ);
+    SetGpuReg(REG_OFFSET_WINOUT, sTransitionData.WINOUT);
+    SetGpuReg(REG_OFFSET_WIN0V, sTransitionData.WIN0V);
+  }
+  _setHBlank(HBlankCB_Mugshots);   // DmaSet buffers[1] → REG_WIN0H par-scanline
+}
+
+/** 1:1 `VBlankCB_MugshotsFadeOut` (:2563). */
+function VBlankCB_MugshotsFadeOut(): void {
+  _setHBlank(null);   // DmaStop(0)
+  VBlankCB_BattleTransition();
+  if (sTransitionData && sTransitionData.VBlank_DMA !== 0) {
+    for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+  }
+  if (sTransitionData) SetGpuReg(REG_OFFSET_BLDCNT, sTransitionData.BLDCNT);
+  _setHBlank(HBlankCB_MugshotsFadeOut);   // DmaSet buffers[1] → REG_BLDY par-scanline
+}
+
+/** 1:1 `HBlankCB_Mugshots` (:2573). BG0HOFS split moitié haut/bas. */
+function HBlankCB_Mugshots(y: number): void {
+  if (y >= DISPLAY_HEIGHT) return;
+  const rt = _coreRt(); if (!rt || !sTransitionData) return;
+  // WIN0H par-scanline (DmaSet buffers[1] → REG_WIN0H) + REG_BG0HOFS Lower/Upper.
+  const win0h = gScanlineEffectRegBuffers[1][y];
+  rt.gba.windows.win0.x1 = (win0h >> 8) & 0xFF;
+  rt.gba.windows.win0.x2 = win0h & 0xFF;
+  rt.gba.bg(0).config.hofs = (y < DISPLAY_HEIGHT / 2) ? sTransitionData.BG0HOFS_Lower : sTransitionData.BG0HOFS_Upper;
+}
+
+/** BLDY par-scanline (DmaSet buffers[1] → REG_BLDY) pendant le fondu blanc. */
+function HBlankCB_MugshotsFadeOut(y: number): void {
+  if (y >= DISPLAY_HEIGHT) return;
+  const rt = _coreRt(); if (!rt) return;
+  rt.gba.blend.brightness = gScanlineEffectRegBuffers[1][y] & 0xFF;
+}
+
+/** 1:1 `Mugshots_CreateTrainerPics` (:2581). Crée les 2 sprites dresseur. INERTE :
+ *  CreateTrainerSprite/PlayerGenderToFrontTrainerPicId routés par bridge. */
+function Mugshots_CreateTrainerPics(taskId: number): void {
+  const d = gTasks[taskId].data;
+  const deps = _mugshotDeps();
+  if (!deps.CreateTrainerSprite || !deps.PlayerGenderToFrontTrainerPicId) {
+    console.error('[battle_transition] Mugshots_CreateTrainerPics : CreateTrainerSprite/PlayerGenderToFrontTrainerPicId non branchés (mugshot INERTE)');
+    return;
+  }
+  const mugshotId = d[15];   // tMugshotId
+  d[13] = deps.CreateTrainerSprite(
+    sMugshotsTrainerPicIDsTable[mugshotId],
+    sMugshotsOpponentCoords[mugshotId][0] - 32,
+    sMugshotsOpponentCoords[mugshotId][1] + 42,
+    0,
+  );   // tOpponentSpriteId
+  d[14] = deps.CreateTrainerSprite(
+    deps.PlayerGenderToFrontTrainerPicId(_mugshotPlayerGender()),
+    DISPLAY_WIDTH + 32,
+    106,
+    0,
+  );   // tPlayerSpriteId
+  const g = _mugshotGSprites();
+  const opponentSprite = g?.[d[13]];
+  const playerSprite = g?.[d[14]];
+  if (!opponentSprite || !playerSprite) return;
+  opponentSprite.callback = SpriteCB_MugshotTrainerPic;
+  playerSprite.callback = SpriteCB_MugshotTrainerPic;
+  opponentSprite.oam.affineMode = ST_OAM_AFFINE_DOUBLE;
+  playerSprite.oam.affineMode = ST_OAM_AFFINE_DOUBLE;
+  opponentSprite.oam.matrixNum = AllocOamMatrix();
+  playerSprite.oam.matrixNum = AllocOamMatrix();
+  opponentSprite.oam.shape = MUGSHOT_SHAPE_64x32;
+  playerSprite.oam.shape = MUGSHOT_SHAPE_64x32;
+  opponentSprite.oam.size = MUGSHOT_SIZE_64x32;
+  playerSprite.oam.size = MUGSHOT_SIZE_64x32;
+  // CalcCenterToCornerVec(sprite, shape, size, affineMode) : notre port renvoie le
+  // vec, on l'assigne au sprite (1:1 la mutation décomp de sprite->centerToCornerVec*).
+  const ocv = CalcCenterToCornerVec(MUGSHOT_SHAPE_64x32, MUGSHOT_SIZE_64x32, ST_OAM_AFFINE_DOUBLE);
+  opponentSprite.centerToCornerVecX = ocv.centerToCornerVecX; opponentSprite.centerToCornerVecY = ocv.centerToCornerVecY;
+  const pcv = CalcCenterToCornerVec(MUGSHOT_SHAPE_64x32, MUGSHOT_SIZE_64x32, ST_OAM_AFFINE_DOUBLE);
+  playerSprite.centerToCornerVecX = pcv.centerToCornerVecX; playerSprite.centerToCornerVecY = pcv.centerToCornerVecY;
+  SetOamMatrixRotationScaling(opponentSprite.oam.matrixNum, sMugshotsOpponentRotationScales[mugshotId][0], sMugshotsOpponentRotationScales[mugshotId][1], 0);
+  SetOamMatrixRotationScaling(playerSprite.oam.matrixNum, -512, 512, 0);
+}
+
+/** 1:1 `SpriteCB_MugshotTrainerPic` (:2620). */
+function SpriteCB_MugshotTrainerPic(sprite: MugshotSprite): void {
+  while (sMugshotTrainerPicFuncs[sprite.data[0]](sprite));
+}
+
+/** 1:1 `MugshotTrainerPic_Pause` (:2626). */
+function MugshotTrainerPic_Pause(_sprite: MugshotSprite): boolean { void _sprite; return false; }
+
+/** 1:1 `MugshotTrainerPic_Init` (:2631). */
+function MugshotTrainerPic_Init(sprite: MugshotSprite): boolean {
+  sprite.data[0]++;                                   // sState
+  sprite.data[1] = sTrainerPicSlideSpeeds[sprite.data[7]];   // sSlideSpeed = speeds[sSlideDir]
+  sprite.data[2] = sTrainerPicSlideAccels[sprite.data[7]];   // sSlideAccel = accels[sSlideDir]
+  return true;
+}
+
+/** 1:1 `MugshotTrainerPic_Slide` (:2645). */
+function MugshotTrainerPic_Slide(sprite: MugshotSprite): boolean {
+  sprite.x += sprite.data[1];   // sSlideSpeed
+  if (sprite.data[7] && sprite.x < DISPLAY_WIDTH - 107) sprite.data[0]++;
+  else if (!sprite.data[7] && sprite.x > 103) sprite.data[0]++;
+  return false;
+}
+
+/** 1:1 `MugshotTrainerPic_SlideSlow` (:2657). */
+function MugshotTrainerPic_SlideSlow(sprite: MugshotSprite): boolean {
+  sprite.data[1] += sprite.data[2];   // sSlideSpeed += sSlideAccel
+  sprite.x += sprite.data[1];
+  if (sprite.data[1] === 0) {
+    sprite.data[0]++;
+    sprite.data[2] = -sprite.data[2];   // sSlideAccel
+    sprite.data[6] = 1;                 // sDone = TRUE
+  }
+  return false;
+}
+
+/** 1:1 `MugshotTrainerPic_SlideOffscreen` (:2677) — jamais atteint (cf. commentaire décomp). */
+function MugshotTrainerPic_SlideOffscreen(sprite: MugshotSprite): boolean {
+  sprite.data[1] += sprite.data[2];
+  sprite.x += sprite.data[1];
+  if (sprite.x < -31 || sprite.x > DISPLAY_WIDTH + 31) sprite.data[0]++;
+  return false;
+}
+
+/** 1:1 `SetTrainerPicSlideDirection` (:2686). */
+function SetTrainerPicSlideDirection(spriteId: number, dirId: number): void {
+  const s = _mugshotGSprites()?.[spriteId];
+  if (s) s.data[7] = dirId;   // sSlideDir
+}
+/** 1:1 `IncrementTrainerPicState` (:2691). */
+function IncrementTrainerPicState(spriteId: number): void {
+  const s = _mugshotGSprites()?.[spriteId];
+  if (s) s.data[0]++;   // sState
+}
+/** 1:1 `IsTrainerPicSlideDone` (:2696). */
+function IsTrainerPicSlideDone(spriteId: number): number {
+  const s = _mugshotGSprites()?.[spriteId];
+  return s ? s.data[6] : 0;   // sDone
+}
+
+/** 1:1 `sMugshot_Funcs` (:530). */
+const sMugshot_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  Mugshot_Init, Mugshot_SetGfx, Mugshot_ShowBanner, Mugshot_StartOpponentSlide,
+  Mugshot_WaitStartPlayerSlide, Mugshot_WaitPlayerSlide, Mugshot_GradualWhiteFade,
+  Mugshot_InitFadeWhiteToBlack, Mugshot_FadeToBlack, Mugshot_End,
+];
+/** 1:1 `sMugshotTrainerPicFuncs` (:569). */
+const sMugshotTrainerPicFuncs: ReadonlyArray<(s: MugshotSprite) => boolean> = [
+  MugshotTrainerPic_Pause, MugshotTrainerPic_Init, MugshotTrainerPic_Slide,
+  MugshotTrainerPic_SlideSlow, MugshotTrainerPic_Pause, MugshotTrainerPic_SlideOffscreen,
+  MugshotTrainerPic_Pause,
+];
+// Task_Sidney..Task_Champion : NON câblés (INERTE — voir en-tête). Le pilote ajoute :
+//   sTasks_Main[ENUM_B_1.B_TRANSITION_SIDNEY] = Task_Sidney;  (…PHOEBE/GLACIA/DRAKE/CHAMPION)
+
 // ─── Câblage sTasks_Main (lancés par Transition_StartMain via __battleTransitionCore) ─
 sTasks_Main[ENUM_B_1.B_TRANSITION_AQUA] = Task_Aqua;
 sTasks_Main[ENUM_B_1.B_TRANSITION_MAGMA] = Task_Magma;
@@ -2171,3 +3145,8 @@ sTasks_Main[ENUM_B_1.B_TRANSITION_CLOCKWISE_WIPE] = Task_ClockwiseWipe;
 sTasks_Main[ENUM_B_1.B_TRANSITION_RIPPLE] = Task_Ripple;
 sTasks_Main[ENUM_B_1.B_TRANSITION_GRID_SQUARES] = Task_GridSquares;
 sTasks_Main[ENUM_B_1.B_TRANSITION_WHITE_BARS_FADE] = Task_WhiteBarsFade;
+sTasks_Main[ENUM_B_1.B_TRANSITION_KYOGRE] = Task_Kyogre;
+sTasks_Main[ENUM_B_1.B_TRANSITION_GROUDON] = Task_Groudon;
+sTasks_Main[ENUM_B_1.B_TRANSITION_RAYQUAZA] = Task_Rayquaza;
+sTasks_Main[ENUM_B_1.B_TRANSITION_BLACKHOLE] = Task_Blackhole;
+sTasks_Main[ENUM_B_1.B_TRANSITION_BLACKHOLE_PULSATE] = Task_BlackholePulsate;
