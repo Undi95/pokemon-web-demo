@@ -56,7 +56,18 @@ import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 // d'overworld.ts:1397 → boot entier mort). Import DIFFÉRÉ (précédents : pokenav.ts:120,
 // region_map.ts anti-TDZ) — Overworld_PlaySpecialMapMusic n'est appelée qu'à l'exécution (:555).
 let _owPlaySpecialMapMusic: (() => void) | null = null;
-import('./overworld').then((m) => { _owPlaySpecialMapMusic = m.Overworld_PlaySpecialMapMusic; })
+// DoFallWarp (field_screen_effect.c:522) réutilise la mécanique de DoDiveWarp (hébergée
+// dans overworld.ts par le canal pending-warp) + le pending-warp API — capturés par le
+// même import différé (anti-TDZ) pour éviter l'arête statique field_screen_effect→overworld.
+let _owDoDiveWarp: (() => void) | null = null;
+let _owGetPendingWarp: (() => { warp: unknown; kind: string } | null) | null = null;
+let _owSetPendingWarp: ((warp: unknown, kind: string) => void) | null = null;
+import('./overworld').then((m) => {
+  _owPlaySpecialMapMusic = m.Overworld_PlaySpecialMapMusic;
+  _owDoDiveWarp = m.DoDiveWarp;
+  _owGetPendingWarp = m.getPendingWarp as unknown as (() => { warp: unknown; kind: string } | null);
+  _owSetPendingWarp = m.setPendingWarp as unknown as ((warp: unknown, kind: string) => void);
+})
   .catch((e) => console.error('[field_screen_effect] import overworld (anti-TDZ) a échoué', e));
 function Overworld_PlaySpecialMapMusic(): void {
   if (!_owPlaySpecialMapMusic) { console.error('[field_screen_effect] Overworld_PlaySpecialMapMusic appelée avant résolution de l\'import overworld'); return; }
@@ -596,6 +607,34 @@ export function getExitTaskKindFor(behavior: number): ExitTaskKind {
 export function getMetatileBehaviorAtPlayerPos(): number {
   return MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
 }
+
+// ─── Fall warp (1:1 field_screen_effect.c:522) ───────────────────────────────
+
+/** 1:1 décomp `void DoFallWarp(void)` (field_screen_effect.c:522) :
+ *    DoDiveWarp();
+ *    gFieldCallback = FieldCB_FallWarpExit;
+ *  Chute sur sol fissuré (Sky Pillar / Granite Cave) : réutilise la mécanique de
+ *  DoDiveWarp puis pose l'anim d'arrivée FieldCB_FallWarpExit (le joueur tombe du
+ *  haut de l'écran + secousse caméra).
+ *  ADAPTATION port : `DoDiveWarp` (overworld.ts, via pont anti-TDZ) pousse le
+ *  pending-warp depuis la destination posée en amont ; on ré-étiquette ce
+ *  pending-warp en kind 'fall' (executeWarp Phase 5 → FieldCB_FallWarpExit,
+ *  précédent 'fly'). On pose aussi `gFieldCallback = FieldCB_FallWarpExit` pour le
+ *  chemin RunFieldCallback (chemin script).
+ *  ⚠️ DETTE (bout-en-bout) : la destination du fall est posée par le scrcmd
+ *  `warphole` → `SetWarpDestinationToFixedHoleWarp` (scrcmd.ts VERROUILLÉ +
+ *  fixed-hole-warp non porté dans overworld.ts). Sans dest, DoDiveWarp ne pousse
+ *  rien hors chemin dive → DoFallWarp reste INERTE en jeu tant que ce câblage
+ *  amont (trigger cracked-floor + fixed-hole dest) n'est pas fait par le pilote. */
+export function DoFallWarp(): void {
+  _owDoDiveWarp?.();
+  const p = _owGetPendingWarp?.();
+  if (p) _owSetPendingWarp?.(p.warp, 'fall');
+  (globalThis as Record<string, unknown>).gFieldCallback =
+    (globalThis as Record<string, unknown>).__FieldCB_FallWarpExit;
+}
+// Pont globalThis (lu par specials-registry, anti-cycle) — cf. section ci-dessous.
+(globalThis as Record<string, unknown>).__DoFallWarp = DoFallWarp;
 
 // ─── Ponts globalThis anti-cycle (lus par overworld/scrcmd sans import statique) ─
 // overworld.ts::InitCurrentFlashLevelScanlineEffect (1:1 overworld.c:1794) appelle ces

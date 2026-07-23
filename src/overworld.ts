@@ -715,6 +715,59 @@ export function DoDiveWarp(): void {
     'step',
   );
 }
+// Pont globalThis (lu par specials-registry `special DoDiveWarp`, anti-cycle) + par
+// field_screen_effect.DoFallWarp (déjà capté via l'import différé côté field_screen_effect).
+(globalThis as Record<string, unknown>).__DoDiveWarp = DoDiveWarp;
+
+// ─── Escape warp (1:1 overworld.c:677-693) — Corde Sortie / Tunnel ───────────
+//
+// SetEscapeWarp mémorise l'entrée du donjon courant (posée quand on passe d'une
+// map OUTDOOR à une map INDOOR) ; consommée par la Corde Sortie (Escape Rope) et
+// le sort Tunnel (Dig) via SetWarpDestinationToEscapeWarp. Le port stocke aussi la
+// dest dans `globalThis.__escapeWarp` ({mapName, x, y} LOGIQUES) — le canal
+// consommé par `field_effect_helpers._warpToEscapeWarpFromHelpers` (spin d'arrivée
+// EscapeRope/Dig via setPendingWarp).
+
+/** 1:1 décomp `void SetEscapeWarp(s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y)`
+ *  (overworld.c:685) : `SetWarpData(&gSaveBlock1Ptr->escapeWarp, …)`. En plus (port),
+ *  publie `globalThis.__escapeWarp` = {mapName résolu depuis (group,num), x, y}. */
+export function SetEscapeWarp(mapGroup: number, mapNum: number, warpId: number, x: number, y: number): void {
+  SetWarpData(gSaveBlock1Ptr.escapeWarp as WarpData, mapGroup, mapNum, warpId, x, y);
+  const mapName = _mapNameByGroupAndNum(mapGroup, mapNum);
+  if (mapName)
+    (globalThis as Record<string, unknown>).__escapeWarp = { mapName, x, y };
+}
+
+/** 1:1 décomp `void UpdateEscapeWarp(s16 x, s16 y)` (overworld.c:677) :
+ *    u8 currMapType = GetCurrentMapType();
+ *    u8 destMapType = GetMapTypeByGroupAndId(sWarpDestination.mapGroup, sWarpDestination.mapNum);
+ *    if (IsMapTypeOutdoors(currMapType) && IsMapTypeOutdoors(destMapType) != TRUE)
+ *        SetEscapeWarp(location.mapGroup, location.mapNum, WARP_ID_NONE, x - MAP_OFFSET, y - MAP_OFFSET + 1);
+ *  ⚠️ `x`/`y` = coords INTERNES (avec MAP_OFFSET), comme le décomp (`position->x`). Les
+ *  appelants du port passent donc `gSaveBlock1Ptr.pos.{x,y} + MAP_OFFSET` (pos = LOGIQUE
+ *  côté port). Doit être appelé APRÈS que sWarpDestination soit posée (SetWarpDestination*). */
+export function UpdateEscapeWarp(x: number, y: number): void {
+  const currMapType = GetCurrentMapType();
+  const destMapType = GetMapTypeByGroupAndId(sWarpDestination.mapGroup, sWarpDestination.mapNum);
+  if (IsMapTypeOutdoors(currMapType) && IsMapTypeOutdoors(destMapType) !== true)
+    SetEscapeWarp(
+      gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum,
+      -1 /* WARP_ID_NONE */, x - MAP_OFFSET, y - MAP_OFFSET + 1,
+    );
+}
+
+/** 1:1 décomp `void SetWarpDestinationToEscapeWarp(void)` (overworld.c:690) :
+ *    `sWarpDestination = gSaveBlock1Ptr->escapeWarp;`. */
+export function SetWarpDestinationToEscapeWarp(): void {
+  const e = gSaveBlock1Ptr.escapeWarp as WarpData;
+  sWarpDestination.mapGroup = e.mapGroup;
+  sWarpDestination.mapNum = e.mapNum;
+  sWarpDestination.warpId = e.warpId;
+  sWarpDestination.x = e.x;
+  sWarpDestination.y = e.y;
+}
+// Pont globalThis (lu par specials-registry / item flows, anti-cycle).
+(globalThis as Record<string, unknown>).__UpdateEscapeWarp = UpdateEscapeWarp;
 
 // ─── Map type helpers (1:1 décomp overworld.c:193 + 1334-1364) ───────────────
 

@@ -86,7 +86,7 @@ import { getString } from '../harness/runtime/decomp-strings';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { getRuntime, PlaySE, FillPalBufferBlack } from '../harness/runtime/decomp-globals';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
-import { CB2_ReturnToField_Manual } from './overworld';
+import { CB2_ReturnToField_Manual, Overworld_ResetStateAfterDigEscRope, ResetInitialPlayerAvatarState } from './overworld';
 import { gPlayerParty, IsPlayerPartyAndPokemonStorageFull } from './engine/battle/party-storage';
 import { gMoveNames } from './engine/data/game-data';
 import { RemoveBagItem } from './engine/bag/bag';
@@ -110,7 +110,15 @@ import { ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKE
 import { ScriptContext_SetupScript, LockPlayerFieldControls } from './script';
 import { GetPlayerMovementDirection, GetXYCoordsOneStepInFrontOfPlayer, PlayerGetElevation } from './field_player_avatar';
 import { GetInFrontOfPlayerPosition, GetInteractedObjectEventScript, type MapPosition } from './field_control_avatar';
-import { MapGridGetMetatileBehaviorAt } from './fieldmap';
+import { MapGridGetMetatileBehaviorAt, gMapHeader } from './fieldmap';
+// DisplayItemMessageOnField (menu.ts) : capture DIFFÉRÉE (import dynamique) — un import
+// STATIQUE item_use→menu ré-ordonne l'éval du cluster circulaire item_use↔party_menu↔
+// item_menu et casse la résolution du re-export `gPlayerPartyCount` de party-storage
+// dans party_menu (TS2724). Pattern anti-cycle projet (cf. field_screen_effect anti-TDZ).
+let _DisplayItemMessageOnField:
+  ((taskId: number, str: string | Uint8Array, cb: (t: DecompTask) => void) => void) | null = null;
+import('./menu').then((m) => { _DisplayItemMessageOnField = m.DisplayItemMessageOnField; })
+  .catch((e) => console.error('[item_use] import menu (DisplayItemMessageOnField) a échoué', e));
 import { GetObjectEventIdByPosition, GetObjectEventBerryTreeId, gObjectEvents, OBJECT_EVENTS_COUNT } from './event_object_movement';
 import { gSelectedObjectEvent } from './engine/script/script-vars';
 import {
@@ -364,6 +372,73 @@ export function ItemUseOnFieldCB_WailmerPailSudowoodo(task: DecompTask): void {
   ScriptContext_SetupScript('BattleFrontier_OutsideEast_EventScript_WaterSudowoodo');  // 1:1 :749
   getRuntime()?.DestroyTask(task.taskId);  // 1:1 :750
 }
+
+// ─── Corde Sortie (Escape Rope) — 1:1 décomp item_use.c:905-943 ─────────────
+// Flux : ItemUseOutOfBattle_EscapeRope → sItemUseOnFieldCB = ItemUseOnFieldCB_EscapeRope
+// + SetUpItemUseOnFieldCallback (fade-out sac → retour OW → FieldCB_UseItemOnField →
+// Task_CallItemUseOnFieldCallback) → ItemUseOnFieldCB_EscapeRope (reset state + retire
+// l'objet + message) → Task_UseDigEscapeRopeOnField → StartEscapeRopeFieldEffect (spin
+// de sortie + warp vers escapeWarp + spin d'arrivée).
+// ⚠️ CÂBLAGE PILOTE : le dispatch item_menu.ts (case 'ItemUseOutOfBattle_EscapeRope',
+// ~item_menu.c) appelle encore la version SIMPLIFIÉE inline (fldeff_dig.StartEscapeRope
+// FieldEffect, warp+fade sans spin) — le repointer vers `ItemUseOutOfBattle_EscapeRope`
+// ci-dessous (item_menu.ts VERROUILLÉ pour cet agent).
+
+/** 1:1 décomp `bool8 CanUseDigOrEscapeRopeOnCurMap(void)` (item_use.c:922) :
+ *      if (gMapHeader.allowEscaping) return TRUE; else return FALSE; */
+export function CanUseDigOrEscapeRopeOnCurMap(): boolean {
+  return gMapHeader?.allowEscaping === true;
+}
+
+/** 1:1 décomp `void Task_UseDigEscapeRopeOnField(u8 taskId)` (item_use.c:907) :
+ *      ResetInitialPlayerAvatarState();
+ *      StartEscapeRopeFieldEffect();
+ *      DestroyTask(taskId);
+ *  ADAPTATION port : `StartEscapeRopeFieldEffect` = la version 1:1 COMPLÈTE (spin
+ *  wobble de sortie + warp différé + spin d'arrivée) transcrite dans
+ *  field_effect_helpers.ts, consommée via le pont
+ *  `globalThis.__StartEscapeRopeFieldEffect_1to1` (anti-cycle : item_use →
+ *  field_effect_helpers fermerait une arête d'éval). Remplace l'ancienne version
+ *  simplifiée (warp + fade sans spin) de fldeff_dig.ts. */
+export function Task_UseDigEscapeRopeOnField(task: DecompTask): void {
+  ResetInitialPlayerAvatarState();
+  const start = (globalThis as Record<string, unknown>).__StartEscapeRopeFieldEffect_1to1 as (() => void) | undefined;
+  if (start) start();
+  else console.error('[EscapeRope] __StartEscapeRopeFieldEffect_1to1 absent (field_effect_helpers non chargé)');
+  getRuntime()?.DestroyTask(task.taskId);
+}
+
+/** 1:1 décomp `static void ItemUseOnFieldCB_EscapeRope(u8 taskId)` (item_use.c:914) :
+ *      Overworld_ResetStateAfterDigEscRope();
+ *      RemoveUsedItem();
+ *      gTasks[taskId].data[0] = 0;
+ *      DisplayItemMessageOnField(taskId, gStringVar4, Task_UseDigEscapeRopeOnField); */
+export function ItemUseOnFieldCB_EscapeRope(task: DecompTask): void {
+  Overworld_ResetStateAfterDigEscRope();
+  RemoveUsedItem();                    // 1:1 :917 — pose aussi gStringVar4 = "{PLAYER} utilise {objet}."
+  task.data[0] = 0;                    // 1:1 :918 gTasks[taskId].data[0] = 0
+  if (_DisplayItemMessageOnField) _DisplayItemMessageOnField(task.taskId, gStringVar4, Task_UseDigEscapeRopeOnField);  // 1:1 :919
+  else console.error('[EscapeRope] DisplayItemMessageOnField absent (menu non chargé)');
+}
+
+/** 1:1 décomp `void ItemUseOutOfBattle_EscapeRope(u8 taskId)` (item_use.c:930) :
+ *      if (CanUseDigOrEscapeRopeOnCurMap() == TRUE) {
+ *          sItemUseOnFieldCB = ItemUseOnFieldCB_EscapeRope;
+ *          SetUpItemUseOnFieldCallback(taskId);
+ *      } else {
+ *          DisplayDadsAdviceCannotUseItemMessage(taskId, tUsingRegisteredKeyItem);
+ *      }
+ *  tUsingRegisteredKeyItem = task.data[3] (item_use.c:78). */
+export function ItemUseOutOfBattle_EscapeRope(task: DecompTask): void {
+  if (CanUseDigOrEscapeRopeOnCurMap()) {
+    setItemUseOnFieldCB(ItemUseOnFieldCB_EscapeRope);
+    SetUpItemUseOnFieldCallback(task);
+  } else {
+    DisplayDadsAdviceCannotUseItemMessage(task.taskId, task.data[3] === 1);
+  }
+}
+// Ponts globalThis (lus par le dispatch item_menu au repointage — anti-cycle).
+(globalThis as Record<string, unknown>).__ItemUseOutOfBattle_EscapeRope = ItemUseOutOfBattle_EscapeRope;
 
 // ─── ItemUseCB_Medicine (party_menu.c:4396) — 1:1-sémantique ────────────────
 // Appelé depuis Task_HandleChooseMonInput PARTY_ACTION_USE_ITEM A_BUTTON

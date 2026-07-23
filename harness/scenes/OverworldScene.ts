@@ -180,6 +180,7 @@ import {
   TryFadeOutOldMapMusic, BGMusicStopped, SetWarpDestinationFromMapName,
   ApplyCurrentWarp, Overworld_GetMapHeaderByGroupAndId,
   GetInitialPlayerAvatarState, ResetInitialPlayerAvatarState,
+  UpdateEscapeWarp,
 } from '../../src/overworld';
 import { MAP_CONSTANTS } from '../../include/constants/map_groups';
 import { OBJ_PALSLOT_COUNT } from '../../include/event_object_movement';
@@ -217,7 +218,7 @@ import { preloadSurfBlobEffect } from '../../src/field_effect_helpers';
 import { preloadDisguiseEffects } from '../../src/field_effect_helpers';
 import { preloadShadowEffect } from '../../src/field_effect_helpers';
 import { preloadPokecenterHealEffect, preloadHallOfFameRecordEffect, preloadFieldMoveShowMonEffect } from '../../src/field_effect_helpers';
-import { FieldCallback_FlyIntoMap } from '../../src/field_effect_helpers';
+import { FieldCallback_FlyIntoMap, FieldCB_FallWarpExit } from '../../src/field_effect_helpers';
 import { PlaySE } from '../runtime/decomp-globals';
 import {
   SE_EXIT,
@@ -1652,6 +1653,14 @@ export class OverworldScene extends Phaser.Scene {
               SetWarpDestinationFromMapName(musicDestMapId, warpIdS8, -1, -1);
             else
               SetWarpDestinationFromMapName(musicDestMapId, warpIdS8, warp.x, warp.y);
+            // 1:1 décomp `SetupWarp` (field_control_avatar.c:826) : juste après
+            // SetWarpDestinationToMapWarp (branche map-warp, PAS dynamic), mémorise
+            // l'entrée pour la Corde Sortie / Tunnel. Ne fait quelque chose que sur une
+            // transition OUTDOOR→INDOOR. `pos` = LOGIQUE côté port → +MAP_OFFSET pour
+            // reconstituer les coords INTERNES attendues par UpdateEscapeWarp.
+            // Exclu 'fly' (Task_UseFly ne passe pas par SetupWarp dans le décomp).
+            if (kind !== 'fly')
+              UpdateEscapeWarp(gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
           }
         }
         TryFadeOutOldMapMusic();
@@ -1817,8 +1826,12 @@ export class OverworldScene extends Phaser.Scene {
       // kind 'fly' (Task_UseFly, field_effect.c:1374) : l'arrivée n'est PAS un exit
       // metatile — c'est gFieldCallback = FieldCallback_FlyIntoMap (l'oiseau dépose
       // le joueur), joué en Phase 5 ci-dessous à la place de l'exit-task.
-      const exitKind: ReturnType<typeof getExitTaskKindFor> | 'fly' =
-        kind === 'fly' ? 'fly' : getExitTaskKindFor(postWarpBehavior);
+      // kind 'fall' (DoFallWarp, field_screen_effect.c:522) : l'arrivée n'est PAS un
+      // exit metatile — c'est gFieldCallback = FieldCB_FallWarpExit (le joueur tombe du
+      // haut de l'écran + secousse caméra), joué en Phase 5 ci-dessous à la place de
+      // l'exit-task. Même traitement que 'fly'.
+      const exitKind: ReturnType<typeof getExitTaskKindFor> | 'fly' | 'fall' =
+        kind === 'fly' ? 'fly' : kind === 'fall' ? 'fall' : getExitTaskKindFor(postWarpBehavior);
       console.log(`[executeWarp] exit task kind=${exitKind}`);
       // 1:1 décomp `Task_ExitDoor` case 0 / `Task_ExitNonAnimDoor` case 0 :
       //   SetPlayerVisibility(FALSE);
@@ -1836,7 +1849,10 @@ export class OverworldScene extends Phaser.Scene {
       // même geste que door/non_anim ci-dessus. + hide du SPRITE direct : le freeze
       // gèle le resync slot→sprite (UpdateObjectEvents skip frozen) → poser le slot
       // seul laisse le sprite visible pendant le fade-in (bug film user, frame 5.31s).
-      if (exitKind === 'fly') {
+      // Idem 'fall' : FallWarpEffect_Init (field_effect.c:1442) rend le joueur
+      // invisible sur son 1er tick, mais on le masque dès AVANT le fade-in pour qu'il
+      // n'apparaisse jamais debout sur la tuile d'atterrissage (il doit tomber du haut).
+      if (exitKind === 'fly' || exitKind === 'fall') {
         SetPlayerVisibility(this.rt, false);
         const _ps = this.rt.gSprites[gPlayerAvatar.spriteId];
         if (_ps) _ps.invisible = true;
@@ -1953,6 +1969,15 @@ export class OverworldScene extends Phaser.Scene {
       else if (exitKind === 'fly') {
         FieldCallback_FlyIntoMap();
       }
+      // 1:1 arrivée FALL (kind 'fall') : gFieldCallback = FieldCB_FallWarpExit
+      // (field_effect.c:1425) — posée par DoFallWarp, jouée ICI par la scène. Le
+      // Task_FallWarpFieldEffect (gTasks) gate la météo puis fait tomber le joueur du
+      // haut de l'écran + secousse caméra + landing ; unlock/unfreeze à la FIN
+      // (FallWarpEffect_End). Comme 'fly', la scène ne touche pas au lock/visibilité
+      // dans le finally (le task les possède).
+      else if (exitKind === 'fall') {
+        FieldCB_FallWarpExit();
+      }
       // exitKind === 'none' (= MB_LADDER, MB_*_ARROW_WARP, etc.) :
       // 1:1 décomp `Task_ExitNonDoor` (field_screen_effect.c:404-421) :
       //   case 0 : FreezeObjectEvents + LockPlayerFieldControls
@@ -1971,10 +1996,11 @@ export class OverworldScene extends Phaser.Scene {
       console.error('[executeWarp] failed:', e);
       this.statusText?.setText(`WARP ERROR : ${e}`);
     } finally {
-      // Toujours unlock + reset state — SAUF kind 'fly' : Task_FlyIntoMap (gTasks,
-      // async) possède le lock ET la visibilité (1:1 : le joueur reste invisible
-      // jusqu'à la dépose par l'oiseau ; unlock/unfreeze à la fin du FLDEFF_FLY_IN).
-      if (kind !== 'fly') {
+      // Toujours unlock + reset state — SAUF kind 'fly'/'fall' : le task d'arrivée
+      // (Task_FlyIntoMap / Task_FallWarpFieldEffect, gTasks, async) possède le lock ET
+      // la visibilité (1:1 : le joueur reste invisible jusqu'à la dépose par l'oiseau /
+      // l'atterrissage ; unlock/unfreeze à la fin du FLDEFF).
+      if (kind !== 'fly' && kind !== 'fall') {
         UnlockPlayerFieldControls();
         SetPlayerVisibility(this.rt, true);
       }

@@ -297,6 +297,19 @@ registerSpecial('IsEnoughForCostInVar0x8005', () => {
 registerSpecial('SetCableClubWarp', () => { /* no-op stub */ });
 registerSpecial('DoCableClubWarp', () => { /* no-op stub */ });
 
+/** 1:1 décomp `special DoDiveWarp` (overworld.c:495) / `special DoFallWarp,
+ *  waitstate=1` (field_screen_effect.c:522). Handlers concrets → fns portées, via
+ *  ponts globalThis (anti-cycle : specials-registry → overworld/field_screen_effect
+ *  fermerait une arête d'éval tôt). RETIRÉS des stub-loops (sinon clobbés). */
+registerSpecial('DoDiveWarp', () => {
+  ((globalThis as Record<string, unknown>).__DoDiveWarp as (() => void) | undefined)?.();
+  return 0;
+});
+registerSpecial('DoFallWarp', () => {
+  ((globalThis as Record<string, unknown>).__DoFallWarp as (() => void) | undefined)?.();
+  return 0;
+});
+
 // `StartWallClock` + `Special_ViewWallClock` : interceptés directement par
 // l'opcode `special` dispatcher dans script-opcodes.ts (= lance wallclock-flow.ts
 // inline overlay). Pas de stub à enregistrer ici, car le dispatch ne tombe
@@ -1943,7 +1956,11 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'DestroyMewEmergingGrassSprite' — porté 1:1 faraway_island.ts (transpilé), handler ci-bas.
   // 'DidFavorLadyLikeItem' — porté 1:1 décomp lilycove_lady.c:218 ci-bas (batch B9).
   'DisplayBerryPowderVendorMenu', 'DoBerryBlending', 'DoDeoxysRockInteraction',
-  'DoDiveWarp', 'DoDomeConfetti', 'DoFallWarp', 'DoLotteryCornerComputerEffect',
+  // 'DoDiveWarp' — porté 1:1 overworld.c:495 (src/overworld.ts) ; handler concret
+  // ci-bas via pont __DoDiveWarp ; RETIRÉ du stub-loop (clobber).
+  // 'DoFallWarp' — porté 1:1 field_screen_effect.c:522 (src/field_screen_effect.ts) ;
+  // handler concret ci-bas via pont __DoFallWarp ; RETIRÉ du stub-loop (clobber).
+  'DoDomeConfetti', 'DoLotteryCornerComputerEffect',
   'DoMirageTowerCeilingCrumble',
   // 'DoPokeNews' — porté 1:1 tv.ts (transpilé), handler ci-haut.
   // 'DoSealedChamberShakingEffect_Long' — porté 1:1 braille_puzzles.ts (transpilé), handler ci-bas.
