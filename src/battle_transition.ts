@@ -84,21 +84,29 @@ let _ballPal: Uint16Array | null = null;           // palette indexée du png (=
 let _assetsReady = false;
 async function _ensureTrailAssets(): Promise<void> {
   if (_assetsReady) return;
-  // loadIndexedPng tolérant (les png battle_transitions extraits sont RGBA, pas
-  // de PLTE → loadIndexedPngStrict throw « no PLTE chunk »).
-  const trail = await loadIndexedPng('/decomp/em/battle_transitions/pokeball_trail.png');
-  _trailTile = trail.charData;
-  // Ball : tiles BYTE-EXACTS + palette en ordre PLTE (extract-png-indexed-tiles
-  // depuis le png INDEXÉ décomp). L'ancienne voie loadIndexedPng sur la copie
-  // public/ RGBA sans PLTE quantifiait les indices → ball NOIRE (verdict A/B ×2)
-  // même avec une palette correcte.
   try {
-    const { loadGbaPal } = await import('../harness/gba/png-loader');
-    const resp = await fetch('/decomp/em/battle_transitions/pokeball.4bpp.bin');
-    _ballTiles = new Uint8Array(await resp.arrayBuffer());
-    _ballPal = await loadGbaPal('/decomp/em/battle_transitions/pokeball.gbapal');
-  } catch (e) { console.warn('[battle_transition] assets ball KO', e); }
-  _assetsReady = true;
+    // loadIndexedPng tolérant (les png battle_transitions extraits sont RGBA, pas
+    // de PLTE → loadIndexedPngStrict throw « no PLTE chunk »).
+    const trail = await loadIndexedPng('/decomp/em/battle_transitions/pokeball_trail.png');
+    _trailTile = trail.charData;
+    // Ball : tiles BYTE-EXACTS + palette en ordre PLTE (extract-png-indexed-tiles
+    // depuis le png INDEXÉ décomp). L'ancienne voie loadIndexedPng sur la copie
+    // public/ RGBA sans PLTE quantifiait les indices → ball NOIRE (verdict A/B ×2)
+    // même avec une palette correcte.
+    try {
+      const { loadGbaPal } = await import('../harness/gba/png-loader');
+      const resp = await fetch('/decomp/em/battle_transitions/pokeball.4bpp.bin');
+      _ballTiles = new Uint8Array(await resp.arrayBuffer());
+      _ballPal = await loadGbaPal('/decomp/em/battle_transitions/pokeball.gbapal');
+    } catch (e) { console.warn('[battle_transition] assets ball KO', e); }
+  } catch (e) {
+    // BLOQ-1 fail-open : un 404/cache-miss ne DOIT jamais geler l'écran. Le flag
+    // passe true en finally → PokeballsTrail_Init avance ; les null-guards (_trailTile/
+    // _ballTiles) dégradent coupe-net (0 ball → _activeTrailBalls=0 → End → FadeScreenBlack).
+    console.error('[battle_transition] _ensureTrailAssets KO — transition PokeballsTrail dégradée SANS gel', e);
+  } finally {
+    _assetsReady = true;
+  }
 }
 
 // ─── État runtime FLDEFF_POKEBALL_TRAIL (= active list fldeff, adaptation) ────
@@ -1208,17 +1216,25 @@ let _bigPokeballPal: Uint16Array | null = null;    // sFieldEffectPal_Pokeball (
 let _bigPokeballReady = false;
 async function _ensureBigPokeballAssets(): Promise<void> {
   if (_bigPokeballReady) return;
-  const { loadGbaPal } = await import('../harness/gba/png-loader');
-  // Indices via loadIndexedPng (palette 1er-vu). ⚠ si couleurs fausses à l'A/B au
-  // bascule, régénérer big_pokeball.4bpp.bin BYTE-EXACT (précédent ball NOIRE :92-99) —
-  // aucun .4bpp.bin dispo dans public/, donc png tolérant pour l'instant.
-  const gfx = await loadIndexedPng('/decomp/em/battle_transitions/big_pokeball.png');
-  _bigPokeballTiles = gfx.charData;
-  const resp = await fetch('/decomp/em/battle_transitions/big_pokeball_map.bin');
-  if (!resp.ok) throw new Error(`big_pokeball_map.bin HTTP ${resp.status}`);
-  _bigPokeballMap = new Uint16Array(await resp.arrayBuffer());
-  _bigPokeballPal = await loadGbaPal('/decomp/em/battle_transitions/pokeball.gbapal');
-  _bigPokeballReady = true;
+  try {
+    const { loadGbaPal } = await import('../harness/gba/png-loader');
+    // Indices via loadIndexedPng (palette 1er-vu). ⚠ si couleurs fausses à l'A/B au
+    // bascule, régénérer big_pokeball.4bpp.bin BYTE-EXACT (précédent ball NOIRE :92-99) —
+    // aucun .4bpp.bin dispo dans public/, donc png tolérant pour l'instant.
+    const gfx = await loadIndexedPng('/decomp/em/battle_transitions/big_pokeball.png');
+    _bigPokeballTiles = gfx.charData;
+    const resp = await fetch('/decomp/em/battle_transitions/big_pokeball_map.bin');
+    if (!resp.ok) throw new Error(`big_pokeball_map.bin HTTP ${resp.status}`);
+    _bigPokeballMap = new Uint16Array(await resp.arrayBuffer());
+    _bigPokeballPal = await loadGbaPal('/decomp/em/battle_transitions/pokeball.gbapal');
+  } catch (e) {
+    // BLOQ-1 fail-open : la state-machine PatternWeave (Blend→CircularMask→FadeScreenBlack)
+    // est 100% timer/blend → un asset manquant ne laisse qu'un BG vide mais la transition
+    // se termine. Le flag passe true en finally → BigPokeball_Init avance (null-guards).
+    console.error('[battle_transition] _ensureBigPokeballAssets KO — transition BigPokeball dégradée SANS gel', e);
+  } finally {
+    _bigPokeballReady = true;
+  }
 }
 
 let _shrinkTiles: Uint8Array | null = null;   // sShrinkingBoxTileset (shrinking_box.png .4bpp, 15 tiles)
@@ -1226,11 +1242,18 @@ let _shrinkPal: Uint16Array | null = null;    // sFieldEffectPal_Pokeball
 let _gridSquaresReady = false;
 async function _ensureGridSquaresAssets(): Promise<void> {
   if (_gridSquaresReady) return;
-  const { loadGbaPal } = await import('../harness/gba/png-loader');
-  const gfx = await loadIndexedPng('/decomp/em/battle_transitions/shrinking_box.png');
-  _shrinkTiles = gfx.charData;
-  _shrinkPal = await loadGbaPal('/decomp/em/battle_transitions/pokeball.gbapal');
-  _gridSquaresReady = true;
+  try {
+    const { loadGbaPal } = await import('../harness/gba/png-loader');
+    const gfx = await loadIndexedPng('/decomp/em/battle_transitions/shrinking_box.png');
+    _shrinkTiles = gfx.charData;
+    _shrinkPal = await loadGbaPal('/decomp/em/battle_transitions/pokeball.gbapal');
+  } catch (e) {
+    // BLOQ-1 fail-open : GridSquares_Main est piloté par tShrinkStage (timer) → la
+    // transition se termine même sans tiles. Le flag passe true en finally → pas de gel.
+    console.error('[battle_transition] _ensureGridSquaresAssets KO — transition GridSquares dégradée SANS gel', e);
+  } finally {
+    _gridSquaresReady = true;
+  }
 }
 
 //------------------------------------------------------------------------

@@ -599,7 +599,12 @@ function _loadPartyGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     _graphicsReady = true;
     _graphicsLoading = false;
   }).catch((e) => {
-    console.error('[party-screen] graphics load failed:', e);
+    // BLOQ-1 fail-open : _loadAssets met en cache une promesse REJETÉE (_assetsLoading
+    // jamais vidé) → sans ça, case 8 re-tente la même promesse rejetée à chaque frame,
+    // _graphicsReady jamais true = party menu figé pour toujours. On marque ready (menu
+    // dégradé sans gfx BG mais navigable) au lieu de geler. Règle 3 : ça HURLE.
+    console.error('[party-screen] graphics load KO — party menu dégradé SANS gel', e);
+    _graphicsReady = true;
     _graphicsLoading = false;
   });
   return false;
@@ -4511,6 +4516,13 @@ export function CB2_InitPartyMenu(): void {
         if (!_windowsLoading) {
           _windowsLoading = true;
           void _loadPartyWindowsCb2(rt).then(() => {
+            _windowsReady = true;
+            _windowsLoading = false;
+          }).catch((e) => {
+            // BLOQ-1 fail-open + Règle 3 : sans .catch, un échec (preloadTextWindowFrames /
+            // loadGbaPal) laissait _windowsLoading=true à jamais → case 9 figé pour toujours.
+            // InitWindows a déjà posé la structure des fenêtres ; on avance en dégradé.
+            console.error('[party-screen] windows load KO — party menu dégradé SANS gel', e);
             _windowsReady = true;
             _windowsLoading = false;
           });

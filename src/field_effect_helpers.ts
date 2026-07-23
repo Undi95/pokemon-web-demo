@@ -4489,6 +4489,10 @@ const TAG_FLY_BIRD = 0x1361;
 let _flyBirdTileStart = -1;
 let _flyBirdPaletteBank = 0;
 let _flyBirdReady = false;
+// BLOQ-1 : passe true si le chargement de l'asset oiseau ÉCHOUE (404/cache-miss). Les gates
+// Task_FlyIntoMap/Task_UseFly attendent la palette (tag != 0xFF) — sans cet échappatoire, un asset
+// manquant fige le fly pour toujours (joueur locké). Sur échec → gate fail-open, warp aux timers.
+let _flyBirdFailed = false;
 let _flyBirdInitPromise: Promise<void> | null = null;
 
 /** Préchargement asset oiseau (concern plateforme — le décomp charge via le template). */
@@ -4500,28 +4504,41 @@ export function preloadFlyBirdEffect(): Promise<void> {
       return loadGbaPal('/decomp/em/field_effects/bird.gbapal').then((pal) => {
         LoadSpritePalette({ data: pal, tag: TAG_FLY_BIRD });
         _flyBirdPaletteBank = IndexOfSpritePaletteTag(TAG_FLY_BIRD);
+      }).catch((e) => {
+        // BLOQ-1 : palette non rechargeable → gate fail-open (fly dégradé, pas de gel).
+        _flyBirdFailed = true;
+        console.error('[fly bird] preloadFlyBirdEffect : recharge palette KO — fly dégradé SANS gel', e);
       });
     }
     _flyBirdPaletteBank = IndexOfSpritePaletteTag(TAG_FLY_BIRD);
     return Promise.resolve();
   }
   if (_flyBirdInitPromise && !_flyBirdReady) return _flyBirdInitPromise;
-  _flyBirdReady = false; _flyBirdInitPromise = null;
+  _flyBirdReady = false; _flyBirdFailed = false; _flyBirdInitPromise = null;
   _flyBirdInitPromise = (async () => {
-    const tilesRes = await fetch('/decomp/em/field_effects/bird.4bpp.bin');
-    const tiles = new Uint8Array(await tilesRes.arrayBuffer());
-    _flyBirdTileStart = LoadSpriteSheet({ data: tiles, size: tiles.length, tag: TAG_FLY_BIRD });
-    const pal = await loadGbaPal('/decomp/em/field_effects/bird.gbapal');
-    LoadSpritePalette({ data: pal, tag: TAG_FLY_BIRD });
-    _flyBirdPaletteBank = IndexOfSpritePaletteTag(TAG_FLY_BIRD);
-    // Précharge les gfx joueur requis par l'anim de Vol : POSE field-move (SetPlayerAvatarFieldMove —
-    // sans lui le swap échoue → l'idle BOUCLE → la pose ne finit jamais) ET SURFING (pose « monté sur
-    // l'oiseau » du fly-out ET du fly-in). Même préchargement que la montée de Surf.
-    await Promise.all([
-      PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(5 /* PLAYER_AVATAR_STATE_FIELD_MOVE */)),
-      PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING)),
-    ]);
-    _flyBirdReady = true;
+    try {
+      const tilesRes = await fetch('/decomp/em/field_effects/bird.4bpp.bin');
+      const tiles = new Uint8Array(await tilesRes.arrayBuffer());
+      _flyBirdTileStart = LoadSpriteSheet({ data: tiles, size: tiles.length, tag: TAG_FLY_BIRD });
+      const pal = await loadGbaPal('/decomp/em/field_effects/bird.gbapal');
+      LoadSpritePalette({ data: pal, tag: TAG_FLY_BIRD });
+      _flyBirdPaletteBank = IndexOfSpritePaletteTag(TAG_FLY_BIRD);
+      // Précharge les gfx joueur requis par l'anim de Vol : POSE field-move (SetPlayerAvatarFieldMove —
+      // sans lui le swap échoue → l'idle BOUCLE → la pose ne finit jamais) ET SURFING (pose « monté sur
+      // l'oiseau » du fly-out ET du fly-in). Même préchargement que la montée de Surf.
+      await Promise.all([
+        PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(5 /* PLAYER_AVATAR_STATE_FIELD_MOVE */)),
+        PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING)),
+      ]);
+    } catch (e) {
+      // BLOQ-1 fail-open : CreateFlyBirdSprite rend déjà MAX_SPRITES si l'asset manque
+      // (:4554) → GetFlyBirdAnimCompleted=1 → les states défilent aux timers = warp ~2s
+      // sans oiseau. Le flag ready passe true en finally pour libérer les gates.
+      _flyBirdFailed = true;
+      console.error('[fly bird] preloadFlyBirdEffect KO — fly dégradé SANS gel (oiseau absent, warp aux timers)', e);
+    } finally {
+      _flyBirdReady = true;
+    }
   })();
   return _flyBirdInitPromise;
 }
@@ -4976,7 +4993,8 @@ function Task_FlyIntoMap(task: DecompTask): void {
     if (!_flyBirdReady) return;      // asset oiseau + gfx pose rechargés après le warp
     // Palette effectivement rechargée (preloadFlyBirdEffect est async : sans ce gate, l'oiseau naît
     // AVANT la recharge → bank stale = ROSE). _flyBirdReady reste true post-1er-preload, insuffisant seul.
-    if (IndexOfSpritePaletteTag(TAG_FLY_BIRD) === 0xFF) return;
+    // BLOQ-1 : _flyBirdFailed → on passe outre (asset KO = fly dégradé, jamais gelé).
+    if (IndexOfSpritePaletteTag(TAG_FLY_BIRD) === 0xFF && !_flyBirdFailed) return;
     if (gPaletteFade.active) return;
     FieldEffectStart(FLDEFF_FLY_IN);
     task.data[0]++;
@@ -5088,7 +5106,8 @@ function Task_UseFly(task: DecompTask): void {
   if (!task.data[0]) {
     if (!IsWeatherNotFadingIn()) return;
     if (!_flyBirdReady) return;                                   // asset oiseau (ADAPTATION ROM→fetch)
-    if (IndexOfSpritePaletteTag(TAG_FLY_BIRD) === 0xFF) return;   // palette rechargée (cf. Task_FlyIntoMap)
+    // BLOQ-1 : _flyBirdFailed → fail-open (asset KO = fly dégradé, jamais gelé).
+    if (IndexOfSpritePaletteTag(TAG_FLY_BIRD) === 0xFF && !_flyBirdFailed) return;   // palette rechargée (cf. Task_FlyIntoMap)
     // 1:1 : gFieldEffectArguments[0] = GetCursorSelectionMonId() (le mon qui connaît
     // VOL, pas le slot 0). Pont globalThis (party_menu, anti-cycle). Clamp PARTY_SIZE-1.
     const cur = (globalThis as Record<string, unknown>).__getCursorSelectionMonId as (() => number) | undefined;
