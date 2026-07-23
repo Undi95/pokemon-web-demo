@@ -66,6 +66,8 @@ import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { getItem as _getItem } from '../harness/runtime/data-tables';
 import { ApplyMedicineEffect } from './engine/bag/bag-item-effects';
 import { setItemUseCB, SetUpItemUseCallback, setItemUseOnFieldCB, SetUpItemUseOnFieldCallback, ItemUseCB_Medicine, ItemUseCB_PPRecovery, ItemUseCB_PPUp, ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh, ItemUseCB_EvolutionStone, ItemUseCB_TMHM, CB2_ChooseMonToGiveItem } from './item_use';
+// VIS-9 : planter/arroser une baie depuis le sac (ItemUseOutOfBattle_Berry / WailmerPail).
+import { IsPlayerFacingEmptyBerryTreePatch, TryToWaterBerryTree, TryToWaterSudowoodo, ItemUseOnFieldCB_Berry, ItemUseOnFieldCB_WailmerPailBerry, ItemUseOnFieldCB_WailmerPailSudowoodo, getFieldCB_UseItemOnField } from './item_use';
 // Handlers d'usage d'objet EN COMBAT (item_use.c → item_use.ts) dispatchés par
 // ItemMenu_UseInBattle (foyer 1:1 item_menu.c:1997) via GetItemBattleFunc.
 import { ItemUseInBattle_PokeBall, ItemUseInBattle_StatIncrease, ItemUseInBattle_Medicine, ItemUseInBattle_PPRecovery, ItemUseInBattle_Escape } from './item_use';
@@ -2532,6 +2534,25 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     PrintThereIsNoPokemon(task.taskId);
     return;
   }
+  // 1:1 item_menu.c:1809-1812 — dans la poche BAIES, le field func de l'item est
+  // BYPASSÉ : on route vers ItemUseOutOfBattle_Berry (item_use.c:684-697).
+  //   if (IsPlayerFacingEmptyBerryTreePatch()) { plante (field CB) }
+  //   else GetItemFieldFunc(item)(task)  ← = le dispatch switch normal ci-dessous.
+  if (gBagPosition.pocket === BERRIES_POCKET) {
+    if (IsPlayerFacingEmptyBerryTreePatch()) {
+      // 1:1 item_use.c:688-692 : sItemUseOnFieldCB = ItemUseOnFieldCB_Berry ;
+      // gFieldCallback = FieldCB_UseItemOnField ; gBagMenu->newScreenCallback =
+      // CB2_ReturnToField ; Task_FadeAndCloseBagMenu. (PAS via SetUpItemUseOnField
+      // Callback : la baie force CB2_ReturnToField, ≠ sItemUseCallbacks[type] qui
+      // ouvrirait le party-menu pour une baie comestible.)
+      setItemUseOnFieldCB(ItemUseOnFieldCB_Berry);
+      (globalThis as Record<string, unknown>).gFieldCallback = getFieldCB_UseItemOnField();
+      gBagMenu!.newScreenCallback = CB2_ReturnToField_Manual;
+      Task_FadeAndCloseBagMenu(task);
+      return;
+    }
+    // else : pas face à un sol vide → GetItemFieldFunc(item)(task) = switch ci-dessous.
+  }
   // 1:1 :1804-1806 — fill desc + dispatch (= GetItemFieldFunc(itemId)(taskId)),
   // via switch sur le nom du handler (chaque case = le field func 1:1 de item_use.c).
   const itemName = GetItemName(itemId);
@@ -2893,12 +2914,31 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       gBagMenu!.newScreenCallback = CB2_CheckMail;
       Task_FadeAndCloseBagMenu(task);
       return;
+    case 'ItemUseOutOfBattle_WailmerPail': {
+      // 1:1 décomp `ItemUseOutOfBattle_WailmerPail` (item_use.c:707-723) :
+      //   if (TryToWaterSudowoodo())   { sItemUseOnFieldCB = ItemUseOnFieldCB_WailmerPailSudowoodo; SetUpItemUseOnFieldCallback(taskId); }
+      //   else if (TryToWaterBerryTree()) { sItemUseOnFieldCB = ItemUseOnFieldCB_WailmerPailBerry;   SetUpItemUseOnFieldCallback(taskId); }
+      //   else DisplayDadsAdviceCannotUseItemMessage(taskId, tUsingRegisteredKeyItem).
+      // SEAU WAILMER = objet-clé (ITEM_USE_FIELD) → SetUpItemUseOnFieldCallback pose
+      // gFieldCallback + newScreenCallback=CB2_ReturnToField (via sItemUseCallbacks[FIELD-1]).
+      // (⚠️ TryToWaterBerryTree A un effet de bord : arrose déjà l'arbre — 1:1, le script
+      // BerryTree_EventScript_ItemUseWailmerPail ré-arrose via le special, idempotent.)
+      if (TryToWaterSudowoodo()) {
+        setItemUseOnFieldCB(ItemUseOnFieldCB_WailmerPailSudowoodo);
+        SetUpItemUseOnFieldCallback(task);
+        return;
+      } else if (TryToWaterBerryTree()) {
+        setItemUseOnFieldCB(ItemUseOnFieldCB_WailmerPailBerry);
+        SetUpItemUseOnFieldCallback(task);
+        return;
+      }
+      // 1:1 :722 — ni Simularbre ni arbre à baies devant → conseil de papa.
+      msg = _itemMsg('gText_DadsAdvice');
+      break;
+    }
     case 'ItemUseOutOfBattle_PokeblockCase':
-    case 'ItemUseOutOfBattle_Berry':
-    case 'ItemUseOutOfBattle_WailmerPail':
-      // 1:1 décomp : ces handlers ouvrent un screen dédié (pokeblock) ou un sous-système overworld
-      // (wailmer berry / plant berry) pas encore portés → DadsAdvice 1:1 (condition prerequisite jamais
-      // remplie). À étendre quand pokeblock/berry-water seront portés (chantiers indépendants).
+      // 1:1 décomp : ce handler ouvre un screen dédié (pokeblock case) pas encore porté
+      // → DadsAdvice 1:1. À étendre quand le pokeblock sera porté (chantier indépendant).
       msg = _itemMsg('gText_DadsAdvice');
       break;
     default:

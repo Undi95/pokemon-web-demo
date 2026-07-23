@@ -103,6 +103,21 @@ import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
 import { encodeOwText, setStringVar } from '../include/text';
 import { gStringVar4, StringExpandPlaceholders } from '../include/string_util';
 import { ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET } from '../include/constants/item';
+// ─── Deps overworld pour ItemUseOutOfBattle_Berry / WailmerPail (VIS-9) ──────
+// (item_use n'est importé QUE par item_menu → aucune de ces arêtes ne referme un
+// cycle : field_control_avatar/field_player_avatar/fieldmap/event_object_movement/
+// script/berry n'importent ni item_use ni item_menu — vérifié.)
+import { ScriptContext_SetupScript, LockPlayerFieldControls } from './script';
+import { GetPlayerMovementDirection, GetXYCoordsOneStepInFrontOfPlayer, PlayerGetElevation } from './field_player_avatar';
+import { GetInFrontOfPlayerPosition, GetInteractedObjectEventScript, type MapPosition } from './field_control_avatar';
+import { MapGridGetMetatileBehaviorAt } from './fieldmap';
+import { GetObjectEventIdByPosition, GetObjectEventBerryTreeId, gObjectEvents, OBJECT_EVENTS_COUNT } from './event_object_movement';
+import { gSelectedObjectEvent } from './engine/script/script-vars';
+import {
+  GetBerryTreeInfo, GetStageByBerryTreeId,
+  BERRY_STAGE_NO_BERRY, BERRY_STAGE_PLANTED, BERRY_STAGE_SPROUTED,
+  BERRY_STAGE_TALLER, BERRY_STAGE_FLOWERING,
+} from './berry';
 
 // ─── gItemUseCB registry global (1:1 décomp party_menu.c:234) ────────────────
 // `COMMON_DATA void (*gItemUseCB)(u8, TaskFunc) = NULL;`
@@ -244,6 +259,110 @@ function _removeOneFromBag(itemId: number): void {
   // composite `gSaveBlock1Ptr.bag` a été migré vers `bagPocket_*` (= undefined)
   // → l'utiliser plantait `Object.keys(undefined)`.
   RemoveBagItem(key, 1);
+}
+
+// ─── Baies : planter / arroser depuis le sac (VIS-9) — 1:1 décomp ───────────
+// item_use.c:684-757 (ItemUseOutOfBattle_Berry / WailmerPail + ItemUseOnFieldCB_*)
+// + berry.c:997-1035 (ObjectEventInteractionWaterBerryTree / IsPlayerFacingEmpty
+// BerryTreePatch / TryToWaterBerryTree). Les fonctions berry.c/field_control_avatar.c
+// sont TRANSCRITES ICI (et non dans berry.ts / field_control_avatar.ts) : berry.ts est
+// en aval de event_object_movement (import berry) → l'y faire importer field_control_
+// avatar refermerait le cycle berry→field_control_avatar→event_object_movement→berry
+// (bombe TDZ, cf mémoire find-import-cycle) ; field_control_avatar.ts est VERROUILLÉ.
+// item_use.ts est un feuillet sûr (importé seulement par item_menu). Noms 1:1 préservés.
+
+/** 1:1 décomp `GetObjectEventScriptPointerPlayerFacing` (field_control_avatar.c:985-993).
+ *  Foyer canonique = field_control_avatar.ts (VERROUILLÉ) → relocalisé ici. Renvoie le
+ *  label du script de l'object event face au joueur (= la string `scriptLabel`, comparée
+ *  à `'BerryTreeScript'` ci-dessous — équivalent 1:1 de l'égalité de pointeur décomp).
+ *  EFFET DE BORD 1:1 : GetInteractedObjectEventScript pose gSelectedObjectEvent = l'arbre. */
+function GetObjectEventScriptPointerPlayerFacing(): string | null {
+  const direction = GetPlayerMovementDirection();
+  const position: MapPosition = { x: 0, y: 0, elevation: 0 };
+  GetInFrontOfPlayerPosition(position);
+  return GetInteractedObjectEventScript(
+    position, MapGridGetMetatileBehaviorAt(position.x, position.y), direction);
+}
+
+/** 1:1 décomp `ObjectEventInteractionWaterBerryTree` (berry.c:997-1019) : pose watered1..4
+ *  selon le stade courant de l'arbre sélectionné (= +1 stade arrosé → meilleur yield à
+ *  maturité). Renvoie TRUE si arrosé, FALSE hors stade PLANTED..FLOWERING. (Le special
+ *  homonyme dans specials-registry duplique ce corps pour le flux script BerryTree — ici
+ *  on a besoin de la valeur de retour pour TryToWaterBerryTree.) */
+function ObjectEventInteractionWaterBerryTree(): boolean {
+  const tree = GetBerryTreeInfo(GetObjectEventBerryTreeId(gSelectedObjectEvent.index));
+  if (!tree) return false;
+  switch (tree.stage) {
+    case BERRY_STAGE_PLANTED:   tree.watered1 = 1; break;
+    case BERRY_STAGE_SPROUTED:  tree.watered2 = 1; break;
+    case BERRY_STAGE_TALLER:    tree.watered3 = 1; break;
+    case BERRY_STAGE_FLOWERING: tree.watered4 = 1; break;
+    default: return false;
+  }
+  return true;
+}
+
+/** 1:1 décomp `IsPlayerFacingEmptyBerryTreePatch` (berry.c:1021-1028) : le joueur fait
+ *  face à un sol de plantation vide (script BerryTree + stade BERRY_STAGE_NO_BERRY). */
+export function IsPlayerFacingEmptyBerryTreePatch(): boolean {
+  if (GetObjectEventScriptPointerPlayerFacing() === 'BerryTreeScript'
+   && GetStageByBerryTreeId(GetObjectEventBerryTreeId(gSelectedObjectEvent.index)) === BERRY_STAGE_NO_BERRY)
+    return true;
+  else
+    return false;
+}
+
+/** 1:1 décomp `TryToWaterBerryTree` (berry.c:1030-1036) : si le joueur fait face à un
+ *  arbre à baies (script BerryTree), arrose-le (ObjectEventInteractionWaterBerryTree). */
+export function TryToWaterBerryTree(): boolean {
+  if (GetObjectEventScriptPointerPlayerFacing() !== 'BerryTreeScript')
+    return false;
+  else
+    return ObjectEventInteractionWaterBerryTree();
+}
+
+/** 1:1 décomp `TryToWaterSudowoodo` (item_use.c:735-745, static) : le joueur fait face
+ *  à un object event SIMULARBRE (OBJ_EVENT_GFX_SUDOWOODO). graphicsId est stocké ici en
+ *  string OBJ_EVENT_GFX_* (cf. précédents field_player_avatar.c:1306 boulder). */
+export function TryToWaterSudowoodo(): boolean {
+  const { x, y } = GetXYCoordsOneStepInFrontOfPlayer();
+  const elevation = PlayerGetElevation();
+  const objId = GetObjectEventIdByPosition(x, y, elevation);
+  if (objId === OBJECT_EVENTS_COUNT || gObjectEvents[objId].graphicsId !== 'OBJ_EVENT_GFX_SUDOWOODO')
+    return false;
+  else
+    return true;
+}
+
+/** 1:1 décomp `FieldCB_UseItemOnField` (item_use.c:130) — exposé pour le chemin baie
+ *  (ItemUseOutOfBattle_Berry pose `gFieldCallback` directement, cf. item_use.c:690). */
+export function getFieldCB_UseItemOnField(): () => void {
+  return FieldCB_UseItemOnField;
+}
+
+/** 1:1 décomp `ItemUseOnFieldCB_Berry` (item_use.c:699-705) : consomme la baie, lock,
+ *  lance BerryTree_EventScript_ItemUsePlantBerry (msgbox "sol meuble" → plante). */
+export function ItemUseOnFieldCB_Berry(task: DecompTask): void {
+  _removeOneFromBag(gSpecialVar.ItemId);   // 1:1 :701 RemoveBagItem(item, 1)
+  LockPlayerFieldControls();               // 1:1 :702
+  ScriptContext_SetupScript('BerryTree_EventScript_ItemUsePlantBerry');  // 1:1 :703
+  getRuntime()?.DestroyTask(task.taskId);  // 1:1 :704
+}
+
+/** 1:1 décomp `ItemUseOnFieldCB_WailmerPailBerry` (item_use.c:725-730) : lock + lance
+ *  BerryTree_EventScript_ItemUseWailmerPail (arrose l'arbre). */
+export function ItemUseOnFieldCB_WailmerPailBerry(task: DecompTask): void {
+  LockPlayerFieldControls();               // 1:1 :727
+  ScriptContext_SetupScript('BerryTree_EventScript_ItemUseWailmerPail');  // 1:1 :728
+  getRuntime()?.DestroyTask(task.taskId);  // 1:1 :729
+}
+
+/** 1:1 décomp `ItemUseOnFieldCB_WailmerPailSudowoodo` (item_use.c:746-751) : lock + lance
+ *  BattleFrontier_OutsideEast_EventScript_WaterSudowoodo (réveille le Simularbre). */
+export function ItemUseOnFieldCB_WailmerPailSudowoodo(task: DecompTask): void {
+  LockPlayerFieldControls();               // 1:1 :748
+  ScriptContext_SetupScript('BattleFrontier_OutsideEast_EventScript_WaterSudowoodo');  // 1:1 :749
+  getRuntime()?.DestroyTask(task.taskId);  // 1:1 :750
 }
 
 // ─── ItemUseCB_Medicine (party_menu.c:4396) — 1:1-sémantique ────────────────
