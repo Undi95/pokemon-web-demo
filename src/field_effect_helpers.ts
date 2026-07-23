@@ -72,7 +72,8 @@ import {
   ObjectEventIsMovementOverridden, ObjectEventCheckHeldMovementStatus,
   GetJumpSpecialMovementAction, GetWalkSlowMovementAction, FreezeObjectEvents, FreezeObjectEventsExceptOne, UnfreezeObjectEvents, PreloadObjectEventGraphics,
   GetFaceDirectionMovementAction,
-  CameraObjectFreeze, ObjectEventClearHeldMovementIfActive, ObjectEventTurn, MoveObjectEventToMapCoords,
+  CameraObjectFreeze, CameraObjectReset, ObjectEventClearHeldMovementIfActive, ObjectEventTurn, MoveObjectEventToMapCoords,
+  SetObjectEventDirection,
 } from './event_object_movement';
 import { MoveCoords } from './event_object_movement';
 import { DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST } from '../include/global.fieldmap';
@@ -95,7 +96,8 @@ import { reverseDecompConstant } from '../harness/runtime/decomp-constants';
 import { InitTextBoxGfxAndPrinters } from './menu';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from './sprite';
-import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera, DrawWholeMapView, flushOverworldTilemaps } from './field_camera';
+import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera, DrawWholeMapView, flushOverworldTilemaps,
+  SetCameraPanning, SetCameraPanningCallback, InstallCameraPanAheadCallback } from './field_camera';
 import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET, gMapHeader } from './fieldmap';
 import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBehavior_GetBridgeType,
   MetatileBehavior_IsPokeGrass, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsReflective,
@@ -108,8 +110,9 @@ import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gPlayerAvatar } from './field_player_avatar';
 // Musique : appel de la LECTURE existante (PlayBGM/m4a) — autorisé (on ne modifie pas
 // l'engine son, seulement on le pilote). MUS_SURF jouée au mount du surf (1:1 FldEff_UseSurf).
-import { Overworld_ClearSavedMusic, Overworld_ChangeMusicTo, Overworld_ResetStateAfterFly, getWarpDestination, setPendingWarp, SetWarpDestinationFromMapName, InitCurrentFlashLevelScanlineEffect } from './overworld';
-import { MUS_SURF, SE_BALL, MUS_HEAL, SE_M_FLY } from '../include/constants/songs';
+import { Overworld_ClearSavedMusic, Overworld_ChangeMusicTo, Overworld_ResetStateAfterFly, getWarpDestination, setPendingWarp, SetWarpDestinationFromMapName, InitCurrentFlashLevelScanlineEffect,
+  Overworld_PlaySpecialMapMusic, BGMusicStopped, TryFadeOutOldMapMusic } from './overworld';
+import { MUS_SURF, SE_BALL, MUS_HEAL, SE_M_FLY, SE_FALL, SE_M_STRENGTH } from '../include/constants/songs';
 import { Cos, Sin } from './trig';
 import { StartSpriteAffineAnim } from './engine/decomp-impls/sprite-engine-impl';
 import { registerAffineAnim, registerAffineAnimTable } from './engine/decomp-impls/sprite-affine-extras';
@@ -5140,6 +5143,299 @@ function Task_UseFly(task: DecompTask): void {
     sprite: s ? { animNum: s.animNum, animEnded: s.animEnded, animPaused: s.animPaused, animsLen: anims ? anims.length : '?', curAnimLen: anims && anims[s.animNum as number] ? (anims[s.animNum as number] as unknown[]).length : '?' } : null,
   } : null;
 };
+
+// ════════════════════════════════════════════════════════════════════════════
+//  WARP ANIMATIONS 1:1 (field_effect.c) — VIS-4
+//  Transcription ligne-à-ligne des state-machines de warp. Homologue exact des
+//  Task_FlyOut/Task_UseDive ci-dessus (mêmes noms décomp, même DecompTask, même
+//  accès rt.gSprites/gObjectEvents). ⚠️ CÂBLAGE : ces effets sont dispatchés dans
+//  le décomp par field_screen_effect.c (DoFallWarp/DoEscalatorWarp/…) qui posent
+//  `gFieldCallback` ou lancent le Task, PUIS par le warp-kind de la scène OW. Dans
+//  le port, ce dispatch vit dans des fichiers VERROUILLÉS (field_control_avatar.ts,
+//  scrcmd.ts, harness/scenes/OverworldScene.ts) : les entry-points ci-dessous sont
+//  transcrits COMPLETS + exposés sur globalThis, mais le câblage final (registre
+//  gFieldCallback = FieldCB_FallWarpExit dans le chemin 'fall' + warp-kind arrivée
+//  pour les spins) reste à faire côté fichiers verrouillés (SIGNALÉ).
+// ════════════════════════════════════════════════════════════════════════════
+
+// ─── FallWarp : chute sur sol fissuré (Sky Pillar / Granite Cave) → atterrissage ─
+// (field_effect.c:1425-1549). PURE anim d'ARRIVÉE (aucune mécanique de warp) : posée
+// comme `gFieldCallback` par DoFallWarp (field_screen_effect.c:522) et jouée au map
+// load. Le joueur tombe du haut de l'écran + secousse caméra + landing.
+// #define tState data[0] / tFallOffset data[1] / tTotalFall data[2] /
+//         tSetTrigger data[3] / tSubsprMode data[4] /
+//         tVertShake data[1] (re-used) / tNumShakes data[2] (re-used)
+
+/** 1:1 `FallWarpEffect_Init` (field_effect.c:1442). */
+function FallWarpEffect_Init(task: DecompTask): boolean {
+  const rt = getRuntime();
+  const playerObject = gObjectEvents[gPlayerAvatar.objectEventId];
+  const playerSprite = rt?.gSprites[gPlayerAvatar.spriteId];
+  CameraObjectFreeze();
+  gObjectEvents[gPlayerAvatar.objectEventId].invisible = true;
+  gPlayerAvatar.preventStep = true;
+  ObjectEventSetHeldMovement(playerObject, GetFaceDirectionMovementAction(GetPlayerFacingDirection()));
+  if (playerSprite && rt) {
+    task.data[4] = playerSprite.subspriteMode === 'on' ? 1 : 0;   // tSubsprMode (port : 'off'|'on' → 0/1)
+    playerObject.fixedPriority = true;
+    const pOam = rt.gba.oam[playerSprite.oamIndex];
+    if (pOam) pOam.priority = 1;                                   // 1:1 sprite->oam.priority = 1
+    // 1:1 sprite->subspriteMode = SUBSPRITES_IGNORE_PRIORITY : le port ne modélise que
+    // 'off'/'on' (pas IGNORE_PRIORITY, cf. DecompSprite) ; l'effet « rendu au-dessus »
+    // est porté par oam.priority=1 ci-dessus (adaptation renderer, mode inchangé).
+  }
+  task.data[0]++;
+  return true;
+}
+
+/** 1:1 `FallWarpEffect_WaitWeather` (field_effect.c:1460). */
+function FallWarpEffect_WaitWeather(task: DecompTask): boolean {
+  if (IsWeatherNotFadingIn())
+    task.data[0]++;
+  return false;
+}
+
+/** 1:1 `FallWarpEffect_StartFall` (field_effect.c:1468). */
+function FallWarpEffect_StartFall(task: DecompTask): boolean {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites[gPlayerAvatar.spriteId];
+  if (sprite) {
+    const centerToCornerVecY = -(sprite.centerToCornerVecY << 1);
+    sprite.y2 = -(sprite.y + sprite.centerToCornerVecY + (rt ? rt.gSpriteCoordOffsetY : 0) + centerToCornerVecY);
+  }
+  task.data[1] = 1;   // tFallOffset
+  task.data[2] = 0;   // tTotalFall
+  gObjectEvents[gPlayerAvatar.objectEventId].invisible = false;
+  PlaySE(SE_FALL);
+  task.data[0]++;
+  return false;
+}
+
+/** 1:1 `FallWarpEffect_Fall` (field_effect.c:1483). */
+function FallWarpEffect_Fall(task: DecompTask): boolean {
+  const rt = getRuntime();
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  const sprite = rt?.gSprites[gPlayerAvatar.spriteId];
+  if (!sprite) return false;
+  sprite.y2 += task.data[1];   // tFallOffset
+  if (task.data[1] < 8) {
+    task.data[2] += task.data[1];   // tTotalFall
+    if (task.data[2] & 0xf)
+      task.data[1] <<= 1;
+  }
+  if (task.data[3] === 0 /* tSetTrigger FALSE */ && sprite.y2 >= -16) {
+    task.data[3]++;
+    objectEvent.fixedPriority = false;
+    sprite.subspriteMode = task.data[4] ? 'on' : 'off';   // tSubsprMode (restore, port 0/1 → 'off'/'on')
+    objectEvent.triggerGroundEffectsOnMove = true;
+  }
+  if (sprite.y2 >= 0) {
+    PlaySE(SE_M_STRENGTH);
+    objectEvent.triggerGroundEffectsOnStop = true;
+    objectEvent.landingJump = true;
+    sprite.y2 = 0;
+    task.data[0]++;
+  }
+  return false;
+}
+
+/** 1:1 `FallWarpEffect_Land` (field_effect.c:1516). */
+function FallWarpEffect_Land(task: DecompTask): boolean {
+  task.data[0]++;
+  task.data[1] = 4;   // tVertShake (re-used data[1])
+  task.data[2] = 0;   // tNumShakes (re-used data[2])
+  SetCameraPanningCallback(null);
+  return true;
+}
+
+/** 1:1 `FallWarpEffect_CameraShake` (field_effect.c:1525). */
+function FallWarpEffect_CameraShake(task: DecompTask): boolean {
+  SetCameraPanning(0, task.data[1]);   // tVertShake
+  task.data[1] = -task.data[1];
+  task.data[2]++;                       // tNumShakes
+  if ((task.data[2] & 3) === 0)
+    task.data[1] >>= 1;
+  if (task.data[1] === 0)
+    task.data[0]++;
+  return false;
+}
+
+/** 1:1 `FallWarpEffect_End` (field_effect.c:1540). */
+function FallWarpEffect_End(_task: DecompTask): boolean {
+  gPlayerAvatar.preventStep = false;
+  UnlockPlayerFieldControls();
+  CameraObjectReset();
+  UnfreezeObjectEvents();
+  InstallCameraPanAheadCallback();
+  DestroyTask(FindTaskIdByFunc(Task_FallWarpFieldEffect));
+  return false;
+}
+
+/** 1:1 `sFallWarpFieldEffectFuncs[]` (field_effect.c:611). */
+const sFallWarpFieldEffectFuncs: ReadonlyArray<(task: DecompTask) => boolean> = [
+  FallWarpEffect_Init,
+  FallWarpEffect_WaitWeather,
+  FallWarpEffect_StartFall,
+  FallWarpEffect_Fall,
+  FallWarpEffect_Land,
+  FallWarpEffect_CameraShake,
+  FallWarpEffect_End,
+];
+
+/** 1:1 `Task_FallWarpFieldEffect` (field_effect.c:1435). */
+function Task_FallWarpFieldEffect(task: DecompTask): void {
+  while (sFallWarpFieldEffectFuncs[task.data[0]](task));
+}
+
+/** 1:1 `FieldCB_FallWarpExit` (field_effect.c:1425) — posé comme `gFieldCallback`
+ *  par DoFallWarp ; RunFieldCallback l'exécute au retour field. ADAPTATION port :
+ *  `WarpFadeInScreen()` → `FadeInFromBlack()` (équivalent fade-from-black, précédent
+ *  FieldCallback_UseFly). CreateTask via rt (runtime passe l'objet task, précédent
+ *  Task_FlyOut). ⚠️ CÂBLAGE : le chemin 'fall' (scrcmd.ts warphole / field_control_avatar
+ *  — VERROUILLÉS) doit poser `gFieldCallback = FieldCB_FallWarpExit` après le warp. */
+export function FieldCB_FallWarpExit(): void {
+  const rt = getRuntime();
+  Overworld_PlaySpecialMapMusic();
+  FadeInFromBlack();   // ≈ WarpFadeInScreen (port : fade-from-black, cf. FieldCallback_UseFly)
+  LockPlayerFieldControls();
+  FreezeObjectEvents();
+  if (rt) rt.CreateTask(Task_FallWarpFieldEffect, 0);
+  (globalThis as Record<string, unknown>).gFieldCallback = null;
+}
+// Exposé pour câblage 'fall' (chemin warp verrouillé) — RunFieldCallback exécutera FieldCB_FallWarpExit.
+(globalThis as Record<string, unknown>).__FieldCB_FallWarpExit = FieldCB_FallWarpExit;
+
+// ─── EscapeRope / Dig : spin de sortie (wobble) + spin d'arrivée ─────────────
+// (field_effect.c:2242-2346). #define tState data[0] / tSpinDelay data[1] /
+//   tNumTurns data[2] / tTimer data[14] / tStartDir data[15].
+// spinDirections[facingDirection] fait tourner le joueur S→W→E→N→S.
+
+/** spinDirections[5] partagé EscapeRope/Teleport (field_effect.c:2264 etc.).
+ *  Indexé par objectEvent.facingDirection (DIR_SOUTH=1..DIR_EAST=4). */
+const sEscapeRopeSpinDirections: readonly number[] = [DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH];
+
+/** 1:1 `EscapeRopeWarpOutEffect_Init` (field_effect.c:2254). */
+function EscapeRopeWarpOutEffect_Init(task: DecompTask): void {
+  task.data[0]++;
+  task.data[14] = 64;   // tTimer
+  task.data[15] = GetPlayerFacingDirection();   // tStartDir
+}
+
+/** 1:1 `EscapeRopeWarpOutEffect_Spin` (field_effect.c:2261). ADAPTATION port : le bloc
+ *  warp (SetWarpDestinationToEscapeWarp + WarpIntoMap + CB2_LoadMap + gFieldCallback =
+ *  FieldCallback_EscapeRopeWarpIn) → setPendingWarp vers __escapeWarp (précédent
+ *  _warpToEscapeWarp dans fldeff_dig.ts). WarpFadeOutScreen → FadeScreen(FADE_TO_BLACK). */
+function EscapeRopeWarpOutEffect_Spin(task: DecompTask): void {
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (task.data[14] !== 0 && (--task.data[14]) === 0) {   // tTimer
+    TryFadeOutOldMapMusic();
+    FadeScreen(FADE_TO_BLACK, 0);   // ≈ WarpFadeOutScreen
+  }
+  if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent)) {
+    if (task.data[14] === 0 && !gPaletteFade.active && BGMusicStopped() === true) {
+      SetObjectEventDirection(objectEvent, task.data[15]);   // tStartDir
+      // 1:1 SetWarpDestinationToEscapeWarp + WarpIntoMap + gFieldCallback =
+      // FieldCallback_EscapeRopeWarpIn + SetMainCallback2(CB2_LoadMap). Port : warp différé.
+      (globalThis as Record<string, unknown>).gFieldCallback = FieldCallback_EscapeRopeWarpIn;
+      _warpToEscapeWarpFromHelpers();
+      DestroyTask(FindTaskIdByFunc(Task_EscapeRopeWarpOut));
+    } else if (task.data[1] === 0 || (--task.data[1]) === 0) {   // tSpinDelay
+      ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(sEscapeRopeSpinDirections[objectEvent.facingDirection]));
+      if (task.data[2] < 12)   // tNumTurns
+        task.data[2]++;
+      task.data[1] = 8 >> (task.data[2] >> 2);
+    }
+  }
+}
+
+/** Port : warp vers __escapeWarp (posée par setescapewarp). Précédent 1:1
+ *  fldeff_dig.ts::_warpToEscapeWarp (même adaptation setPendingWarp). */
+function _warpToEscapeWarpFromHelpers(): void {
+  const esc = (globalThis as Record<string, unknown>).__escapeWarp as
+    { mapName?: string; x?: number; y?: number } | undefined;
+  if (esc && esc.mapName) {
+    const destMap = esc.mapName.startsWith('MAP_') ? esc.mapName : `MAP_${esc.mapName}`;
+    setPendingWarp({ destMap, x: esc.x ?? 0, y: esc.y ?? 0, elevation: 0, warpId: -1 }, 'step');
+  } else {
+    console.warn('[EscapeRope] pas d\'escapeWarp set (setescapewarp)');
+  }
+}
+
+/** 1:1 `Task_EscapeRopeWarpOut` (field_effect.c:2249). */
+function Task_EscapeRopeWarpOut(task: DecompTask): void {
+  sEscapeRopeWarpOutEffectFuncs[task.data[0]](task);
+}
+
+const sEscapeRopeWarpOutEffectFuncs: ReadonlyArray<(task: DecompTask) => void> = [
+  EscapeRopeWarpOutEffect_Init,
+  EscapeRopeWarpOutEffect_Spin,
+];
+
+/** 1:1 `StartEscapeRopeFieldEffect` (field_effect.c:2242). Transcription COMPLÈTE (spin).
+ *  ⚠️ NON câblée : item_menu.ts appelle encore la version simplifiée de fldeff_dig.ts
+ *  (warp + fade, sans spin) — repointer après test EN JEU (le gate warp-out dépend du
+ *  timing gPaletteFade/BGMusicStopped du port). Exposée pour ce câblage. */
+export function StartEscapeRopeFieldEffect_1to1(): void {
+  const rt = getRuntime();
+  LockPlayerFieldControls();
+  FreezeObjectEvents();
+  if (rt) rt.CreateTask(Task_EscapeRopeWarpOut, 80);
+}
+(globalThis as Record<string, unknown>).__StartEscapeRopeFieldEffect_1to1 = StartEscapeRopeFieldEffect_1to1;
+
+/** 1:1 `FieldCallback_EscapeRopeWarpIn` (field_effect.c:2297) — spin d'ARRIVÉE, posé
+ *  comme gFieldCallback par l'out-side. ADAPTATION : WarpFadeInScreen → FadeInFromBlack. */
+export function FieldCallback_EscapeRopeWarpIn(): void {
+  const rt = getRuntime();
+  Overworld_PlaySpecialMapMusic();
+  FadeInFromBlack();   // ≈ WarpFadeInScreen
+  LockPlayerFieldControls();
+  FreezeObjectEvents();
+  (globalThis as Record<string, unknown>).gFieldCallback = null;
+  gObjectEvents[gPlayerAvatar.objectEventId].invisible = true;
+  if (rt) rt.CreateTask(Task_EscapeRopeWarpIn, 0);
+}
+(globalThis as Record<string, unknown>).__FieldCallback_EscapeRopeWarpIn = FieldCallback_EscapeRopeWarpIn;
+
+/** 1:1 `EscapeRopeWarpInEffect_Init` (field_effect.c:2313). */
+function EscapeRopeWarpInEffect_Init(task: DecompTask): void {
+  if (IsWeatherNotFadingIn()) {
+    task.data[0]++;
+    task.data[15] = GetPlayerFacingDirection();   // tStartDir
+  }
+}
+
+/** 1:1 `EscapeRopeWarpInEffect_Spin` (field_effect.c:2322). */
+function EscapeRopeWarpInEffect_Spin(task: DecompTask): void {
+  const objectEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (task.data[1] === 0 || (--task.data[1]) === 0) {   // tSpinDelay
+    if (ObjectEventIsMovementOverridden(objectEvent) && !ObjectEventClearHeldMovementIfFinished(objectEvent)) {
+      return;
+    }
+    if (task.data[2] >= 32 && task.data[15] === GetPlayerFacingDirection()) {   // tNumTurns / tStartDir
+      objectEvent.invisible = false;
+      UnlockPlayerFieldControls();
+      UnfreezeObjectEvents();
+      DestroyTask(FindTaskIdByFunc(Task_EscapeRopeWarpIn));
+      return;
+    }
+    ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(sEscapeRopeSpinDirections[objectEvent.facingDirection]));
+    if (task.data[2] < 32)
+      task.data[2]++;
+    task.data[1] = task.data[2] >> 2;
+  }
+  objectEvent.invisible = !objectEvent.invisible;   // invisible ^= 1
+}
+
+const sEscapeRopeWarpInEffectFuncs: ReadonlyArray<(task: DecompTask) => void> = [
+  EscapeRopeWarpInEffect_Init,
+  EscapeRopeWarpInEffect_Spin,
+];
+
+/** 1:1 `Task_EscapeRopeWarpIn` (field_effect.c:2308). */
+function Task_EscapeRopeWarpIn(task: DecompTask): void {
+  sEscapeRopeWarpInEffectFuncs[task.data[0]](task);
+}
 
 // Pont dev (test en jeu de TOUTE la séquence VOL — fly-out → warp → fly-in — sans
 // passer par la carte région) : pose sWarpDestination (Oldale) puis joue le VRAI
