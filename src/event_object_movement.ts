@@ -112,7 +112,11 @@ import {
   CanCameraMoveInDirection,
 } from './fieldmap';
 import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera } from './field_camera';
-import { gPlayerAvatar, GetPlayerFacingDirection } from './field_player_avatar';
+import {
+  gPlayerAvatar, GetPlayerFacingDirection, GetPlayerMovementDirection,
+  PlayerGetCopyableMovement, T_TILE_CENTER,
+} from './field_player_avatar';
+import { ObjectEventIsFarawayIslandMew, GetMewMoveDirection } from './faraway_island';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_SOUTHWEST, DIR_SOUTHEAST, DIR_NORTHWEST, DIR_NORTHEAST,
@@ -144,7 +148,7 @@ import {
   MetatileBehavior_IsSandOrDeepSand, MetatileBehavior_IsFootprints, MetatileBehavior_IsShallowFlowingWater,
   MetatileBehavior_IsPacifidlogLog, MetatileBehavior_IsPuddle, MetatileBehavior_IsHotSprings,
   MetatileBehavior_IsSeaweed, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsATile,
-  MetatileBehavior_HasRipples,
+  MetatileBehavior_HasRipples, MetatileBehavior_IsPokeGrass,
   MetatileBehavior_IsSouthBlocked, MetatileBehavior_IsNorthBlocked,
   MetatileBehavior_IsEastBlocked, MetatileBehavior_IsWestBlocked,
 } from './metatile_behavior';
@@ -1860,6 +1864,15 @@ export function SetObjectEventDirection(obj: ObjectEvent, direction: number): vo
   obj.movementDirection = direction;
 }
 
+/** 1:1 décomp `GetObjectEventBerryTreeId(u8 objectEventId)`
+ *  (event_object_movement.c:2425-2428) :
+ *      return gObjectEvents[objectEventId].trainerRange_berryTreeId;
+ *  (le champ `trainerRange_berryTreeId` est un union C : berryTreeId pour un
+ *  object event arbre-à-baies). */
+export function GetObjectEventBerryTreeId(objectEventId: number): number {
+  return gObjectEvents[objectEventId].trainerRange_berryTreeId ?? 0;
+}
+
 /** 1:1 décomp `GetObjectEventIdByPosition(u16 x, u16 y, u8 elevation)`
  *  (event_object_movement.c:2192-2207). Same que GetObjectEventIdByXY mais
  *  filtre aussi sur `ObjectEventDoesElevationMatch`. */
@@ -2938,6 +2951,307 @@ const MOVEMENT_HANDLERS: Record<string, { tick: 'look' | 'wander'; dirs: Readonl
 /** Movement type pattern matching pour les types non-LookAround/Wander.
  *  Returns le handler à appliquer + paramètres. Approche string-match évite
  *  un huge map literal. */
+// ═══════════════════════════════════════════════════════════════════════════
+// MOVEMENT_TYPE_COPY_PLAYER* — 1:1 STRICT décomp event_object_movement.c
+// (VIS-21, dette H1) : les NPC « jumeaux » (maison du Détective, etc.) miroitent
+// le pas du joueur (même / opposé / horaire / anti-horaire ± IN_GRASS).
+//
+// Sources décomp :
+//   - MovementType_CopyPlayer_Step0/1/2 (:4159-4184)
+//   - CopyablePlayerMovement_* (:4186-4341) + gCopyPlayerMovementFuncs
+//     (data/object_events/movement_type_func_tables.h:390)
+//   - MovementType_CopyPlayerInGrass_Step1 (:4346)
+//   - GetPlayerDirectionForCopy + GetCopyDirection + sPlayerDirectionsForCopy +
+//     sPlayerDirectionToCopyDirection (:1124-1178, :5004-5023)
+//   - ObjectEventSetSingleMovement / ObjectEventExecSingleMovementAction /
+//     ObjectEventMoveDestCoords / MoveCoordsInDirection (:4778-4870, :5030-5045)
+//
+// Adaptation moteur (précédent cité) : le décomp exécute l'action unique via
+// gMovementActionFuncs[actionId][sActionFuncId] ; notre moteur porte déjà cette
+// table (gMovementActionFuncs, ligne ~6220) + les Step callbacks Walk/Jump/Slide
+// (précédent : _execHeldMovementAction, TickObjectEventMovements:4315). On dispatch
+// donc sur `npc.actionStep` (= sActionFuncId) exactement comme _execHeldMovementAction.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `sPlayerDirectionsForCopy[initDir-1][moveDir-1]`
+ *  (event_object_movement.c:1124). Indexé [SOUTH,NORTH,WEST,EAST]. */
+const sPlayerDirectionsForCopy: readonly (readonly number[])[] = [
+  /* [DIR_SOUTH-1] */ [DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST],
+  /* [DIR_NORTH-1] */ [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST],
+  /* [DIR_WEST-1]  */ [DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH],
+  /* [DIR_EAST-1]  */ [DIR_EAST, DIR_WEST, DIR_SOUTH, DIR_NORTH],
+];
+
+/** 1:1 décomp `sPlayerDirectionToCopyDirection[copyInitDir-1][dir-1]`
+ *  (event_object_movement.c:1153). Ligne = facing initial du NPC (dérivé du
+ *  movementType via gInitialMovementTypeFacingDirections) :
+ *    DIR_SOUTH → COPY_PLAYER_OPPOSITE ; DIR_NORTH → COPY_PLAYER ;
+ *    DIR_WEST  → COPY_PLAYER_COUNTERCLOCKWISE ; DIR_EAST → COPY_PLAYER_CLOCKWISE. */
+const sPlayerDirectionToCopyDirection: readonly (readonly number[])[] = [
+  /* [DIR_SOUTH-1] OPPOSITE */ [DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST],
+  /* [DIR_NORTH-1] COPY     */ [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST],
+  /* [DIR_WEST-1]  CCW      */ [DIR_EAST, DIR_WEST, DIR_SOUTH, DIR_NORTH],
+  /* [DIR_EAST-1]  CW       */ [DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH],
+];
+
+/** 1:1 décomp `GetPlayerDirectionForCopy` (event_object_movement.c:5004). */
+function GetPlayerDirectionForCopy(initDir: number, moveDir: number): number {
+  return sPlayerDirectionsForCopy[initDir - 1][moveDir - 1];
+}
+
+/** 1:1 décomp `GetCopyDirection` (event_object_movement.c:5012).
+ *  copyInitDir  = facing initial du NPC (gInitialMovementTypeFacingDirections).
+ *  playerInitDir = direction du joueur au spawn du NPC (= directionSequenceIndex).
+ *  playerMoveDir = direction du pas courant du joueur. */
+function GetCopyDirection(copyInitDir: number, playerInitDir: number, playerMoveDir: number): number {
+  const _playerInitDir = playerInitDir & 0xFF;
+  const _playerMoveDir = playerMoveDir & 0xFF;
+  if (_playerInitDir === DIR_NONE || _playerMoveDir === DIR_NONE
+    || _playerInitDir > DIR_EAST || _playerMoveDir > DIR_EAST)
+    return DIR_NONE;
+  const dir = GetPlayerDirectionForCopy(_playerInitDir, playerMoveDir);
+  return sPlayerDirectionToCopyDirection[copyInitDir - 1][dir - 1];
+}
+
+/** 1:1 décomp `ObjectEventMoveDestCoords` (event_object_movement.c:4846). */
+function ObjectEventMoveDestCoords(objectEvent: ObjectEvent, direction: number): { x: number; y: number } {
+  return MoveCoords(direction & 0xFF, objectEvent.currentCoordsX, objectEvent.currentCoordsY);
+}
+
+/** 1:1 décomp `MoveCoordsInDirection` (event_object_movement.c:4778) : décale
+ *  (x,y) de (deltaX,deltaY) selon le signe de sDirectionToVectors[dir]. */
+function MoveCoordsInDirection(dir: number, x: number, y: number, deltaX: number, deltaY: number): { x: number; y: number } {
+  const direction = dir & 0xFF;
+  const vx = DIR_TO_DX[direction] ?? 0;
+  const vy = DIR_TO_DY[direction] ?? 0;
+  let nx = x;
+  let ny = y;
+  if (vx > 0) nx += deltaX;
+  if (vx < 0) nx -= deltaX;
+  if (vy > 0) ny += deltaY;
+  if (vy < 0) ny -= deltaY;
+  return { x: nx, y: ny };
+}
+
+/** 1:1 décomp `ObjectEventSetSingleMovement` (event_object_movement.c:5043) :
+ *    objectEvent->movementActionId = animId; sprite->sActionFuncId = 0;
+ *  Notre `npc.actionStep` = `sprite->sActionFuncId` (idem _execHeldMovementAction). */
+function ObjectEventSetSingleMovement(npc: ObjectEvent, animId: number): void {
+  npc.movementActionId = animId;
+  npc.actionStep = 0;
+}
+
+/** 1:1 décomp `ObjectEventExecSingleMovementAction` (event_object_movement.c:5030) :
+ *    if (gMovementActionFuncs[movementActionId][sActionFuncId](obj, sprite)) {
+ *      movementActionId = MOVEMENT_ACTION_NONE; sActionFuncId = 0; return TRUE;
+ *    }
+ *    return FALSE; */
+function ObjectEventExecSingleMovementAction(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  const actionId = npc.movementActionId;
+  if (actionId === MOVEMENT_ACTION_NONE || actionId < 0 || actionId >= gMovementActionFuncs.length) {
+    npc.movementActionId = MOVEMENT_ACTION_NONE;
+    npc.actionStep = 0;
+    return true;
+  }
+  if (gMovementActionFuncs[actionId](rt, npc)) {
+    npc.movementActionId = MOVEMENT_ACTION_NONE;
+    npc.actionStep = 0;
+    return true;
+  }
+  return false;
+}
+
+// tileCallback : null (COPY_PLAYER) ou MetatileBehavior_IsPokeGrass (COPY_PLAYER_IN_GRASS).
+type CopyTileCallback = ((mb: number) => boolean) | null;
+type CopyablePlayerMovementFunc =
+  (rt: DecompRuntime, npc: ObjectEvent, playerDirection: number, tileCallback: CopyTileCallback) => boolean;
+
+/** 1:1 décomp `CopyablePlayerMovement_None` (event_object_movement.c:4186). */
+function CopyablePlayerMovement_None(): boolean {
+  return false;
+}
+
+/** 1:1 décomp `CopyablePlayerMovement_FaceDirection` (event_object_movement.c:4191). */
+function CopyablePlayerMovement_FaceDirection(rt: DecompRuntime, npc: ObjectEvent, playerDirection: number): boolean {
+  void rt;
+  ObjectEventSetSingleMovement(npc, GetFaceDirectionMovementAction(
+    GetCopyDirection(movementTypeToInitialFacing(npc.movementType), npc.directionSeqIdx, playerDirection)));
+  npc.singleMovementActive = true;
+  npc.movementStep = 2;
+  return true;
+}
+
+/** 1:1 décomp `CopyablePlayerMovement_WalkNormal` (event_object_movement.c:4199). */
+function CopyablePlayerMovement_WalkNormal(rt: DecompRuntime, npc: ObjectEvent, playerDirection: number, tileCallback: CopyTileCallback): boolean {
+  void rt;
+  let direction = playerDirection;
+  if (ObjectEventIsFarawayIslandMew(npc)) {
+    direction = GetMewMoveDirection();
+    if (direction === DIR_NONE) {
+      direction = playerDirection;
+      direction = GetCopyDirection(movementTypeToInitialFacing(npc.movementType), npc.directionSeqIdx, direction);
+      ObjectEventMoveDestCoords(npc, direction);
+      ObjectEventSetSingleMovement(npc, GetFaceDirectionMovementAction(direction));
+      npc.singleMovementActive = true;
+      npc.movementStep = 2;
+      return true;
+    }
+  } else {
+    direction = GetCopyDirection(movementTypeToInitialFacing(npc.movementType), npc.directionSeqIdx, direction);
+  }
+  const dest = ObjectEventMoveDestCoords(npc, direction);
+  ObjectEventSetSingleMovement(npc, GetWalkNormalMovementAction(direction));
+  if (GetCollisionAtCoords(npc, dest.x, dest.y, direction)
+    || (tileCallback !== null && !tileCallback(MapGridGetMetatileBehaviorAt(dest.x, dest.y))))
+    ObjectEventSetSingleMovement(npc, GetFaceDirectionMovementAction(direction));
+  npc.singleMovementActive = true;
+  npc.movementStep = 2;
+  return true;
+}
+
+/** 1:1 décomp `CopyablePlayerMovement_WalkFast` (event_object_movement.c:4235). */
+function CopyablePlayerMovement_WalkFast(rt: DecompRuntime, npc: ObjectEvent, playerDirection: number, tileCallback: CopyTileCallback): boolean {
+  void rt;
+  const direction = GetCopyDirection(movementTypeToInitialFacing(npc.movementType), npc.directionSeqIdx, playerDirection);
+  const dest = ObjectEventMoveDestCoords(npc, direction);
+  ObjectEventSetSingleMovement(npc, GetWalkFastMovementAction(direction));
+  if (GetCollisionAtCoords(npc, dest.x, dest.y, direction)
+    || (tileCallback !== null && !tileCallback(MapGridGetMetatileBehaviorAt(dest.x, dest.y))))
+    ObjectEventSetSingleMovement(npc, GetFaceDirectionMovementAction(direction));
+  npc.singleMovementActive = true;
+  npc.movementStep = 2;
+  return true;
+}
+
+/** 1:1 décomp `CopyablePlayerMovement_WalkFaster` (event_object_movement.c:4254). */
+function CopyablePlayerMovement_WalkFaster(rt: DecompRuntime, npc: ObjectEvent, playerDirection: number, tileCallback: CopyTileCallback): boolean {
+  void rt;
+  const direction = GetCopyDirection(movementTypeToInitialFacing(npc.movementType), npc.directionSeqIdx, playerDirection);
+  const dest = ObjectEventMoveDestCoords(npc, direction);
+  ObjectEventSetSingleMovement(npc, GetWalkFasterMovementAction(direction));
+  if (GetCollisionAtCoords(npc, dest.x, dest.y, direction)
+    || (tileCallback !== null && !tileCallback(MapGridGetMetatileBehaviorAt(dest.x, dest.y))))
+    ObjectEventSetSingleMovement(npc, GetFaceDirectionMovementAction(direction));
+  npc.singleMovementActive = true;
+  npc.movementStep = 2;
+  return true;
+}
+
+/** 1:1 décomp `CopyablePlayerMovement_Slide` (event_object_movement.c:4273). */
+function CopyablePlayerMovement_Slide(rt: DecompRuntime, npc: ObjectEvent, playerDirection: number, tileCallback: CopyTileCallback): boolean {
+  void rt;
+  const direction = GetCopyDirection(movementTypeToInitialFacing(npc.movementType), npc.directionSeqIdx, playerDirection);
+  const dest = ObjectEventMoveDestCoords(npc, direction);
+  ObjectEventSetSingleMovement(npc, GetSlideMovementAction(direction));
+  if (GetCollisionAtCoords(npc, dest.x, dest.y, direction)
+    || (tileCallback !== null && !tileCallback(MapGridGetMetatileBehaviorAt(dest.x, dest.y))))
+    ObjectEventSetSingleMovement(npc, GetFaceDirectionMovementAction(direction));
+  npc.singleMovementActive = true;
+  npc.movementStep = 2;
+  return true;
+}
+
+/** 1:1 décomp `CopyablePlayerMovement_JumpInPlace` (event_object_movement.c:4292). */
+function CopyablePlayerMovement_JumpInPlace(rt: DecompRuntime, npc: ObjectEvent, playerDirection: number): boolean {
+  void rt;
+  const direction = GetCopyDirection(movementTypeToInitialFacing(npc.movementType), npc.directionSeqIdx, playerDirection);
+  ObjectEventSetSingleMovement(npc, GetJumpInPlaceMovementAction(direction));
+  npc.singleMovementActive = true;
+  npc.movementStep = 2;
+  return true;
+}
+
+/** 1:1 décomp `CopyablePlayerMovement_Jump` (event_object_movement.c:4304). */
+function CopyablePlayerMovement_Jump(rt: DecompRuntime, npc: ObjectEvent, playerDirection: number, tileCallback: CopyTileCallback): boolean {
+  void rt;
+  const direction = GetCopyDirection(movementTypeToInitialFacing(npc.movementType), npc.directionSeqIdx, playerDirection);
+  const dest = ObjectEventMoveDestCoords(npc, direction);
+  ObjectEventSetSingleMovement(npc, GetJumpMovementAction(direction));
+  if (GetCollisionAtCoords(npc, dest.x, dest.y, direction)
+    || (tileCallback !== null && !tileCallback(MapGridGetMetatileBehaviorAt(dest.x, dest.y))))
+    ObjectEventSetSingleMovement(npc, GetFaceDirectionMovementAction(direction));
+  npc.singleMovementActive = true;
+  npc.movementStep = 2;
+  return true;
+}
+
+/** 1:1 décomp `CopyablePlayerMovement_Jump2` (event_object_movement.c:4323). */
+function CopyablePlayerMovement_Jump2(rt: DecompRuntime, npc: ObjectEvent, playerDirection: number, tileCallback: CopyTileCallback): boolean {
+  void rt;
+  const direction = GetCopyDirection(movementTypeToInitialFacing(npc.movementType), npc.directionSeqIdx, playerDirection);
+  const dest = MoveCoordsInDirection(direction, npc.currentCoordsX, npc.currentCoordsY, 2, 2);
+  ObjectEventSetSingleMovement(npc, GetJump2MovementAction(direction));
+  if (GetCollisionAtCoords(npc, dest.x, dest.y, direction)
+    || (tileCallback !== null && !tileCallback(MapGridGetMetatileBehaviorAt(dest.x, dest.y))))
+    ObjectEventSetSingleMovement(npc, GetFaceDirectionMovementAction(direction));
+  npc.singleMovementActive = true;
+  npc.movementStep = 2;
+  return true;
+}
+
+/** 1:1 décomp `gCopyPlayerMovementFuncs[]`
+ *  (data/object_events/movement_type_func_tables.h:390), indexé par COPY_MOVE_*. */
+const gCopyPlayerMovementFuncs: readonly CopyablePlayerMovementFunc[] = [
+  /* COPY_MOVE_NONE          */ CopyablePlayerMovement_None,
+  /* COPY_MOVE_FACE          */ CopyablePlayerMovement_FaceDirection,
+  /* COPY_MOVE_WALK          */ CopyablePlayerMovement_WalkNormal,
+  /* COPY_MOVE_WALK_FAST     */ CopyablePlayerMovement_WalkFast,
+  /* COPY_MOVE_WALK_FASTER   */ CopyablePlayerMovement_WalkFaster,
+  /* COPY_MOVE_SLIDE         */ CopyablePlayerMovement_Slide,
+  /* COPY_MOVE_JUMP_IN_PLACE */ CopyablePlayerMovement_JumpInPlace,
+  /* COPY_MOVE_JUMP          */ CopyablePlayerMovement_Jump,
+  /* COPY_MOVE_JUMP2         */ CopyablePlayerMovement_Jump2,
+];
+
+/** 1:1 décomp `MovementType_CopyPlayer_Step0/1/2` (event_object_movement.c:4159)
+ *  + `MovementType_CopyPlayerInGrass_Step1` (:4346). Le macro `movement_type_def`
+ *  boucle `while (funcTable[sTypeFuncId](obj, sprite));` → on réplique la boucle.
+ *  tileCallback = null (COPY_PLAYER) ou MetatileBehavior_IsPokeGrass (IN_GRASS). */
+function tickCopyPlayer(rt: DecompRuntime, npc: ObjectEvent, tileCallback: CopyTileCallback): void {
+  // eslint-disable-next-line no-constant-condition
+  for (;;) {
+    let cont = false;
+    switch (npc.movementStep) {
+      case 0:
+        // Step0 : ClearObjectEventMovement + init directionSequenceIndex.
+        npc.singleMovementActive = false;
+        npc.heldMovementActive = false;
+        npc.heldMovementFinished = false;
+        npc.movementActionId = MOVEMENT_ACTION_NONE;
+        if (npc.directionSeqIdx === 0)
+          npc.directionSeqIdx = GetPlayerFacingDirection();
+        npc.movementStep = 1;
+        cont = true;
+        break;
+      case 1: {
+        // Step1 : ne copie que si le joueur est en plein pas (pas centré/immobile).
+        const playerObj = gObjectEvents[gPlayerAvatar.objectEventId];
+        if (playerObj.movementActionId === MOVEMENT_ACTION_NONE
+          || gPlayerAvatar.tileTransitionState === T_TILE_CENTER) {
+          cont = false;
+          break;
+        }
+        const fn = gCopyPlayerMovementFuncs[PlayerGetCopyableMovement()];
+        cont = fn ? fn(rt, npc, GetPlayerMovementDirection(), tileCallback) : false;
+        break;
+      }
+      case 2:
+        // Step2 : exécute l'action unique posée par la copyable fn ; à la fin,
+        // retour Step1 pour re-copier le prochain pas du joueur.
+        if (ObjectEventExecSingleMovementAction(rt, npc)) {
+          npc.singleMovementActive = false;
+          npc.movementStep = 1;
+        }
+        cont = false;
+        break;
+      default:
+        cont = false;
+        break;
+    }
+    if (!cont) break;
+  }
+}
+
 function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
   const mt = npc.movementType;
   // ─── MOVEMENT_TYPE_FACE_DOWN/UP/LEFT/RIGHT (H5) ─────────────────────────────
@@ -3157,52 +3471,18 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     npc.movementActionId = 0xFF;
     return true;
   }
-  // ─── MOVEMENT_TYPE_COPY_PLAYER* (H4) ────────────────────────────────────────
-  // 1:1 strict décomp `MovementType_CopyPlayer_Step0/1/2` (event_object_movement.c
-  // :4159-4184) :
-  //   Step0 : ClearObjectEventMovement;
-  //           if (directionSequenceIndex == 0) directionSequenceIndex = GetPlayerFacingDirection();
-  //           sTypeFuncId = 1; return TRUE;
-  //   Step1 : if (player->movementActionId == MOVEMENT_ACTION_NONE ||
-  //               gPlayerAvatar.tileTransitionState == T_TILE_CENTER) return FALSE;
-  //           return gCopyPlayerMovementFuncs[PlayerGetCopyableMovement()](
-  //                     obj, sprite, GetPlayerMovementDirection(), NULL);
-  //   Step2 : if (ObjectEventExecSingleMovementAction(obj, sprite)) {
-  //               singleMovementActive = FALSE;
-  //               sTypeFuncId = 1;
-  //           }
-  //           return FALSE;
-  //
-  // DETTES H1 cascade explicits :
-  //   - gCopyPlayerMovementFuncs[6] (None/FaceDirection/WalkNormal/WalkFast/
-  //     WalkFaster/Slide/JumpInPlace/Jump/Jump2) chacune calls
-  //     ObjectEventSetSingleMovement + GetWalkNormal/Fast/.../MovementAction.
-  //   - PlayerGetCopyableMovement (= retourne COPY_MOVE_* selon player
-  //     runningState + tileTransitionState).
-  //   - GetCopyDirection(initialFacing, seqIdx, playerDir) = mapping selon
-  //     gInitialMovementTypeFacingDirections + COPY_PLAYER_OPPOSITE/CCW/CW.
-  //   - ObjectEventSetSingleMovement / ObjectEventExecSingleMovementAction.
-  //   - ObjectEventIsFarawayIslandMew + GetMewMoveDirection (= subsystem
-  //     Faraway Island Mystery Event).
-  //   - GetCollisionAtCoords + MetatileBehavior_IsPokeGrass (= COPY_PLAYER_IN_GRASS).
-  //
-  // Port partial : Step0 init directionSequenceIndex 1:1 strict. Step1/2 idle
-  // (= no-op sans gCopyPlayerMovementFuncs cascade). NPCs en COPY_PLAYER_X
-  // garderont leur facingDirection initiale + ne copieront pas player.
-  // Implémentation cascade complète attend H1 refactor.
+  // ─── MOVEMENT_TYPE_COPY_PLAYER* (VIS-21) ────────────────────────────────────
+  // 1:1 strict décomp `MovementType_CopyPlayer_Step0/1/2` (:4159) +
+  // `MovementType_CopyPlayerInGrass_Step1` (:4346). Le NPC miroite le pas du
+  // joueur (même / opposé / horaire / anti-horaire) via gCopyPlayerMovementFuncs
+  // + GetCopyDirection. La cascade complète (tables + copyable funcs + step
+  // machine) est portée plus haut dans ce fichier (bloc « MOVEMENT_TYPE_COPY_PLAYER* »).
+  // Variante IN_GRASS : tileCallback = MetatileBehavior_IsPokeGrass (= ne copie le
+  // pas que si la case cible est de l'herbe, sinon FaceDirection).
   if (mt.startsWith('MOVEMENT_TYPE_COPY_PLAYER')) {
-    if (npc.movementStep === 0) {
-      // Step0 : ClearObjectEventMovement + init directionSequenceIndex.
-      npc.singleMovementActive = false;
-      npc.heldMovementActive = false;
-      npc.heldMovementFinished = false;
-      npc.movementActionId = 0xFF;
-      if (npc.directionSeqIdx === 0) {
-        npc.directionSeqIdx = GetPlayerFacingDirection();
-      }
-      npc.movementStep = 1;
-    }
-    // Step 1+ : idle sans gCopyPlayerMovementFuncs dispatch (= dette H1).
+    const tileCallback: CopyTileCallback = mt.endsWith('_IN_GRASS')
+      ? MetatileBehavior_IsPokeGrass : null;
+    tickCopyPlayer(rt, npc, tileCallback);
     return true;
   }
   // WALK_SLOWLY_IN_PLACE_* : facing static + slower in-place walk anim.
@@ -6749,6 +7029,21 @@ const gJumpInPlaceMovementActions: readonly number[] = [
 export function GetJumpInPlaceMovementAction(dir: number): number {
   if (dir > DIR_EAST) dir = 0;
   return gJumpInPlaceMovementActions[dir];
+}
+
+/** 1:1 décomp `gSlideMovementActions` (event_object_movement.c:961). */
+const gSlideMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_SLIDE_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_SLIDE_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_SLIDE_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_SLIDE_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_SLIDE_RIGHT,  // DIR_EAST
+];
+/** 1:1 décomp `GetSlideMovementAction` (event_object_movement.c:4963, via
+ *  `dirn_to_anim`). Utilisé par `CopyablePlayerMovement_Slide`. */
+export function GetSlideMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gSlideMovementActions[dir];
 }
 
 /** 1:1 décomp `gJumpInPlaceTurnAroundMovementActions` (event_object_movement.c:989). */

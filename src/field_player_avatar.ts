@@ -494,6 +494,19 @@ export function GetPlayerMovementDirection(): number {
   return DIR_SOUTH;
 }
 
+/** 1:1 décomp `PlayerGetCopyableMovement` (field_player_avatar.c:939-942) :
+ *    return gObjectEvents[gPlayerAvatar.objectEventId].playerCopyableMovement;
+ *
+ *  Retourne le COPY_MOVE_* posé par `PlayerSetAnimId` (via PlayerSetCopyableMovement)
+ *  à la dernière action de mouvement du joueur. Indexe `gCopyPlayerMovementFuncs`
+ *  pour que les NPC MOVEMENT_TYPE_COPY_PLAYER* miroitent le pas courant du joueur. */
+export function PlayerGetCopyableMovement(): number {
+  const slot = gPlayerAvatar.objectEventId;
+  const obj = gObjectEvents[slot];
+  if (obj && obj.active && obj.isPlayer) return obj.playerCopyableMovement;
+  return 0;  // COPY_MOVE_NONE
+}
+
 /** 1:1 STRICT décomp `IsPlayerSurfingNorth` (field_player_avatar.c) :
  *    if (GetPlayerMovementDirection() == DIR_NORTH && TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
  *        return TRUE;
