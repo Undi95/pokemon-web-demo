@@ -119,18 +119,23 @@ export function DrawMoneyBox(amount: number, x: number, y: number): void {
   };
   _moneyBoxWindowId = AddWindow(tmpl);
   if (_moneyBoxWindowId < 0) return;
-  // 1:1 décomp PrintMoneyAmountInMoneyBoxWithBorder : DrawStdFrame(wid, FALSE, 0x214, 14)
-  // + PrintMoneyAmountInMoneyBox(wid, amount, 0).
-  DrawStdFrameWithCustomTileAndPalette(_moneyBoxWindowId, false, 0x214, 14);
-  FillWindowPixelBuffer(_moneyBoxWindowId, 0x11);
+  // 1:1 décomp DrawMoneyBox (money.c:166-177) : FillWindowPixelBuffer(PIXEL_FILL(0)),
+  // PutWindowTilemap, CopyWindowToVram(COPYWIN_MAP), puis
+  // PrintMoneyAmountInMoneyBoxWithBorder(wid, 0x214, 14, amount) qui dessine le cadre
+  // + imprime le montant, puis AddMoneyLabelObject (libellé ARGENT).
+  FillWindowPixelBuffer(_moneyBoxWindowId, 0x00 /* PIXEL_FILL(0) */);
   PutWindowTilemap(_moneyBoxWindowId);
-  _printAmountInMoneyBox(amount);
-  CopyWindowToVram(_moneyBoxWindowId, 3 /* COPYWIN_FULL */);
+  CopyWindowToVram(_moneyBoxWindowId, 1 /* COPYWIN_MAP */);
+  PrintMoneyAmountInMoneyBoxWithBorder(_moneyBoxWindowId, 0x214, 14, amount);
+  // 1:1 money.c:176 (//!< French Difference) : (8*x)+24, (8*y)+11.
+  AddMoneyLabelObject((8 * x) + 24, (8 * y) + 11);
 }
 
 /** 1:1 décomp `HideMoneyBox` (money.c:130). */
 export function HideMoneyBox(): void {
   if (_moneyBoxWindowId < 0) return;
+  // 1:1 décomp money.c:179 : RemoveMoneyLabelObject() en premier.
+  RemoveMoneyLabelObject();
   ClearStdWindowAndFrame(_moneyBoxWindowId, true);
   RemoveWindow(_moneyBoxWindowId);
   _moneyBoxWindowId = -1;
