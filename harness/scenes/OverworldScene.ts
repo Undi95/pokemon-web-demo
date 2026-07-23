@@ -143,7 +143,11 @@ import {
   GetAdjustedInitialDirection,
   GetDynamicWarp,
 } from '../../src/overworld';
-import { getExitTaskKindFor, getMetatileBehaviorAtPlayerPos } from '../../src/field_screen_effect';
+import { getExitTaskKindFor, getMetatileBehaviorAtPlayerPos, FillPalBufferWhite } from '../../src/field_screen_effect';
+// Fondu grotte↔extérieur 1:1 (WarpFadeIn/OutScreen, field_screen_effect.c:74/100) :
+// GetMapPairFadeTo/FromType (fldeff_flash.ts) choisit WHITE vs BLACK. Import scène (sink) —
+// PAS depuis overworld (cycle statique overworld↔fldeff_flash via field_effect_helpers).
+import { GetMapPairFadeToType, GetMapPairFadeFromType } from '../../src/fldeff_flash';
 import type { WarpKind } from '../../src/field_control_avatar';
 import {
   GetDoorSoundEffect,
@@ -180,7 +184,7 @@ import {
   TryFadeOutOldMapMusic, BGMusicStopped, SetWarpDestinationFromMapName,
   ApplyCurrentWarp, Overworld_GetMapHeaderByGroupAndId,
   GetInitialPlayerAvatarState, ResetInitialPlayerAvatarState,
-  UpdateEscapeWarp,
+  UpdateEscapeWarp, GetCurrentMapType, GetLastUsedWarpMapType, GetDestinationWarpMapType,
 } from '../../src/overworld';
 import { MAP_CONSTANTS } from '../../include/constants/map_groups';
 import { OBJ_PALSLOT_COUNT } from '../../include/event_object_movement';
@@ -1676,7 +1680,11 @@ export class OverworldScene extends Phaser.Scene {
         FillPalBufferBlack();
         this.rt.gPlttBufferFaded.flushTo();
       } else {
-        this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+        // 1:1 `WarpFadeOutScreen` (field_screen_effect.c:100) : fondu vers BLANC si on
+        // ENTRE dans une grotte (GetMapPairFadeToType(currentType, destType) = isEnter),
+        // sinon vers NOIR. sWarpDestination a été posée juste au-dessus (Phase 2).
+        const fadeToWhite = GetMapPairFadeToType(GetCurrentMapType(), GetDestinationWarpMapType());
+        this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, fadeToWhite ? 'RGB_WHITE' : 'RGB_BLACK');
       }
       // 1:1 décomp `DoWarp` (field_screen_effect.c:484) : PlaySE(SE_EXIT) pour
       // step warps. Pour 'door' : SE déjà joué dans Task_DoDoorWarp.
@@ -1795,6 +1803,15 @@ export class OverworldScene extends Phaser.Scene {
       const destHeader = await this.loadAndInitMap(destMapId, destX, destY, destDir);
       console.log(`[executeWarp] loaded ${destHeader.id}, player at (${destX},${destY}) facing=${destDir}`);
 
+      // 1:1 `WarpFadeInScreen` (field_screen_effect.c:74) : fondu depuis BLANC si on
+      // SORT d'une grotte (GetMapPairFadeFromType(prevType, currentType) = isExit),
+      // sinon depuis NOIR. Calculé APRÈS ApplyCurrentWarp (gLastUsedWarp = source,
+      // location = dest) + loadAndInitMap (header dest en cache → GetMapTypeByGroupAndId
+      // résout). Sert les 3 sites de masquage/fade-in ci-dessous.
+      const warpFadeFromWhite = GetMapPairFadeFromType(GetLastUsedWarpMapType(), GetCurrentMapType());
+      const _warpFadeInColor: 'RGB_WHITE' | 'RGB_BLACK' = warpFadeFromWhite ? 'RGB_WHITE' : 'RGB_BLACK';
+      const _warpFillFadeIn = (): void => { if (warpFadeFromWhite) FillPalBufferWhite(); else FillPalBufferBlack(); };
+
       // ─── Anti-flash : re-masquer NOIR AVANT les await de Pre-Phase 4 ────────
       // `loadAndInitMap` → LoadMapTilesetPalettes a flushTo() les NEW colors en
       // VRAM (push direct qui bypass `bufferTransferDisabled`, cf. Phase 3). Les
@@ -1803,9 +1820,10 @@ export class OverworldScene extends Phaser.Scene {
       // palette transitoire = "magenta + tiles bizarres" (glitch user warp
       // intérieur, [[warp-stale-camera-glitch]]). La décomp garde l'écran NOIR
       // pendant TOUT le load (WarpFadeOut → WarpFadeIn) ; notre load étant async,
-      // on re-pose BLACK ici — avant tout await — pour tenir le même invariant.
-      // `FillPalBufferBlack` + flushTo déjà utilisés en Phase 4 (même précédent).
-      FillPalBufferBlack();
+      // on re-pose BLACK/WHITE ici — avant tout await — pour tenir le même invariant
+      // (WHITE si sortie de grotte, cf. warpFadeFromWhite ci-dessus).
+      // `FillPalBufferBlack/White` + flushTo déjà utilisés en Phase 4 (même précédent).
+      _warpFillFadeIn();
       this.rt.gPlttBufferFaded.flushTo();
 
       // ─── Pre-Phase 4 : determine exit task kind + setup pre-fade-in state ──
@@ -1886,8 +1904,9 @@ export class OverworldScene extends Phaser.Scene {
       // écrit les NEW colors dans gPlttBufferFaded → flushTo() pousse les NEW
       // colors → écran flash full-color avant le fade in (bug visible session 102 :
       // entrée labo = magenta + tiles bizarres parce que palette transition wrong).
-      FillPalBufferBlack();
-      // Force flush BLACK au PLTT register IMMEDIATELY pour overrider le push
+      // WHITE si sortie de grotte (1:1 WarpFadeInScreen case 1, cf. warpFadeFromWhite).
+      _warpFillFadeIn();
+      // Force flush BLACK/WHITE au PLTT register IMMEDIATELY pour overrider le push
       // de NEW colors fait par loadAndInitMap (= flushTo() à la fin de
       // LoadMapTilesetPalettes). Sans ça, écran montre 1 frame full-color avant
       // que le fade in commence à blender vers BLACK → flash visible.
@@ -1896,7 +1915,7 @@ export class OverworldScene extends Phaser.Scene {
       // (= FillPalBufferBlack + flushTo), on rouvre l'auto-flushTo VBlank pour
       // que le fade-in tick (= UpdatePaletteFade) push les couleurs interpolées.
       this.rt.gPaletteFade.bufferTransferDisabled = false;
-      this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+      this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, _warpFadeInColor);
       await this.waitForFadeComplete();
 
       // ─── Phase 5 : SetUpWarpExitTask (kind-specific exit task) ──────────

@@ -96,11 +96,34 @@ interface FlashStruct {
 // des placeholders (Uint16Array) À LIER depuis public/decomp/em/cave_transition/*.pal au
 // câblage du sous-système (précédent : hall_of_fame.ts _bindHofGfxAssets, assetCache).
 // Tailles décomp : white/black = 16 couleurs, enter = 16, exit = 8 (cf. PLTT_SIZEOF).
-let sCaveTransitionPalette_White = new Uint16Array(16);
-let sCaveTransitionPalette_Black = new Uint16Array(16);
-let sCaveTransitionPalette_Enter = new Uint16Array(16);
+// Type élargi (ArrayBufferLike) : loadGbaPal renvoie Uint16Array<ArrayBufferLike> ;
+// le placeholder new Uint16Array(n) infère <ArrayBuffer> → incompat à la réaffectation.
+let sCaveTransitionPalette_White: Uint16Array<ArrayBufferLike> = new Uint16Array(16);
+let sCaveTransitionPalette_Black: Uint16Array<ArrayBufferLike> = new Uint16Array(16);
+let sCaveTransitionPalette_Enter: Uint16Array<ArrayBufferLike> = new Uint16Array(16);
 //!< French Difference
-let sCaveTransitionPalette_Exit = new Uint16Array(8);
+let sCaveTransitionPalette_Exit: Uint16Array<ArrayBufferLike> = new Uint16Array(8);
+
+// Binder ASSETS 1:1 — remplace les placeholders par les VRAIES palettes extraites du
+// décomp (public/decomp/em/cave_transition/*.pal, pipeline loadGbaPal, précédent
+// intro-asset-loader.ts:380 loadGbaPal('.../bg.pal')). Chargé au module-load. NB : la
+// state-machine animée (Task_*CaveTransition) reste INERTE (CB2_DoChangeMap non porté,
+// cf. bloc ci-dessus) — ces palettes servent ce sous-système quand il sera câblé.
+async function _bindCaveTransitionPalettes(): Promise<void> {
+  const { loadGbaPal } = await import('../harness/gba/png-loader');
+  const [white, black, enter, exit] = await Promise.all([
+    loadGbaPal('/decomp/em/cave_transition/white.pal'),
+    loadGbaPal('/decomp/em/cave_transition/black.pal'),
+    loadGbaPal('/decomp/em/cave_transition/enter.pal'),
+    loadGbaPal('/decomp/em/cave_transition/exit.pal'),
+  ]);
+  sCaveTransitionPalette_White = white;
+  sCaveTransitionPalette_Black = black;
+  sCaveTransitionPalette_Enter = enter;
+  // French Difference : sCaveTransitionPalette_Exit = 8 couleurs (cf. PLTT_SIZEOF(8)).
+  sCaveTransitionPalette_Exit = exit.length >= 8 ? exit.subarray(0, 8) : exit;
+}
+void _bindCaveTransitionPalettes().catch((e) => console.error('[fldeff_flash] chargement palettes cave_transition KO', e));
 // Symboles LZ77UnCompVram (résolus via getAsset au câblage) : tilemap.bin.lz / tiles.png.4bpp.lz.
 const sCaveTransitionTilemap = 'sCaveTransitionTilemap';
 const sCaveTransitionTiles = 'sCaveTransitionTiles';

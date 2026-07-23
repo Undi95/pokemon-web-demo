@@ -443,6 +443,15 @@ export function GetDestinationWarpMapHeader(): any {
   return Overworld_GetMapHeaderByGroupAndId(sWarpDestination.mapGroup, sWarpDestination.mapNum);
 }
 
+/** Type de map de la destination du prochain warp (= `GetDestinationWarpMapHeader()->mapType`
+ *  du décomp, résolu en enum numérique). Exposé pour le choix fondu WHITE/BLACK 1:1
+ *  `WarpFadeOutScreen` (field_screen_effect.c:100) — la scène le passe à `GetMapPairFadeToType`
+ *  (fldeff_flash.ts) sans importer overworld↔fldeff_flash (cycle statique via
+ *  field_effect_helpers). */
+export function GetDestinationWarpMapType(): number {
+  return GetMapTypeByGroupAndId(sWarpDestination.mapGroup, sWarpDestination.mapNum);
+}
+
 /** 1:1 décomp `void ApplyCurrentWarp(void)` (overworld.c:540-546) :
  *    gLastUsedWarp = gSaveBlock1Ptr->location;
  *    gSaveBlock1Ptr->location = sWarpDestination;
