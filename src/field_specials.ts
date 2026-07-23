@@ -38,7 +38,9 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { gLocalTime } from './rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './overworld';
 import { Random } from './random';
-import { CheckFreePokemonStorageSpace, StorageGetCurrentBox } from './pokemon_storage_system';
+import { CheckFreePokemonStorageSpace, StorageGetCurrentBox, GetBoxedMonPtr, GetBoxMonData } from './pokemon_storage_system';
+import { IN_BOX_COUNT, TOTAL_BOXES_COUNT } from './engine/save/save-blocks';
+import { SPECIES_NONE } from '../include/constants/species';
 import { SetCameraPanning, SetCameraPanningCallback, InstallCameraPanAheadCallback } from './field_camera';
 import {
   SpawnSpecialObjectEventParameterized, CameraObjectSetFollowedSpriteId,
@@ -590,6 +592,32 @@ export function ShouldShowBoxWasFullMessage(): number {
 }
 // Préserve le hook battle (Cmd_givecaughtmon, battle_script_commands.c:10062) : boolean.
 (globalThis as Record<string, unknown>).__ShouldShowBoxWasFullMessage = () => ShouldShowBoxWasFullMessage() !== 0;
+
+/** 1:1 décomp `bool8 IsDestinationBoxFull(void)` (field_specials.c:3428-3451) :
+ *  scan de la boîte PC courante puis des suivantes (wrap TOTAL_BOXES_COUNT) jusqu'au
+ *  premier slot SPECIES_NONE libre ; met à jour VAR_PC_BOX_TO_SEND_MON et retourne
+ *  ShouldShowBoxWasFullMessage() (TRUE si la boîte cible diffère du curseur PC).
+ *  Consommé par DisplaySentToPCMessage (naming_screen.c:711) au flux CAUGHT_MON équipe pleine. */
+export function IsDestinationBoxFull(): number {
+  let box: number;
+  let i: number;
+  SetPCBoxToSendMon(VarGet('VAR_PC_BOX_TO_SEND_MON'));
+  box = StorageGetCurrentBox();
+  do {
+    for (i = 0; i < IN_BOX_COUNT; i++) {
+      if (GetBoxMonData(GetBoxedMonPtr(box, i), MON_DATA_SPECIES) === SPECIES_NONE) {
+        if (GetPCBoxToSendMon() !== box)
+          FlagClear('FLAG_SHOWN_BOX_WAS_FULL_MESSAGE');
+        VarSet('VAR_PC_BOX_TO_SEND_MON', box);
+        return ShouldShowBoxWasFullMessage();
+      }
+    }
+
+    if (++box === TOTAL_BOXES_COUNT)
+      box = 0;
+  } while (box !== StorageGetCurrentBox());
+  return 0;
+}
 
 // ─── Lot 9 — camera (field_specials.c §1251, 1263, 1470, 1672) ──────────────
 

@@ -63,7 +63,19 @@ import { gSpeciesNames } from './engine/data/game-data';
 // Gender symbols (♂/♀) = getString(strings.json), cf. daycare.ts precedent.
 import { getString } from '../harness/runtime/decomp-strings';
 import { encodeOwText } from './text';
-import { StringCopy, StringExpandPlaceholders, gStringVar1 } from './string_util';
+import { StringCopy, StringExpandPlaceholders, gStringVar1, gStringVar2, gStringVar3, gStringVar4 } from './string_util';
+// CAUGHT_MON équipe-pleine → mon envoyé au PC (naming_screen.c:670-745 + storage path).
+import { CalculatePlayerPartyCount } from './pokemon';
+import { IsDestinationBoxFull, GetPCBoxToSendMon } from './field_specials';
+import { GetBoxNamePtr } from './pokemon_storage_system';
+import { VarGet, FlagGet } from './event_data';
+import { VAR_PC_BOX_TO_SEND_MON } from '../include/constants/vars';
+import { FLAG_SYS_PC_LANETTE } from '../include/constants/flags';
+import { PARTY_SIZE } from '../include/constants/global';
+import { DrawDialogueFrame, AddTextPrinterParameterized2, GetPlayerTextSpeedDelay } from './menu';
+import { gTextFlags, IsTextPrinterActive, RunTextPrinters, FONT_NORMAL } from './text';
+import { TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY } from '../include/constants/characters';
+import { COPYWIN_FULL } from './window';
 
 // ─── Constants 1:1 décomp src/naming_screen.c ────────────────────────────────
 //
@@ -153,13 +165,13 @@ const STATE_MOVE_TO_OK_BUTTON = 3;
 const STATE_START_PAGE_SWAP = 4;
 const STATE_WAIT_PAGE_SWAP = 5;
 const STATE_PRESSED_OK = 6;
-// const STATE_WAIT_SENT_TO_PC_MESSAGE = 7;
+const STATE_WAIT_SENT_TO_PC_MESSAGE = 7;
 const STATE_FADE_OUT = 8;
 const STATE_EXIT = 9;
 
 const NAMING_SCREEN_PLAYER = 0;
 const NAMING_SCREEN_BOX = 1;
-// const NAMING_SCREEN_CAUGHT_MON = 2;
+const NAMING_SCREEN_CAUGHT_MON = 2;
 // const NAMING_SCREEN_NICKNAME = 3;
 // const NAMING_SCREEN_WALDA = 4;
 
@@ -430,6 +442,15 @@ const sNamingScreenTemplates = [
     initialPage: KBPAGE_LETTERS_UPPER,
     title: 'MOTS ?',
   },
+];
+
+// 1:1 décomp src/naming_screen.c:190-196 — sTransferredToPCMessages[].
+// Noms gText_* résolus via getString(strings.json) (pas de hardcode de texte).
+const sTransferredToPCMessages: readonly string[] = [
+  'gText_PkmnTransferredSomeonesPC',
+  'gText_PkmnTransferredLanettesPC',
+  'gText_PkmnTransferredSomeonesPCBoxFull',
+  'gText_PkmnTransferredLanettesPCBoxFull',
 ];
 
 // ─── Asset loading state ─────────────────────────────────────────────────────
@@ -1015,6 +1036,9 @@ function Task_NamingScreen(_task: DecompTask): void {
     case STATE_PRESSED_OK:
       MainState_PressedOKButton();
       break;
+    case STATE_WAIT_SENT_TO_PC_MESSAGE:
+      MainState_WaitSentToPCMessage();
+      break;
     case STATE_FADE_OUT:
       MainState_FadeOut();
       break;
@@ -1098,11 +1122,68 @@ function MainState_MoveToOKButton(): void {
 
 function MainState_PressedOKButton(): void {
   if (!sNamingScreen) return;
+  // 1:1 décomp src/naming_screen.c:670-688.
   SaveInputText();
   SetInputState(INPUT_STATE_DISABLED);
   SetCursorFlashing(false);
   TryStartButtonFlash(BUTTON_COUNT, false, true);
-  sNamingScreen.state = STATE_FADE_OUT;
+  if (sNamingScreen.templateNum === NAMING_SCREEN_CAUGHT_MON
+    && CalculatePlayerPartyCount() >= PARTY_SIZE) {
+    DisplaySentToPCMessage();
+    sNamingScreen.state = STATE_WAIT_SENT_TO_PC_MESSAGE;
+    return;
+  } else {
+    sNamingScreen.state = STATE_FADE_OUT;
+    return;
+  }
+}
+
+// ─── DisplaySentToPCMessage 1:1 décomp src/naming_screen.c:711-736 ───────────
+// Le mon capturé n'a pas de place dans l'équipe (pleine) → il est transféré au PC.
+// StringCopy attend des buffers GBA (garde EOS) : on encode via encodeOwText les
+// strings JS retournées par GetBoxNamePtr + le nickname (destBuffer = char codes).
+function DisplaySentToPCMessage(): void {
+  if (!sNamingScreen) return;
+  let stringToDisplay = 0;
+
+  // destBuffer (nickname) → string JS puis buffer GBA.
+  const destBuf = sNamingScreen.destBuffer;
+  const nickname = Array.isArray(destBuf)
+    ? (destBuf as number[]).map((c) => String.fromCharCode(c)).join('')
+    : String(destBuf);
+
+  if (!IsDestinationBoxFull()) {
+    StringCopy(gStringVar1, encodeOwText(GetBoxNamePtr(VarGet(VAR_PC_BOX_TO_SEND_MON))));
+    StringCopy(gStringVar2, encodeOwText(nickname));
+  } else {
+    StringCopy(gStringVar1, encodeOwText(GetBoxNamePtr(VarGet(VAR_PC_BOX_TO_SEND_MON))));
+    StringCopy(gStringVar2, encodeOwText(nickname));
+    StringCopy(gStringVar3, encodeOwText(GetBoxNamePtr(GetPCBoxToSendMon())));
+    stringToDisplay = 2;
+  }
+
+  if (FlagGet(FLAG_SYS_PC_LANETTE))
+    stringToDisplay++;
+
+  // sTransferredToPCMessages[] (naming_screen.c:190-196) : gText_PkmnTransferred* via getString.
+  StringExpandPlaceholders(gStringVar4, encodeOwText(getString(sTransferredToPCMessages[stringToDisplay])));
+  DrawDialogueFrame(0, false);
+  gTextFlags.canABSpeedUpPrint = true;
+  AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), null,
+    TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+  CopyWindowToVram(0, COPYWIN_FULL);
+}
+
+// ─── MainState_WaitSentToPCMessage 1:1 décomp src/naming_screen.c:738-745 ─────
+function MainState_WaitSentToPCMessage(): void {
+  if (!sNamingScreen) return;
+  const rt = getRuntime();
+  if (!rt) return;
+  RunTextPrinters();
+  const A_BUTTON = 0x01;
+  const newKeys = (rt.gMain as any).newKeys ?? 0;
+  if (!IsTextPrinterActive(0) && (newKeys & A_BUTTON))
+    sNamingScreen.state = STATE_FADE_OUT;
 }
 
 function MainState_FadeOut(): void {
