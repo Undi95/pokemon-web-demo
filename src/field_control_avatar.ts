@@ -1072,9 +1072,12 @@ export function UpdateFriendshipStepCounter(): void {
  *  Pokemon numérique). Sur FLDPSN_FNT → EventScript_FieldPoison → special
  *  TryFieldPoisonWhiteOut (message + white-out, field_poison.ts). */
 export function UpdatePoisonStepCounter(): boolean {
-  // 1:1 décomp : skip pour Secret Base.
+  // 1:1 décomp : skip pour Secret Base. Dans notre port `mapType` = STRING
+  // "MAP_TYPE_SECRET_BASE" (= json.map_type) ; on compare à la string, l'enum
+  // numérique 9 était mort au runtime (SYS-2 : le poison tournait dans les Bases).
   const MAP_TYPE_SECRET_BASE = 9;  // 1:1 décomp include/constants/map_types.h:13.
-  if (gMapHeader && (gMapHeader as unknown as { mapType?: number }).mapType === MAP_TYPE_SECRET_BASE) {
+  const mt = (gMapHeader as unknown as { mapType?: string | number } | undefined)?.mapType;
+  if (mt === 'MAP_TYPE_SECRET_BASE' || mt === MAP_TYPE_SECRET_BASE) {
     return false;
   }
   const counter = ((VarGet('VAR_POISON_STEP_COUNTER') + 1) & 0xFFFF) % 4;
