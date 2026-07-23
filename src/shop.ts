@@ -58,6 +58,8 @@ import {
   type ListMenuTemplate, type ListMenuItem,
 } from './list_menu';
 import { GetItemName, GetItemPrice, GetItemPocket, GetItemDescription } from './item';
+import { IsPokeNewsActive } from './tv';
+import { POKENEWS_SLATEPORT } from '../include/constants/tv';
 import { AddBagItem, CountTotalItemQuantityInBag } from './engine/bag/bag';
 import { CB2_GoToSellMenu, _setSellMenuExitCallback } from './item_menu';
 import { GetMoney, IsEnoughMoney, RemoveMoney, AddMoneyLabelObject, RemoveMoneyLabelObject, PreloadMoneyLabelAsset, PrintMoneyAmountInMoneyBoxWithBorder, PrintMoneyAmountInMoneyBox } from './money';
@@ -797,7 +799,9 @@ function _removeBuyMenuItemIcon(): void {
 // ─── BuyMenuPrintPriceInList (1:1 shop.c:620) ───────────────────────────────
 function _buyMenuPrintPriceInList(windowId: number, index: number, y: number): void {
   if (index === LIST_CANCEL) return;
-  const price = GetItemPrice(sItemList[index]);
+  // 1:1 shop.c:630 : GetItemPrice(itemId) >> IsPokeNewsActive(POKENEWS_SLATEPORT)
+  // (réduction PokéNews Poivressel = prix divisé par 2 quand la news est active).
+  const price = GetItemPrice(sItemList[index]) >> (IsPokeNewsActive(POKENEWS_SLATEPORT) ? 1 : 0);
   setStringVar(1, String(price));
   StringExpandPlaceholders(gStringVar4, getString('gText_PokedollarVar1') ?? '{STR_VAR_1}¥');
   const x = GetStringRightAlignXOffset(gStringVar4, 120, FONT_NARROW);
@@ -834,7 +838,8 @@ function _tickBuyMenu(): void {
   // message va occuper le bas). Restaurée par _buyReturnToItemList. (Scroll arrows + cursor
   // gris = non portés, hors des 5 bugs.)
   if (sDescWindowId >= 0) ClearWindowTilemap(sDescWindowId);
-  sTotalCost = GetItemPrice(sSelectedKey);
+  // 1:1 shop.c:989 : GetItemPrice(itemId) >> IsPokeNewsActive(POKENEWS_SLATEPORT).
+  sTotalCost = GetItemPrice(sSelectedKey) >> (IsPokeNewsActive(POKENEWS_SLATEPORT) ? 1 : 0);
   if (!IsEnoughMoney(sTotalCost)) {
     _displayMessage(getString('gText_YouDontHaveMoney'), _buyReturnToItemList);
     return;
@@ -864,8 +869,9 @@ function _buyHowManyDialogueInit(): void {
   sQuantity.value = 1;
   // 1:1 shop.c:1042 : DrawStdFrameWithCustomTileAndPalette(WIN_QUANTITY_PRICE, FALSE, 1, 13).
   sPriceQtyWindowId = _addBuyStdWindow(WIN_QUANTITY_PRICE);
-  const unitPrice = GetItemPrice(sSelectedKey);
-  sMaxQuantity = Math.min(Math.floor(GetMoney() / unitPrice), MAX_BAG_ITEM_CAPACITY);
+  // 1:1 shop.c:1046 : maxQuantity = GetMoney() / sShopData->totalCost — totalCost est
+  // déjà le prix unitaire réduit PokéNews fixé au select (shop.c:989).
+  sMaxQuantity = Math.min(Math.floor(GetMoney() / sTotalCost), MAX_BAG_ITEM_CAPACITY);
   _buyMenuPrintItemQuantityAndPrice();
   ScheduleBgCopyTilemapToVram(0);  // 1:1 shop.c:1044 : flush les cadres quantité.
   sSubState = 'buy_qty';
@@ -887,7 +893,8 @@ function _buyMenuPrintItemQuantityAndPrice(): void {
 // ─── Task_BuyHowManyDialogueHandleInput (1:1 shop.c:1056) ───────────────────
 function _tickBuyQuantity(newKeys: number): void {
   if (AdjustQuantityAccordingToDPadInput(sQuantity, sMaxQuantity)) {
-    sTotalCost = GetItemPrice(sSelectedKey) * sQuantity.value;
+    // 1:1 shop.c:1062 : (GetItemPrice(tItemId) >> IsPokeNewsActive(POKENEWS_SLATEPORT)) * tItemCount.
+    sTotalCost = (GetItemPrice(sSelectedKey) >> (IsPokeNewsActive(POKENEWS_SLATEPORT) ? 1 : 0)) * sQuantity.value;
     _buyMenuPrintItemQuantityAndPrice();
     return;
   }
