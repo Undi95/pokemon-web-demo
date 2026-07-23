@@ -11127,9 +11127,21 @@ function _gBattlerAttacker_HBT(): number {
  *  gMapHeader.mapType — sync from overworld system. Retourne 0 (MAP_TYPE_NONE)
  *  si non dispo (= rare en battle path : un battle est toujours triggered depuis
  *  une map valide). */
+const _MAP_TYPE_STR_TO_NUM_HBT: Record<string, number> = {
+  MAP_TYPE_NONE: 0, MAP_TYPE_TOWN: 1, MAP_TYPE_CITY: 2, MAP_TYPE_ROUTE: 3,
+  MAP_TYPE_UNDERGROUND: 4, MAP_TYPE_UNDERWATER: 5, MAP_TYPE_OCEAN_ROUTE: 6,
+  MAP_TYPE_UNKNOWN: 7, MAP_TYPE_INDOOR: 8, MAP_TYPE_SECRET_BASE: 9,
+};
 function _getCurrentMapTypeHBT(): number {
   // 1:1 décomp `gMapHeader.mapType` (= struct MapHeader, global.fieldmap.h).
-  return (gMapHeader?.mapType as number | undefined) ?? 0;
+  // Dans notre port, `mapType` est une STRING "MAP_TYPE_*" (= json.map_type) ;
+  // on la résout vers l'enum numérique du décomp (même patron que battle_setup
+  // `_MAP_TYPE_STR_TO_NUM`). L'ancienne comparaison `=== 5` était morte car
+  // elle testait la string brute (SYS-2).
+  const mt = gMapHeader?.mapType as string | number | undefined;
+  if (typeof mt === 'number') return mt;
+  if (typeof mt === 'string') return _MAP_TYPE_STR_TO_NUM_HBT[mt] ?? 0;
+  return 0;
 }
 
 function _getSpeciesCatchRateHBT(species: number): number {
