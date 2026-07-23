@@ -2781,6 +2781,12 @@ export function BufferPokedexRatingForMatchCall(destStr: Uint8Array): void {
 // Miroir du pont __gTrainers côté pokenav_match_call_data.ts.
 (globalThis as any).__BufferPokedexRatingForMatchCall = BufferPokedexRatingForMatchCall;
 
+// Pont module → field_control_avatar.ts (TryStartStepCountScript, field_control_avatar.c:604) :
+// évite l'import statique field_control_avatar→match_call qui tirerait le gros sous-arbre Pokénav
+// dans l'init précoce de field_control_avatar (TDZ). Enregistré à l'éval du module (chaîne de boot
+// new_game.ts + flux Pokénav). Consommé par _tryStartMatchCall() côté field_control_avatar.
+(globalThis as any).__matchCall = { TryStartMatchCall };
+
 /** 1:1 `void LoadMatchCallWindowGfx(u32 windowId, u32 destOffset, u32 paletteId)` (match_call.c:2102-2107). */
 export function LoadMatchCallWindowGfx(windowId: number, destOffset: number, paletteId: number): void {
   let bg = GetWindowAttribute(windowId, WINDOW_BG);

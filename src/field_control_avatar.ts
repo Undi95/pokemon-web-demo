@@ -38,9 +38,17 @@ import {
   PLAYER_AVATAR_FLAG_FORCED_MOVE,
 } from './field_player_avatar';
 import { IncrementGameStat } from './field_player_avatar';
-import { GAME_STAT_HATCHED_EGGS } from '../include/constants/game_stat';
+import { GAME_STAT_HATCHED_EGGS, GAME_STAT_STEPS } from '../include/constants/game_stat';
 import { ShouldEggHatch } from './daycare';
 import { IncrementRematchStepCounter } from './battle_setup';
+// TryStartMatchCall : appelée via le pont globalThis.__matchCall (posé par match_call, tiré au
+// boot par new_game/pokenav). L'import statique field_control_avatar→match_call tirerait le gros
+// sous-arbre Pokénav dans l'init précoce de field_control_avatar → réordonnancement ESM → TDZ.
+interface MatchCallBridge { TryStartMatchCall(): boolean }
+function _tryStartMatchCall(): boolean {
+  return (globalThis as { __matchCall?: MatchCallBridge })
+    .__matchCall?.TryStartMatchCall() ?? false;
+}
 // CheckForTrainersWantingBattle : appelée via le pont globalThis.__trainerSee (posé par
 // trainer_see, tiré au boot par field_effect). L'import statique field_control_avatar→
 // trainer_see tirait le sous-arbre aggro dans l'init précoce de field_control_avatar →
@@ -51,6 +59,7 @@ function _checkForTrainersWantingBattle(): boolean {
     .__trainerSee?.CheckForTrainersWantingBattle() ?? false;
 }
 import { FlagGet } from './engine/script/script-vars';
+import { resolveDecompConstant } from '../harness/runtime/decomp-constants';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { gPlayerParty } from './engine/battle/party-storage';
 // DoPoisonFieldEffect = dégât poison par pas (foyer 1:1 field_poison.ts). L'import
@@ -301,6 +310,10 @@ export function ProcessPlayerFieldInput(input: FieldInput): boolean {
 
   // input->tookStep : 1:1 décomp `TryStartStepBasedScript` (coord events + step-on warp).
   if (input.tookStep) {
+    // 1:1 décomp field_control_avatar.c:157 : premier statement du bloc tookStep, incrémente le
+    // compteur de pas global (= GAME_STAT_STEPS, lu par la TV / le Match Phone). Était perdu →
+    // compteur de pas mort. IncrementBirthIslandRockStepCount (c:158) = Île du Sud, non porté.
+    IncrementGameStat(GAME_STAT_STEPS);
     // `TryStartCoordEventScript(position)` — coord events (= truck SetIntroFlags). Coords LOGIQUES.
     if (TryRunCoordEventScript(position.x - MAP_OFFSET, position.y - MAP_OFFSET)) {
       return true;
@@ -800,7 +813,18 @@ export function GetInteractedBackgroundEventScript(
     gMapHeader, position.x - MAP_OFFSET, position.y - MAP_OFFSET, position.elevation);
   if (!bgEvent) return null;
   // Hidden item dispatch (= kind 'hidden_item' dans notre data, BG_EVENT_HIDDEN_ITEM décomp).
+  // 1:1 STRICT décomp field_control_avatar.c:348-353 :
+  //   gSpecialVar_0x8004 = ((u32)bgUnion.script >> 16) + FLAG_HIDDEN_ITEMS_START;  // flag anti-re-ramassage
+  //   gSpecialVar_0x8005 = (u32)bgUnion.script;                                     // item caché
+  //   if (FlagGet(gSpecialVar_0x8004) == TRUE) return NULL;                         // déjà ramassé → rien
+  //   return EventScript_HiddenItemScript;
+  // Modèle : le décomp packe flag/item dans bgUnion.script ; notre JSON les fournit NOMMÉS
+  // (bgEvent.hiddenItemFlag / hiddenItemId) → on résout en id numérique pour poser les special vars.
   if (bgEvent.kind === 'hidden_item') {
+    const flagName = bgEvent.hiddenItemFlag ?? '';
+    VarSet('VAR_0x8004', resolveDecompConstant(flagName) ?? 0);
+    VarSet('VAR_0x8005', resolveDecompConstant(bgEvent.hiddenItemId ?? '') ?? 0);
+    if (FlagGet(flagName)) return null;
     return 'EventScript_HiddenItemScript';
   }
   // DETTE : secret base entrance (kind 'secret_base') non portée (sous-système base secrète).
@@ -1114,6 +1138,10 @@ function TryStartStepCountScript(metatileBehavior: number): boolean {
       return true;
     }
   }
+  // 1:1 décomp field_control_avatar.c:604 : TryStartMatchCall (appels Match Call déclenchés en
+  // marchant), HORS de la garde forced-move (position décomp = après Safari/SSTidal, avant return).
+  // Était perdu → aucun appel Match Phone en marchant. Bridge globalThis (anti-cycle/TDZ).
+  if (_tryStartMatchCall()) return true;
   return false;
 }
 

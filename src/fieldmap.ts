@@ -268,6 +268,10 @@ export interface BgEvent {
   kind: string;
   playerFacingDir: string;
   script: string;
+  /** 1:1 décomp BG_EVENT_HIDDEN_ITEM (bgUnion packé) : nom du flag anti-re-ramassage
+   *  (= gSpecialVar_0x8004) + item caché (= gSpecialVar_0x8005). Undefined si non-hidden. */
+  hiddenItemFlag?: string;
+  hiddenItemId?: string;
 }
 
 /** 1:1 décomp `struct MapEvents` (global.fieldmap.h:145-155). */
@@ -628,6 +632,9 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
     bg_events?: Array<{
       type: string; x: number; y: number; elevation: number;
       player_facing_dir?: string; script?: string;
+      // 1:1 décomp BG_EVENT_HIDDEN_ITEM : le flag anti-re-ramassage + l'item caché
+      // (le décomp les packe dans bgUnion.script ; notre JSON les donne nommés).
+      flag?: string; item?: string;
     }>;
   };
 
@@ -700,6 +707,8 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
     kind: b.type,
     playerFacingDir: b.player_facing_dir ?? 'BG_EVENT_PLAYER_FACING_ANY',
     script: b.script ?? '',
+    hiddenItemFlag: b.flag,
+    hiddenItemId: b.item,
   }));
 
   const connections: MapConnection[] = (json.connections ?? []).map(c => ({
