@@ -3435,6 +3435,8 @@ const FIELD_MOVE_SWEET_SCENT  = 13;
 /** 1:1 décomp `FLDEFF_*` (field_effect.h) — const locales (pattern
  *  "FLDEFF_* locales par module" anti-cycle ESM field-effect). */
 const FLDEFF_USE_SURF = 9;
+const FLDEFF_USE_WATERFALL = 43;
+const FLDEFF_USE_DIVE = 44;
 const FLDEFF_SWEET_SCENT = 51;
 
 /** 1:1 décomp `GetCursorSelectionMonId(void)` (party_menu.c:6221) = gPartyMenu.slotId.
@@ -3468,6 +3470,24 @@ function FieldCallback_Surf(): void {
   _setFieldEffectArgument(0, GetCursorSelectionMonId());
   const start = (globalThis as Record<string, unknown>).FieldEffectStart as ((id: number) => void) | undefined;
   start?.(FLDEFF_USE_SURF);
+}
+
+/** 1:1 décomp `FieldCallback_Waterfall(void)` (party_menu.c:3890) :
+ *      gFieldEffectArguments[0] = GetCursorSelectionMonId();
+ *      FieldEffectStart(FLDEFF_USE_WATERFALL); */
+function FieldCallback_Waterfall(): void {
+  _setFieldEffectArgument(0, GetCursorSelectionMonId());
+  const start = (globalThis as Record<string, unknown>).FieldEffectStart as ((id: number) => void) | undefined;
+  start?.(FLDEFF_USE_WATERFALL);
+}
+
+/** 1:1 décomp `FieldCallback_Dive(void)` (party_menu.c:3910) :
+ *      gFieldEffectArguments[0] = GetCursorSelectionMonId();
+ *      FieldEffectStart(FLDEFF_USE_DIVE); */
+function FieldCallback_Dive(): void {
+  _setFieldEffectArgument(0, GetCursorSelectionMonId());
+  const start = (globalThis as Record<string, unknown>).FieldEffectStart as ((id: number) => void) | undefined;
+  start?.(FLDEFF_USE_DIVE);
 }
 
 /** 1:1 décomp `SetUpFieldMove_Surf(void)` (party_menu.c:3858) :
@@ -3575,6 +3595,56 @@ function SetUpFieldMove_Fly(): boolean {
   const mt = hdr?.mapType;
   return mt === 'MAP_TYPE_ROUTE' || mt === 'MAP_TYPE_TOWN'
     || mt === 'MAP_TYPE_OCEAN_ROUTE' || mt === 'MAP_TYPE_CITY';
+}
+
+/** 1:1 décomp `SetUpFieldMove_Waterfall(void)` (party_menu.c:3896) :
+ *      s16 x, y;
+ *      GetXYCoordsOneStepInFrontOfPlayer(&x, &y);
+ *      if (MetatileBehavior_IsWaterfall(MapGridGetMetatileBehaviorAt(x, y)) == TRUE
+ *          && IsPlayerSurfingNorth() == TRUE) {
+ *          gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+ *          gPostMenuFieldCallback = FieldCallback_Waterfall;
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *  Helpers field bridgés sur globalThis par field_control_avatar.ts (anti-cycle ESM,
+ *  pattern Surf/Strength). FLDEFF_USE_WATERFALL porté (field_effect_helpers.ts:1280). */
+function SetUpFieldMove_Waterfall(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  const getXY = g.__GetXYCoordsOneStepInFrontOfPlayer as (() => { x: number; y: number }) | undefined;
+  const behaviorAt = g.__MapGridGetMetatileBehaviorAt as ((x: number, y: number) => number) | undefined;
+  const isWaterfall = g.__MetatileBehavior_IsWaterfall as ((mb: number) => boolean) | undefined;
+  const surfingNorth = g.__IsPlayerSurfingNorth as (() => boolean) | undefined;
+  const p = getXY?.();
+  if (p && isWaterfall?.(behaviorAt?.(p.x, p.y) ?? -1) === true && surfingNorth?.() === true) {
+    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+    g.gPostMenuFieldCallback = FieldCallback_Waterfall;
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `SetUpFieldMove_Dive(void)` (party_menu.c:3916) :
+ *      gFieldEffectArguments[1] = TrySetDiveWarp();
+ *      if (gFieldEffectArguments[1] != 0) {
+ *          gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+ *          gPostMenuFieldCallback = FieldCallback_Dive;
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *  TrySetDiveWarp bridgé sur globalThis par field_control_avatar.ts (anti-cycle ESM).
+ *  FLDEFF_USE_DIVE porté (field_effect_helpers.ts:1376). */
+function SetUpFieldMove_Dive(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  const trySetDive = g.__TrySetDiveWarp as (() => number) | undefined;
+  const arg1 = trySetDive?.() ?? 0;
+  _setFieldEffectArgument(1, arg1);
+  if (arg1 !== 0) {
+    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+    g.gPostMenuFieldCallback = FieldCallback_Dive;
+    return true;
+  }
+  return false;
 }
 
 /** 1:1 décomp `sPartyMenuYesNoWindowTemplate` (party_menu.h:518) : boîte Oui/Non
@@ -3832,6 +3902,8 @@ const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
   [FIELD_MOVE_STRENGTH]:    { fieldMoveFunc: SetUpFieldMove_Strength,   msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_FLASH]:       { fieldMoveFunc: SetUpFieldMove_Flash,      msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_SURF]:        { fieldMoveFunc: SetUpFieldMove_Surf,       msgId: 'gText_CantSurfHere' },
+  [FIELD_MOVE_WATERFALL]:   { fieldMoveFunc: SetUpFieldMove_Waterfall,  msgId: 'gText_CantUseHere' },
+  [FIELD_MOVE_DIVE]:        { fieldMoveFunc: SetUpFieldMove_Dive,       msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_TELEPORT]:    { fieldMoveFunc: SetUpFieldMove_Teleport,   msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_FLY]:         { fieldMoveFunc: SetUpFieldMove_Fly,        msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_DIG]:         { fieldMoveFunc: SetUpFieldMove_Dig,        msgId: 'gText_CantUseHere' },

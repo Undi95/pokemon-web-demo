@@ -1159,3 +1159,12 @@ export function IncrementWildEncounterImmunitySteps(): void {
 /** Get/set sPrevMetatileBehavior cache. */
 export function GetPrevMetatileBehavior(): number { return sPrevMetatileBehavior; }
 export function SetPrevMetatileBehavior(v: number): void { sPrevMetatileBehavior = v; }
+
+// Ponts globalThis (anti-cycle ESM, pattern field_player_avatar.ts:596 __PartyHasMonWithSurf)
+// consommés par party_menu.ts sFieldMoveCursorCallbacks (SetUpFieldMove_Waterfall / _Dive).
+// Ce module importe/définit déjà tous ces symboles → foyer naturel unique.
+(globalThis as Record<string, unknown>).__GetXYCoordsOneStepInFrontOfPlayer = GetXYCoordsOneStepInFrontOfPlayer;
+(globalThis as Record<string, unknown>).__IsPlayerSurfingNorth = IsPlayerSurfingNorth;
+(globalThis as Record<string, unknown>).__MetatileBehavior_IsWaterfall = MetatileBehavior_IsWaterfall;
+(globalThis as Record<string, unknown>).__MapGridGetMetatileBehaviorAt = MapGridGetMetatileBehaviorAt;
+(globalThis as Record<string, unknown>).__TrySetDiveWarp = TrySetDiveWarp;
