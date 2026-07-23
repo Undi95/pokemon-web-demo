@@ -65,6 +65,10 @@ import { CRY_MODE_NORMAL, CRY_MODE_WEAK } from '../include/constants/sound';
 import { ShouldPlayNormalMonCry } from './battle_gfx_sfx_util';
 import { IsShinyOtIdPersonality, GetGenderFromSpeciesAndPersonality } from './pokemon';
 import { reverseDecompConstant, resolveDecompConstant } from '../harness/runtime/decomp-constants';
+// 1:1 décomp pokemon_summary_screen.c:2225/2239 — le mode SELECT_MOVE écrit
+// gSpecialVar_0x8005 = sMoveSlotToReplace (consommé par l'Effaceur de capacités :
+// BufferMoveDeleterNicknameAndMove / MoveDeleterForgetMove lisent VAR_0x8005).
+import { VarSet } from './event_data';
 
 // Accès id-keyés locaux 1:1 décomp = indexation DIRECTE des tables id-strictes
 // (`gSpeciesInfo[species]` / `gBattleMoves[move]` / `gMoveNames[move]` / …).
@@ -3059,6 +3063,7 @@ function Task_HandleReplaceMoveInput(task: DecompTask): void {
       PlaySE(SE_SELECT);
       // 1:1 : StopPokemonAnimations est fait par _beginCloseSummaryScreen.
       _moveSlotToReplace = sMon.firstMoveIndex;
+      VarSet(0x8005, _moveSlotToReplace);  // 1:1 :2225 gSpecialVar_0x8005 = sMoveSlotToReplace
       _beginCloseSummaryScreen();
     } else {
       PlaySE(SE_FAILURE);
@@ -3067,6 +3072,7 @@ function Task_HandleReplaceMoveInput(task: DecompTask): void {
   } else if (newKeys & KEY_B) {
     PlaySE(SE_SELECT);
     _moveSlotToReplace = MAX_MON_MOVES;
+    VarSet(0x8005, _moveSlotToReplace);  // 1:1 :2239 gSpecialVar_0x8005 = MAX_MON_MOVES (annulé)
     _beginCloseSummaryScreen();
   }
 }

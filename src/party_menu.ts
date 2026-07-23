@@ -45,6 +45,7 @@ import {
   AddTextPrinterParameterized2, GetPlayerTextSpeedDelay,
 } from './menu';
 import { gTextFlags, IsTextPrinterActive } from './text';
+import { encodeOwText } from './text';
 import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from './menu_specialized';
 import { GetStringCenterAlignXOffset } from './text';
 import { AddTextPrinterParameterized3 } from './menu';
@@ -66,7 +67,11 @@ import { gMoveNames } from './engine/data/game-data';
 import {
   MonTryLearningNewMove, GetEvolutionTargetSpecies, RemoveMonPPBonus, SetMonMoveSlot,
   CanMonLearnTMHM, GiveMoveToMon, MonKnowsMove, AdjustFriendship,
+  GetMonData, SetMonData, gPPUpGetMask, GetNumberOfRelearnableMoves, gPlayerPartyCount,
 } from './pokemon';
+import {
+  MON_DATA_MOVE1, MON_DATA_PP1, MON_DATA_PP_BONUSES,
+} from '../include/pokemon';
 // 1:1 décomp party_menu.c:4688 ItemIdToBattleMoveId + sa table sTMHMMoves
 // (relocalisées en feuille pure engine/pokemon/tmhm-moves.ts, cf. en-tête là-bas).
 import { sTMHMMoves as _sTMHMMoves_TM } from './data/party_menu';
@@ -89,7 +94,7 @@ import { FlagGet, gSpecialVar } from './engine/script/script-vars';
 import { MUS_LEVEL_UP, SE_FAILURE } from '../include/constants/songs';
 import { FANFARE_LEVEL_UP } from '../include/constants/sound';
 import { GetMapNameGeneric } from './region_map';
-import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1 } from '../include/string_util';
+import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1, gStringVar2, StringCopy } from '../include/string_util';
 import { CHAR_SLASH, EOS } from '../include/constants/characters';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToField_Manual } from './overworld';
 import { FadeScreen, FADE_FROM_BLACK } from './field_weather';
@@ -98,6 +103,9 @@ import {
   OpenSummaryScreen, GetSummaryLastMonIndex,
   ShowSelectMovePokemonSummaryScreen, GetMoveSlotToReplace,
 } from './pokemon_summary_screen';
+// 1:1 décomp `MoveDeleterChooseMoveToForget` (party_menu.c:6341) : gFieldCallback
+// = FieldCB_ContinueScriptHandleMusic après ShowPokemonSummaryScreen(SELECT_MOVE).
+import { FieldCB_ContinueScriptHandleMusic } from './field_screen_effect';
 import { getString } from '../harness/runtime/decomp-strings';
 import { MON_ICON_PALETTE_INDICES } from './pokemon_icon';
 import type { DecompTask, CB2Callback } from '../harness/runtime/decomp-runtime';
@@ -113,13 +121,14 @@ import {
   PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING, PARTY_ACTION_SEND_OUT,
   PARTY_ACTION_SOFTBOILED, PARTY_ACTION_CANT_SWITCH, PARTY_ACTION_ABILITY_PREVENTS,
   PARTY_MENU_TYPE_FIELD, PARTY_MENU_TYPE_IN_BATTLE, PARTY_MENU_TYPE_DAYCARE,
+  PARTY_MENU_TYPE_MOVE_RELEARNER, PARTY_MENU_TYPE_CHOOSE_MON, PARTY_ACTION_CHOOSE_AND_CLOSE,
   PARTY_NOTHING_CHOSEN,
 } from '../include/constants/party_menu';
 // Mode DAYCARE (ChooseMonForDaycare/BufferMonSelection, party_menu.c:6197-6231) :
 // retour au field script-driven (gFieldCallback2 = CB2_FadeFromPartyMenu).
 import { IsWeatherNotFadingIn } from './field_weather';
 import { UnlockPlayerFieldControls, ScriptContext_Enable } from './script';
-import { VarSet } from './event_data';
+import { VarSet, VarGet } from './event_data';
 /** 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (party_menu.c:2096).
  *  baseTile=0x4F, paletteNum=13. */
 const STD_FRAME_TILE = 0x4F;
@@ -2124,6 +2133,16 @@ function HandleChooseMonSelection(taskId: number, slotPtr: PartySlotPtr): void {
       // 1:1 :1344-1347 PlaySE(SE_SELECT) + SwitchSelectedMons.
       PlaySE(5);
       _switchSelectedMons();
+      break;
+    }
+    case PARTY_ACTION_CHOOSE_AND_CLOSE: {
+      // 1:1 :1348-1351 PlaySE(SE_SELECT) + Task_ClosePartyMenu. Mode « choisir un
+      //   mon puis fermer » (Effaceur ChoosePartyMon / Maître des Capacités
+      //   ChooseMonForMoveRelearner). Le slot choisi est lu APRÈS la fermeture par
+      //   le CB de sortie (BufferMonSelection / CB2_ChooseMonForMoveRelearner) via
+      //   GetCursorSelectionMonId (persiste _cursorSelectionMonId, cf. _freePartyMenu).
+      PlaySE(5);
+      ClosePartyScreen();  // = Task_ClosePartyMenu(taskId) → savedCallback (exitCallback)
       break;
     }
     default: {
@@ -4787,6 +4806,172 @@ function Task_PartyMenuWaitForFade(task: DecompTask): void {
     ScriptContext_Enable();
     ((globalThis as Record<string, unknown>).__SignalWaitState as (() => void) | undefined)?.();
   }
+}
+
+// ─── Effaceur (Move Deleter) + Maître des Capacités (Move Relearner) ─────────
+//     1:1 party_menu.c:6262-6376. Modes PARTY_ACTION_CHOOSE_AND_CLOSE : ouvrir
+//     l'écran party, choisir un mon, fermer ; le slot est relu par le CB de sortie
+//     (BufferMonSelection déjà porté, ou CB2_ChooseMonForMoveRelearner ci-dessous).
+//     L'ouverture suit le précédent ChooseMonForDaycare (async _loadAssets →
+//     savedCallback = exitCallback → SetMainCallback2(CB2_InitPartyMenu)) ; le décomp
+//     LockPlayerFieldControls + FadeScreen(FADE_TO_BLACK) est absorbé par ce chemin
+//     (le retour ré-allume via CB2_FadeFromPartyMenu, cf. daycare).
+
+/** 1:1 décomp `void ChoosePartyMon(void)` (party_menu.c:6262-6267) + son
+ *  `Task_ChoosePartyMon` (:6269-6277) :
+ *  ```c
+ *  InitPartyMenu(PARTY_MENU_TYPE_CHOOSE_MON, PARTY_LAYOUT_SINGLE,
+ *      PARTY_ACTION_CHOOSE_AND_CLOSE, FALSE, PARTY_MSG_CHOOSE_MON,
+ *      Task_HandleChooseMonInput, BufferMonSelection);
+ *  ```
+ *  exitCallback = BufferMonSelection (déjà porté → gSpecialVar_0x8004 = slot). Utilisé
+ *  par l'Effaceur (LilycoveCity_MoveDeletersHouse) pour choisir le mon. */
+export function ChoosePartyMon(): void {
+  if (_isOpen) return;
+  _menuType = PARTY_MENU_TYPE_CHOOSE_MON;
+  _partyAction = PARTY_ACTION_CHOOSE_AND_CLOSE;
+  _slotId = 0;  // keepCursorPos = FALSE
+  void _loadAssets().then(() => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.gMain.state = 0;
+    rt.gMain.savedCallback = BufferMonSelection;  // gPartyMenu.exitCallback
+    rt.SetMainCallback2(CB2_InitPartyMenu);
+  }).catch((e) => {
+    console.error('[party-screen] ChoosePartyMon preload failed', e);
+  });
+}
+
+/** 1:1 décomp `void ChooseMonForMoveRelearner(void)` (party_menu.c:6279-6284) +
+ *  `Task_ChooseMonForMoveRelearner` (:6286-6294) :
+ *  ```c
+ *  InitPartyMenu(PARTY_MENU_TYPE_MOVE_RELEARNER, PARTY_LAYOUT_SINGLE,
+ *      PARTY_ACTION_CHOOSE_AND_CLOSE, FALSE, PARTY_MSG_CHOOSE_MON,
+ *      Task_HandleChooseMonInput, CB2_ChooseMonForMoveRelearner);
+ *  ```
+ *  exitCallback = CB2_ChooseMonForMoveRelearner. Maître des Capacités
+ *  (FallarborTown_MoveRelearnersHouse). ÉCART port : le rendu par-slot
+ *  DisplayPartyPokemonDataForRelearner (ABLE_2/NOT_ABLE_2) n'est pas branché (mode
+ *  CHOOSE_AND_CLOSE = pas de menu d'action ; cosmétique — dette signalée). */
+export function ChooseMonForMoveRelearner(): void {
+  if (_isOpen) return;
+  _menuType = PARTY_MENU_TYPE_MOVE_RELEARNER;
+  _partyAction = PARTY_ACTION_CHOOSE_AND_CLOSE;
+  _slotId = 0;  // keepCursorPos = FALSE
+  void _loadAssets().then(() => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.gMain.state = 0;
+    rt.gMain.savedCallback = CB2_ChooseMonForMoveRelearner;  // gPartyMenu.exitCallback
+    rt.SetMainCallback2(CB2_InitPartyMenu);
+  }).catch((e) => {
+    console.error('[party-screen] ChooseMonForMoveRelearner preload failed', e);
+  });
+}
+
+/** 1:1 décomp `static void CB2_ChooseMonForMoveRelearner(void)` (party_menu.c:6296-6305) :
+ *  ```c
+ *  gSpecialVar_0x8004 = GetCursorSelectionMonId();
+ *  if (gSpecialVar_0x8004 >= PARTY_SIZE) gSpecialVar_0x8004 = PARTY_NOTHING_CHOSEN;
+ *  else gSpecialVar_0x8005 = GetNumberOfRelearnableMoves(&gPlayerParty[gSpecialVar_0x8004]);
+ *  gFieldCallback2 = CB2_FadeFromPartyMenu;
+ *  SetMainCallback2(CB2_ReturnToField);
+ *  ```
+ *  Tourne comme exitCallback après le teardown (cf. BufferMonSelection). Le script
+ *  TeachMoveRelearnerMove (move_relearner.ts) relit VAR_0x8004/0x8005. */
+function CB2_ChooseMonForMoveRelearner(): void {
+  let monId = GetCursorSelectionMonId();
+  if (monId >= PARTY_SIZE) {
+    monId = PARTY_NOTHING_CHOSEN;
+    VarSet(0x8004, monId);  // gSpecialVar_0x8004
+  } else {
+    VarSet(0x8004, monId);  // gSpecialVar_0x8004
+    const mon = gPlayerParty[monId];
+    // gSpecialVar_0x8005 = GetNumberOfRelearnableMoves(&gPlayerParty[monId])
+    VarSet(0x8005, mon ? GetNumberOfRelearnableMoves(mon) : 0);
+  }
+  (globalThis as Record<string, unknown>).gFieldCallback2 = CB2_FadeFromPartyMenu;
+  getRuntime().SetMainCallback2(CB2_ReturnToField_Manual);
+}
+
+/** 1:1 décomp `void MoveDeleterChooseMoveToForget(void)` (party_menu.c:6341-6345) :
+ *  ```c
+ *  ShowPokemonSummaryScreen(SUMMARY_MODE_SELECT_MOVE, gPlayerParty,
+ *      gSpecialVar_0x8004, gPlayerPartyCount - 1, CB2_ReturnToField);
+ *  gFieldCallback = FieldCB_ContinueScriptHandleMusic;
+ *  ```
+ *  Ouvre le résumé en mode « choisir la capacité à oublier » (newMove = MOVE_NONE).
+ *  À la fermeture, le résumé écrit gSpecialVar_0x8005 = slot choisi (ou MAX_MON_MOVES
+ *  si annulé), cf. pokemon_summary_screen.ts (:2225/:2239). Port : le mode SELECT_MOVE
+ *  du résumé est ShowSelectMovePokemonSummaryScreen (précédent move_relearner.ts:555). */
+export function MoveDeleterChooseMoveToForget(): void {
+  ShowSelectMovePokemonSummaryScreen(
+    gPlayerParty, VarGet(0x8004), gPlayerPartyCount - 1,
+    CB2_ReturnToField_Manual, 'MOVE_NONE',
+  );
+  (globalThis as Record<string, unknown>).gFieldCallback = FieldCB_ContinueScriptHandleMusic;
+}
+
+/** 1:1 décomp `void BufferMoveDeleterNicknameAndMove(void)` (party_menu.c:6359-6366) :
+ *  ```c
+ *  struct Pokemon *mon = &gPlayerParty[gSpecialVar_0x8004];
+ *  u16 move = GetMonData(mon, MON_DATA_MOVE1 + gSpecialVar_0x8005);
+ *  GetMonNickname(mon, gStringVar1);
+ *  StringCopy(gStringVar2, gMoveNames[move]);
+ *  ```
+ *  Buffer surnom (gStringVar1) + nom de capacité (gStringVar2) pour le message de
+ *  l'Effaceur. GetMonNickname → un œuf donne gText_EggNickname (cf.
+ *  DisplayPartyPokemonNickname). Frontière charmap : encodeOwText (précédent
+ *  evolution_scene.ts:459 / move_relearner.ts:514). */
+export function BufferMoveDeleterNicknameAndMove(): void {
+  const mon = gPlayerParty[VarGet(0x8004)];
+  if (!mon) return;
+  const move = GetMonData(mon, MON_DATA_MOVE1 + VarGet(0x8005)) as number;
+  // GetMonNickname(mon, gStringVar1) — œuf → gText_EggNickname ("OEUF").
+  StringCopy(gStringVar1, encodeOwText(mon.isEgg ? getString('gText_EggNickname') : mon.nickname));
+  StringCopy(gStringVar2, encodeOwText(gMoveNames[move] ?? ''));
+}
+
+/** 1:1 décomp `void MoveDeleterForgetMove(void)` (party_menu.c:6368-6376) :
+ *  ```c
+ *  SetMonMoveSlot(&gPlayerParty[gSpecialVar_0x8004], MOVE_NONE, gSpecialVar_0x8005);
+ *  RemoveMonPPBonus(&gPlayerParty[gSpecialVar_0x8004], gSpecialVar_0x8005);
+ *  for (i = gSpecialVar_0x8005; i < MAX_MON_MOVES - 1; i++)
+ *      ShiftMoveSlot(&gPlayerParty[gSpecialVar_0x8004], i, i + 1);
+ *  ```
+ *  Efface la capacité au slot 0x8005 puis compacte les slots suivants. */
+export function MoveDeleterForgetMove(): void {
+  const mon = gPlayerParty[VarGet(0x8004)];
+  if (!mon) return;
+  const slot = VarGet(0x8005);
+  SetMonMoveSlot(mon, 0 /* MOVE_NONE */, slot);
+  RemoveMonPPBonus(mon, slot);
+  for (let i = slot; i < 4 - 1; i++)  // MAX_MON_MOVES - 1
+    ShiftMoveSlot(mon, i, i + 1);
+}
+
+/** 1:1 décomp `static void ShiftMoveSlot(struct Pokemon *mon, u8 slotTo, u8 slotFrom)`
+ *  (party_menu.c:6378-6398) : échange les capacités + PP + les 2 bits de PP-Up des
+ *  slots `slotTo`/`slotFrom` (compaction après effacement). gPPUpGetMask[i] = masque
+ *  2 bits du slot i (pokemon.ts). */
+function ShiftMoveSlot(mon: Pokemon, slotTo: number, slotFrom: number): void {
+  const move1 = GetMonData(mon, MON_DATA_MOVE1 + slotTo) as number;
+  const move0 = GetMonData(mon, MON_DATA_MOVE1 + slotFrom) as number;
+  const pp1 = GetMonData(mon, MON_DATA_PP1 + slotTo) as number;
+  const pp0 = GetMonData(mon, MON_DATA_PP1 + slotFrom) as number;
+  let ppBonuses = GetMonData(mon, MON_DATA_PP_BONUSES) as number;
+  const ppBonusMask1 = gPPUpGetMask[slotTo];
+  const ppBonusMove1 = (ppBonuses & ppBonusMask1) >> (slotTo * 2);
+  const ppBonusMask2 = gPPUpGetMask[slotFrom];
+  const ppBonusMove2 = (ppBonuses & ppBonusMask2) >> (slotFrom * 2);
+  ppBonuses &= ~ppBonusMask1;
+  ppBonuses &= ~ppBonusMask2;
+  ppBonuses |= (ppBonusMove1 << (slotFrom * 2)) + (ppBonusMove2 << (slotTo * 2));
+  SetMonData(mon, MON_DATA_MOVE1 + slotTo, move0);
+  SetMonData(mon, MON_DATA_MOVE1 + slotFrom, move1);
+  SetMonData(mon, MON_DATA_PP1 + slotTo, pp0);
+  SetMonData(mon, MON_DATA_PP1 + slotFrom, pp1);
+  SetMonData(mon, MON_DATA_PP_BONUSES, ppBonuses);
 }
 
 /** 1:1 décomp `CB2_ShowPartyMenuForItemUse` (party_menu.c:4225-4274) — entrée

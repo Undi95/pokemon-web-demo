@@ -1130,6 +1130,66 @@ export function GetMoveRelearnerMoves(mon: Pokemon, moves: number[]): number {
   return numMoves;
 }
 
+/** 1:1 décomp `u8 GetNumberOfRelearnableMoves(struct Pokemon *mon)` (pokemon.c:6321) :
+ *  ```c
+ *  u16 species = GetMonData(mon, MON_DATA_SPECIES_OR_EGG, 0);
+ *  u8 level = GetMonData(mon, MON_DATA_LEVEL, 0);
+ *  if (species == SPECIES_EGG) return 0;
+ *  for (i = 0; i < MAX_MON_MOVES; i++) learnedMoves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, 0);
+ *  for (i = 0; i < MAX_LEVEL_UP_MOVES; i++) {
+ *      if (gLevelUpLearnsets[species][i] == LEVEL_UP_END) break;
+ *      moveLevel = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_LV;
+ *      if (moveLevel <= (level << 9)) {
+ *          for (j = 0; j < MAX_MON_MOVES && learnedMoves[j] != moveId; j++) ;
+ *          if (j == MAX_MON_MOVES) {
+ *              for (k = 0; k < numMoves && moves[k] != moveId; k++) ;
+ *              if (k == numMoves) moves[numMoves++] = moveId;
+ *          }
+ *      }
+ *  }
+ *  return numMoves;
+ *  ```
+ *  Variante compte-seul de `GetMoveRelearnerMoves` (même corps, `moves` local jeté).
+ *  Consommé par CB2_ChooseMonForMoveRelearner (party_menu.c:6302) et
+ *  DisplayPartyPokemonDataForRelearner. Adaptation modèle identique à
+ *  GetMoveRelearnerMoves ; garde œuf : notre MON_DATA_SPECIES_OR_EGG renvoie 0 pour
+ *  un œuf (cf. note :294), d'où `species === 0` ⟺ `species == SPECIES_EGG`. */
+export function GetNumberOfRelearnableMoves(mon: Pokemon): number {
+  const learnedMoves: number[] = [];
+  const moves: number[] = [];
+  let numMoves = 0;
+  const species = GetMonData(mon, MON_DATA_SPECIES_OR_EGG) as number;
+  const level = GetMonData(mon, MON_DATA_LEVEL) as number;
+
+  if (species === SPECIES_EGG || species === 0)
+    return 0;
+
+  for (let i = 0; i < 4; i++)  // MAX_MON_MOVES
+    learnedMoves[i] = GetMonData(mon, MON_DATA_MOVE1 + i) as number;
+
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? '';
+  const learnset = getLevelUpLearnset(speciesEnum);
+
+  for (let i = 0; i < MAX_LEVEL_UP_MOVES && i < learnset.length; i++) {
+    if (learnset[i].level > level)
+      continue;
+    const moveId = (resolveDecompConstant(learnset[i].move) as number | undefined) ?? 0;
+
+    let j: number;
+    for (j = 0; j < 4 && learnedMoves[j] !== moveId; j++)  // MAX_MON_MOVES
+      ;
+    if (j === 4) {
+      let k: number;
+      for (k = 0; k < numMoves && moves[k] !== moveId; k++)
+        ;
+      if (k === numMoves)
+        moves[numMoves++] = moveId;
+    }
+  }
+
+  return numMoves;
+}
+
 /** 1:1 décomp `void CreateBoxMon(struct BoxPokemon*, species, level, fixedIV,
  *  hasFixedPersonality, fixedPersonality, otIdType, fixedOtId)` (pokemon.c:2208).
  *  Génère un Pokemon NUMÉRIQUE directement (PID → OT id → données espèce → IVs →
