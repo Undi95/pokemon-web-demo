@@ -91,7 +91,7 @@ import type { WarpKind } from './field_control_avatar';
 // aucun réordonnancement d'éval (anti-TDZ, vérifié find-import-cycle.cjs).
 import { ScriptContext_Snapshot, ScriptContext_Restore } from './script';
 import { TrySpawnTallGrassOnReturnToField } from './field_effect_helpers';
-import { GetOverworldHost, SetReturnToFieldFn } from './engine/overworld-host';
+import { GetOverworldHost, SetReturnToFieldFn, GetMainCB2Fn } from './engine/overworld-host';
 
 // ─── Dépendances des corps CB2_NewGame / CB2_ContinueSavedGame : LAZY (anti-TDZ) ──
 // overworld.ts est évalué TRÈS TÔT au boot. Importer STATIQUEMENT ces ~15 modules
@@ -1433,9 +1433,9 @@ export async function ReturnToFieldFromBattleOrMenu(): Promise<void> {
   // one-shot du retour combat (ReturnFromBattleToOverworld) → l'OW est rendu UNE
   // fois mais FIGÉ (PlayerStep + CameraUpdate sont pilotés par callback2, cf.
   // update() l.728). = le maillon manquant du retour combat voie L (la voie
-  // option-menu le fait déjà via _overworldMainCB2). La caméra se recentre alors
+  // option-menu le fait déjà via GetMainCB2Fn). La caméra se recentre alors
   // sur le joueur (le « 2 cases en haut » = caméra figée non recentrée).
-  GetOverworldHost().rt.gMain.callback2 = (globalThis as Record<string, unknown>)._overworldMainCB2 as (() => void);
+  GetOverworldHost().rt.gMain.callback2 = GetMainCB2Fn() as (() => void);
   // 1:1 décomp `GroundEffect_SpawnOnTallGrass` : si le joueur revient au field
   // (sortie combat/menu) sur une tuile d'herbe haute, ré-affiche l'overlay
   // statique (sinon « dessus » l'herbe sans overlay jusqu'à bouger).
@@ -1525,15 +1525,15 @@ function ReturnToFieldLocal_Manual(): boolean {
 
 /** 1:1 décomp `static void CB2_ReturnToFieldLocal(void)` (overworld.c:1638).
  *  Notre `CB2_Overworld` = `MainCB2_Overworld` (closure OverworldScene via
- *  globalThis._overworldMainCB2). */
+ *  le registre GetMainCB2Fn, cf. engine/overworld-host.ts). */
 export function CB2_ReturnToFieldLocal_Manual(): void {
   if (ReturnToFieldLocal_Manual()) {
     const rt = getRuntime();
-    const cb2 = (globalThis as Record<string, unknown>)._overworldMainCB2 as (() => void) | undefined;
+    const cb2 = GetMainCB2Fn();
     if (typeof cb2 === 'function') {
       rt.SetMainCallback2(cb2);
     } else {
-      console.error('[CB2_ReturnToFieldLocal_Manual] _overworldMainCB2 not exposed');
+      console.error('[CB2_ReturnToFieldLocal_Manual] MainCB2_Overworld non enregistré');
     }
   }
 }

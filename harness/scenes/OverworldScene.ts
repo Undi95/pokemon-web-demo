@@ -21,7 +21,7 @@ import { setGlobalRuntime, resetObjAllocations, ResetTasks, ResetPaletteFade, Fr
 import { startM4aNativeAudio } from '../m4a/native';
 import { ResetSpriteData } from '../../src/sprite';
 import { CB2_NewGame, CB2_ContinueSavedGame, primeFieldInitDeps } from '../../src/overworld';
-import { SetOverworldHost } from '../../src/engine/overworld-host';
+import { SetOverworldHost, SetMainCB2Fn } from '../../src/engine/overworld-host';
 // Boot intro réutilisable (host unifié intro+OW — LE boot par défaut depuis 2026-07-10).
 import { registerIntroSpriteCallbacks, bootIntroSequence } from '../boot/intro-host';
 import { exposeGbaGlobals } from '../runtime/gba-global-scope';
@@ -882,7 +882,8 @@ export class OverworldScene extends Phaser.Scene {
       // CB2_ReturnToFieldLocal_Manual (option-menu-return.ts) doit pouvoir
       // restaurer ce closure quand le state machine décomp completes (= 1:1
       // `SetMainCallback2(CB2_Overworld)` après ReturnToFieldLocal returns TRUE).
-      (globalThis as Record<string, unknown>)._overworldMainCB2 = MainCB2_Overworld;
+      // Registre typé overworld-host (remplace l'ex-pont globalThis._overworldMainCB2).
+      SetMainCB2Fn(MainCB2_Overworld);
       // Enregistre cette scène comme HOST overworld. La rustine de restauration
       // (ex-`_restoreOverworldFromMenu` posée ici, = 1:1 CB2_ReturnToField) a été
       // rapatriée dans src/overworld.ts (`ReturnToFieldFromBattleOrMenu`) ; elle

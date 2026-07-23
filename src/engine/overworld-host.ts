@@ -49,3 +49,19 @@ export function GetReturnToFieldFn(): () => Promise<void> {
   if (!_returnToFieldFn) throw new Error('ReturnToFieldFromBattleOrMenu non enregistré');
   return _returnToFieldFn;
 }
+
+// ─── MainCB2_Overworld (closure locale de bootOverworld, non importable) ───
+// Même pattern registre (remplace l'ex-pont globalThis._overworldMainCB2).
+// Getter SANS throw : les consommateurs (CB2_ReturnToFieldLocal_Manual) gardent
+// leur propre garde console.error historique.
+let _mainCB2Fn: (() => void) | null = null;
+
+/** Enregistre MainCB2_Overworld (appelé dans bootOverworld, OverworldScene). */
+export function SetMainCB2Fn(fn: () => void): void {
+  _mainCB2Fn = fn;
+}
+
+/** Récupère MainCB2_Overworld, ou undefined si le boot field n'a pas eu lieu. */
+export function GetMainCB2Fn(): (() => void) | undefined {
+  return _mainCB2Fn ?? undefined;
+}
