@@ -143,7 +143,7 @@ import {
   GetAdjustedInitialDirection,
   GetDynamicWarp,
 } from '../../src/overworld';
-import { getExitTaskKindFor, getMetatileBehaviorAtPlayerPos, FillPalBufferWhite } from '../../src/field_screen_effect';
+import { getExitTaskKindFor, getMetatileBehaviorAtPlayerPos, FillPalBufferWhite, FieldCB_SpinEnterWarp } from '../../src/field_screen_effect';
 // Fondu grotte↔extérieur 1:1 (WarpFadeIn/OutScreen, field_screen_effect.c:74/100) :
 // GetMapPairFadeTo/FromType (fldeff_flash.ts) choisit WHITE vs BLACK. Import scène (sink) —
 // PAS depuis overworld (cycle statique overworld↔fldeff_flash via field_effect_helpers).
@@ -1848,8 +1848,14 @@ export class OverworldScene extends Phaser.Scene {
       // exit metatile — c'est gFieldCallback = FieldCB_FallWarpExit (le joueur tombe du
       // haut de l'écran + secousse caméra), joué en Phase 5 ci-dessous à la place de
       // l'exit-task. Même traitement que 'fly'.
-      const exitKind: ReturnType<typeof getExitTaskKindFor> | 'fly' | 'fall' =
-        kind === 'fly' ? 'fly' : kind === 'fall' ? 'fall' : getExitTaskKindFor(postWarpBehavior);
+      // kind 'aqua_teleport' (DoTeleportTileWarp, field_screen_effect.c:549) : arrivée =
+      // gFieldCallback = FieldCB_SpinEnterWarp (le joueur descend en tournoyant), jouée en
+      // Phase 5. Même traitement que 'fly'/'fall'.
+      const exitKind: ReturnType<typeof getExitTaskKindFor> | 'fly' | 'fall' | 'spin_enter' =
+        kind === 'fly' ? 'fly'
+        : kind === 'fall' ? 'fall'
+        : kind === 'aqua_teleport' ? 'spin_enter'
+        : getExitTaskKindFor(postWarpBehavior);
       console.log(`[executeWarp] exit task kind=${exitKind}`);
       // 1:1 décomp `Task_ExitDoor` case 0 / `Task_ExitNonAnimDoor` case 0 :
       //   SetPlayerVisibility(FALSE);
@@ -1997,6 +2003,13 @@ export class OverworldScene extends Phaser.Scene {
       else if (exitKind === 'fall') {
         FieldCB_FallWarpExit();
       }
+      // 1:1 arrivée TÉLÉPORT (kind 'aqua_teleport') : gFieldCallback = FieldCB_SpinEnterWarp
+      // (field_screen_effect.c:298) — Task_SpinEnterWarp fait descendre le joueur en
+      // tournoyant (DoPlayerSpinEntrance) puis unlock/unfreeze à la fin. Comme 'fly'/'fall',
+      // la scène ne touche pas au lock/visibilité dans le finally (le task les possède).
+      else if (exitKind === 'spin_enter') {
+        FieldCB_SpinEnterWarp();
+      }
       // exitKind === 'none' (= MB_LADDER, MB_*_ARROW_WARP, etc.) :
       // 1:1 décomp `Task_ExitNonDoor` (field_screen_effect.c:404-421) :
       //   case 0 : FreezeObjectEvents + LockPlayerFieldControls
@@ -2019,7 +2032,7 @@ export class OverworldScene extends Phaser.Scene {
       // (Task_FlyIntoMap / Task_FallWarpFieldEffect, gTasks, async) possède le lock ET
       // la visibilité (1:1 : le joueur reste invisible jusqu'à la dépose par l'oiseau /
       // l'atterrissage ; unlock/unfreeze à la fin du FLDEFF).
-      if (kind !== 'fly' && kind !== 'fall') {
+      if (kind !== 'fly' && kind !== 'fall' && kind !== 'aqua_teleport') {
         UnlockPlayerFieldControls();
         SetPlayerVisibility(this.rt, true);
       }

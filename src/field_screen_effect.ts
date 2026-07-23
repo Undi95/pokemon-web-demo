@@ -44,10 +44,11 @@
 import { FadeScreen, FADE_FROM_BLACK, FADE_FROM_WHITE, IsWeatherNotFadingIn } from './field_weather';
 import {
   FillPalBufferBlack, FillPalBufferWhite, CpuFastSet, LoadPalette,
-  FuncIsActiveTask, FindTaskIdByFunc, BgDmaFill,
+  FuncIsActiveTask, FindTaskIdByFunc, BgDmaFill, PlaySE,
 } from '../harness/runtime/decomp-globals';
 import { CreateTask, DestroyTask, gTasks } from './task';
-import { LockPlayerFieldControls, ScriptContext_Enable } from './script';
+import { LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_Enable } from './script';
+import { SE_WARP_OUT } from '../include/constants/songs';
 import { MetatileBehavior_IsDoor, MetatileBehavior_IsNonAnimDoor } from './metatile_behavior';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './fieldmap';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
@@ -73,6 +74,22 @@ function Overworld_PlaySpecialMapMusic(): void {
   if (!_owPlaySpecialMapMusic) { console.error('[field_screen_effect] Overworld_PlaySpecialMapMusic appelée avant résolution de l\'import overworld'); return; }
   _owPlaySpecialMapMusic();
 }
+// ── ANTI-TDZ : DoPlayerSpinEntrance/IsPlayerSpinEntranceActive (field_player_avatar) +
+// FreezeObjectEvents/UnfreezeObjectEvents (event_object_movement) pour Task_SpinEnterWarp
+// (arrivée téléport / Repaire Aqua). Import STATIQUE de field_player_avatar tire son
+// sous-arbre d'éval tôt (TDZ, cf. commentaire SignalWaitState:88) → capture DIFFÉRÉE.
+let _DoPlayerSpinEntrance: (() => void) | null = null;
+let _IsPlayerSpinEntranceActive: (() => boolean) | null = null;
+let _FreezeObjectEvents: (() => void) | null = null;
+let _UnfreezeObjectEvents: (() => void) | null = null;
+import('./field_player_avatar').then((m) => {
+  _DoPlayerSpinEntrance = m.DoPlayerSpinEntrance;
+  _IsPlayerSpinEntranceActive = m.IsPlayerSpinEntranceActive;
+}).catch((e) => console.error('[field_screen_effect] import field_player_avatar (spin) a échoué', e));
+import('./event_object_movement').then((m) => {
+  _FreezeObjectEvents = m.FreezeObjectEvents;
+  _UnfreezeObjectEvents = m.UnfreezeObjectEvents;
+}).catch((e) => console.error('[field_screen_effect] import event_object_movement (freeze) a échoué', e));
 import { SetGpuReg, GetGpuReg } from './gpu_regs';
 import { SetGpuRegBits, ClearGpuRegBits } from '../harness/runtime/decomp-helpers';
 import { ScheduleBgCopyTilemapToVram } from './window';
@@ -635,6 +652,46 @@ export function DoFallWarp(): void {
 }
 // Pont globalThis (lu par specials-registry, anti-cycle) — cf. section ci-dessous.
 (globalThis as Record<string, unknown>).__DoFallWarp = DoFallWarp;
+
+// ─── Spin-enter warp (téléport / Repaire Aqua) — 1:1 field_screen_effect.c:298/1000 ─
+// #define tState data[0]. Le joueur descend en tournoyant sur la tuile d'arrivée.
+
+/** 1:1 décomp `static void Task_SpinEnterWarp(u8 taskId)` (field_screen_effect.c:1000). */
+function Task_SpinEnterWarp(taskId: number): void {
+  switch (gTasks[taskId].data[0]) {   // tState
+    case 0:
+      _FreezeObjectEvents?.();
+      LockPlayerFieldControls();
+      _DoPlayerSpinEntrance?.();
+      gTasks[taskId].data[0]++;
+      break;
+    case 1:
+      if (WaitForWeatherFadeIn() && _IsPlayerSpinEntranceActive?.() !== true) {
+        _UnfreezeObjectEvents?.();
+        UnlockPlayerFieldControls();
+        DestroyTask(taskId);
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `static void FieldCB_SpinEnterWarp(void)` (field_screen_effect.c:298) :
+ *    Overworld_PlaySpecialMapMusic();
+ *    WarpFadeInScreen();
+ *    PlaySE(SE_WARP_OUT);
+ *    CreateTask(Task_SpinEnterWarp, 10);
+ *    LockPlayerFieldControls();
+ *  ADAPTATION port : `WarpFadeInScreen` est joué par executeWarp Phase 4 (précédent
+ *  FieldCallback_FlyIntoMap, port-adapté SANS re-fade) → on ne rejoue PAS le fade ici
+ *  (éviter le double-fade). Posé comme entrée d'arrivée pour le kind 'aqua_teleport'. */
+export function FieldCB_SpinEnterWarp(): void {
+  Overworld_PlaySpecialMapMusic();
+  PlaySE(SE_WARP_OUT);
+  _createTask(Task_SpinEnterWarp, 10);
+  LockPlayerFieldControls();
+}
+// Exposé pour câblage 'aqua_teleport' (chemin warp verrouillé — cf. OverworldScene Phase 5).
+(globalThis as Record<string, unknown>).__FieldCB_SpinEnterWarp = FieldCB_SpinEnterWarp;
 
 // ─── Ponts globalThis anti-cycle (lus par overworld/scrcmd sans import statique) ─
 // overworld.ts::InitCurrentFlashLevelScanlineEffect (1:1 overworld.c:1794) appelle ces
