@@ -1906,11 +1906,18 @@ export function _CtxReturnToListWithRebuild(taskId: number): void {
   if (!rt) return;
   const task = rt.gTasks[taskId];
   if (!task) return;
-  // Rebuild la liste via DestroyListMenuTask + LoadBagItemListBuffers +
-  // ListMenuInit (= 1:1 décomp DoItemSwap restore pattern).
+  // Rebuild la liste 1:1 décomp `CloseItemMessage` (item_menu.c:1180-1187) /
+  // `Task_RemoveItemFromBag` (:1906-1912) : DestroyListMenuTask →
+  // UpdatePocketItemList → UpdatePocketListPosition → LoadBagItemListBuffers →
+  // ListMenuInit → ReturnToItemList. UpdatePocketItemList (Compact/Sort +
+  // recompte numItemStacks) et UpdatePocketListPosition (clamp curseur) sont
+  // OBLIGATOIRES : sans elles, le retrait du dernier objet d'une pile laisse un
+  // slot fantôme "????×0" (VIS-13).
   const sr = DestroyListMenuTask(task.data[T_LIST_TASK_ID]);
   gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
   gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+  UpdatePocketItemList(gBagPosition.pocket);      // 1:1 :1182 / :1907
+  UpdatePocketListPosition(gBagPosition.pocket);  // 1:1 :1183 / :1908
   LoadBagItemListBuffers(gBagPosition.pocket);
   task.data[T_LIST_TASK_ID] = ListMenuInitForBag(
     gBagPosition.scrollPosition[gBagPosition.pocket],
