@@ -1921,7 +1921,251 @@ const sWhiteBarsFade_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
   WhiteBarsFade_Init, WhiteBarsFade_StartBars, WhiteBarsFade_WaitBars, WhiteBarsFade_BlendToBlack, WhiteBarsFade_End,
 ];
 
+//------------------------------------------------------------------------
+// FAMILLE PatternWeave « logo/légendaire » (battle_transition.c) — VIS-23
+//------------------------------------------------------------------------
+// Task_Aqua/Magma/Regice/Registeel/Regirock (:1345-1370) : MÊME tronc PatternWeave
+// que BigPokeball (Blend1/Blend2/FinishAppear/CircularMask déjà portés), seuls
+// diffèrent le tileset/tilemap/palette chargés et (Aqua/Magma) l'ajout de
+// FramesCountdown. Assets extraits présents dans public/decomp/em/battle_transitions/
+// (team_aqua/team_magma .png+.bin+evil_team.pal ; regis.png + regi{ce,steel,rock}.bin+.pal).
+// Chargement fail-open IDENTIQUE à _ensureBigPokeballAssets (asset KO → BG vide mais la
+// state-machine timer/blend/mask se termine SANS gel). Câblés dans sTasks_Main plus bas.
+// DETTE : rendu visuel 1:1 à valider EN JEU (session partagée) — machinerie partagée
+// prouvée (BigPokeball) mais ces assets n'ont pas encore été A/B en jeu.
+
+/** 1:1 `FramesCountdown` (:1672) : décrémente tEndDelay (data[8]), avance à 0. */
+function FramesCountdown(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (--d[8] === 0) d[0]++;
+  return false;
+}
+
+// team_aqua / team_magma : tileset (.4bpp.lz → png décompressé) + tilemap (.bin.lz →
+// .bin décompressé) + evil_team.pal. Même voie tolérante que BigPokeball.
+let _teamAquaTiles: Uint8Array | null = null;
+let _teamAquaMap: Uint16Array | null = null;
+let _teamMagmaTiles: Uint8Array | null = null;
+let _teamMagmaMap: Uint16Array | null = null;
+let _evilTeamPal: Uint16Array | null = null;
+let _teamAquaReady = false;
+let _teamMagmaReady = false;
+async function _ensureTeamAquaAssets(): Promise<void> {
+  if (_teamAquaReady) return;
+  try {
+    const { loadGbaPal } = await import('../harness/gba/png-loader');
+    const gfx = await loadIndexedPng('/decomp/em/battle_transitions/team_aqua.png');
+    _teamAquaTiles = gfx.charData;
+    const resp = await fetch('/decomp/em/battle_transitions/team_aqua.bin');
+    if (!resp.ok) throw new Error(`team_aqua.bin HTTP ${resp.status}`);
+    _teamAquaMap = new Uint16Array(await resp.arrayBuffer());
+    _evilTeamPal = await loadGbaPal('/decomp/em/battle_transitions/evil_team.pal');
+  } catch (e) {
+    console.error('[battle_transition] _ensureTeamAquaAssets KO — transition Aqua dégradée SANS gel', e);
+  } finally {
+    _teamAquaReady = true;
+  }
+}
+async function _ensureTeamMagmaAssets(): Promise<void> {
+  if (_teamMagmaReady) return;
+  try {
+    const { loadGbaPal } = await import('../harness/gba/png-loader');
+    const gfx = await loadIndexedPng('/decomp/em/battle_transitions/team_magma.png');
+    _teamMagmaTiles = gfx.charData;
+    const resp = await fetch('/decomp/em/battle_transitions/team_magma.bin');
+    if (!resp.ok) throw new Error(`team_magma.bin HTTP ${resp.status}`);
+    _teamMagmaMap = new Uint16Array(await resp.arrayBuffer());
+    _evilTeamPal = await loadGbaPal('/decomp/em/battle_transitions/evil_team.pal');
+  } catch (e) {
+    console.error('[battle_transition] _ensureTeamMagmaAssets KO — transition Magma dégradée SANS gel', e);
+  } finally {
+    _teamMagmaReady = true;
+  }
+}
+
+// regis : tileset partagé (regis.png .4bpp, 53 tiles, non compressé) + 3 tilemaps
+// (INCBIN .bin, 0x500 = 640 u16) + 3 palettes .gbapal (bank 15).
+let _regisTiles: Uint8Array | null = null;
+let _regiceMap: Uint16Array | null = null;
+let _registeelMap: Uint16Array | null = null;
+let _regirockMap: Uint16Array | null = null;
+let _regicePal: Uint16Array | null = null;
+let _registeelPal: Uint16Array | null = null;
+let _regirockPal: Uint16Array | null = null;
+let _regiReady = false;
+async function _ensureRegiAssets(): Promise<void> {
+  if (_regiReady) return;
+  try {
+    const { loadGbaPal } = await import('../harness/gba/png-loader');
+    const gfx = await loadIndexedPng('/decomp/em/battle_transitions/regis.png');
+    _regisTiles = gfx.charData;
+    const readBin = async (name: string): Promise<Uint16Array> => {
+      const resp = await fetch(`/decomp/em/battle_transitions/${name}`);
+      if (!resp.ok) throw new Error(`${name} HTTP ${resp.status}`);
+      return new Uint16Array(await resp.arrayBuffer());
+    };
+    _regiceMap = await readBin('regice.bin');
+    _registeelMap = await readBin('registeel.bin');
+    _regirockMap = await readBin('regirock.bin');
+    _regicePal = await loadGbaPal('/decomp/em/battle_transitions/regice.pal');
+    _registeelPal = await loadGbaPal('/decomp/em/battle_transitions/registeel.pal');
+    _regirockPal = await loadGbaPal('/decomp/em/battle_transitions/regirock.pal');
+  } catch (e) {
+    console.error('[battle_transition] _ensureRegiAssets KO — transitions Regi dégradées SANS gel', e);
+  } finally {
+    _regiReady = true;
+  }
+}
+
+/** Écrit une palette (16 couleurs) dans gPlttBufferFaded, bank 15 (= LoadPalette
+ *  BG_PLTT_ID(15)), 1:1 le pattern BigPokeball_Init. */
+function _loadTransitionPalBank15(pal: Uint16Array | null): void {
+  const rtPal = (getRuntime() as unknown as { gPlttBufferFaded?: Uint16Array }).gPlttBufferFaded;
+  if (rtPal && pal) rtPal.set(pal.subarray(0, 16), 15 * 16);
+}
+
+/** 1:1 `Aqua_Init` (:1398). tEndDelay=60 + tileset + evil_team pal (bank 15). */
+function Aqua_Init(taskId: number): boolean {
+  if (!_teamAquaReady) {
+    _ensureTeamAquaAssets().catch((e) => console.error('[battle_transition] assets Aqua KO', e));
+    return false;
+  }
+  const d = gTasks[taskId].data;
+  d[8] = 60;   // tEndDelay
+  InitPatternWeaveTransition(taskId);
+  const rt = _coreRt();
+  if (rt) {
+    rt.gba.bg(0).tilemap.fill(0);   // CpuFill16(0, tilemap, BG_SCREEN_SIZE)
+    if (_teamAquaTiles) rt.gba.bg(0).vram.set(_teamAquaTiles, 0);   // LZ77UnCompVram tileset
+    _loadTransitionPalBank15(_evilTeamPal);
+  }
+  d[0]++;
+  return false;
+}
+
+/** 1:1 `Aqua_SetGfx` (:1477). Tilemap (LZ décompressé) + SetSinWave. */
+function Aqua_SetGfx(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const rt = _coreRt();
+  if (rt && _teamAquaMap) {
+    const tilemap = rt.gba.bg(0).tilemap;
+    tilemap.set(_teamAquaMap.subarray(0, Math.min(_teamAquaMap.length, tilemap.length)), 0);
+  }
+  _setSinWave(gScanlineEffectRegBuffers[0], 0, d[4], 132, d[5], DISPLAY_HEIGHT);
+  d[0]++;
+  return false;
+}
+
+/** 1:1 `Magma_Init` (:1413). */
+function Magma_Init(taskId: number): boolean {
+  if (!_teamMagmaReady) {
+    _ensureTeamMagmaAssets().catch((e) => console.error('[battle_transition] assets Magma KO', e));
+    return false;
+  }
+  const d = gTasks[taskId].data;
+  d[8] = 60;
+  InitPatternWeaveTransition(taskId);
+  const rt = _coreRt();
+  if (rt) {
+    rt.gba.bg(0).tilemap.fill(0);
+    if (_teamMagmaTiles) rt.gba.bg(0).vram.set(_teamMagmaTiles, 0);
+    _loadTransitionPalBank15(_evilTeamPal);
+  }
+  d[0]++;
+  return false;
+}
+
+/** 1:1 `Magma_SetGfx` (:1489). */
+function Magma_SetGfx(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const rt = _coreRt();
+  if (rt && _teamMagmaMap) {
+    const tilemap = rt.gba.bg(0).tilemap;
+    tilemap.set(_teamMagmaMap.subarray(0, Math.min(_teamMagmaMap.length, tilemap.length)), 0);
+  }
+  _setSinWave(gScanlineEffectRegBuffers[0], 0, d[4], 132, d[5], DISPLAY_HEIGHT);
+  d[0]++;
+  return false;
+}
+
+/** 1:1 `Regi_Init` (:1428). tEndDelay=60 + tileset partagé regis (CpuCopy16 0x2000). */
+function Regi_Init(taskId: number): boolean {
+  if (!_regiReady) {
+    _ensureRegiAssets().catch((e) => console.error('[battle_transition] assets Regi KO', e));
+    return false;
+  }
+  const d = gTasks[taskId].data;
+  d[8] = 60;   // tEndDelay (posé mais inutilisé : sRegi*_Funcs n'ont pas FramesCountdown — 1:1)
+  InitPatternWeaveTransition(taskId);
+  const rt = _coreRt();
+  if (rt) {
+    rt.gba.bg(0).tilemap.fill(0);
+    if (_regisTiles) rt.gba.bg(0).vram.set(_regisTiles, 0);   // CpuCopy16(sRegis_Tileset, tileset, 0x2000)
+  }
+  d[0]++;
+  return false;
+}
+
+/** SetGfx commun Regi (:1501/1514/1527) : LoadPalette(pal, bank15) + CpuCopy16 tilemap
+ *  (0x500 = 640 u16) + SetSinWave. Le tilemap RAW porte déjà les bits pal 15. */
+function _regiSetGfx(taskId: number, map: Uint16Array | null, pal: Uint16Array | null): boolean {
+  const d = gTasks[taskId].data;
+  _loadTransitionPalBank15(pal);
+  const rt = _coreRt();
+  if (rt && map) {
+    const tilemap = rt.gba.bg(0).tilemap;
+    const n = Math.min(0x500 / 2, map.length, tilemap.length);   // CpuCopy16 0x500 octets
+    tilemap.set(map.subarray(0, n), 0);
+  }
+  _setSinWave(gScanlineEffectRegBuffers[0], 0, d[4], 132, d[5], DISPLAY_HEIGHT);
+  d[0]++;
+  return false;
+}
+/** 1:1 `Regice_SetGfx` (:1501). */
+function Regice_SetGfx(taskId: number): boolean { return _regiSetGfx(taskId, _regiceMap, _regicePal); }
+/** 1:1 `Registeel_SetGfx` (:1514). */
+function Registeel_SetGfx(taskId: number): boolean { return _regiSetGfx(taskId, _registeelMap, _registeelPal); }
+/** 1:1 `Regirock_SetGfx` (:1527). */
+function Regirock_SetGfx(taskId: number): boolean { return _regiSetGfx(taskId, _regirockMap, _regirockPal); }
+
+/** 1:1 `sAqua_Funcs` (:420). */
+const sAqua_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  Aqua_Init, Aqua_SetGfx, PatternWeave_Blend1, PatternWeave_Blend2, PatternWeave_FinishAppear,
+  FramesCountdown, PatternWeave_CircularMask,
+];
+/** 1:1 `sMagma_Funcs` (:430). */
+const sMagma_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  Magma_Init, Magma_SetGfx, PatternWeave_Blend1, PatternWeave_Blend2, PatternWeave_FinishAppear,
+  FramesCountdown, PatternWeave_CircularMask,
+];
+/** 1:1 `sRegice_Funcs` (:451). */
+const sRegice_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  Regi_Init, Regice_SetGfx, PatternWeave_Blend1, PatternWeave_Blend2, PatternWeave_FinishAppear,
+  PatternWeave_CircularMask,
+];
+/** 1:1 `sRegisteel_Funcs` (:462). */
+const sRegisteel_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  Regi_Init, Registeel_SetGfx, PatternWeave_Blend1, PatternWeave_Blend2, PatternWeave_FinishAppear,
+  PatternWeave_CircularMask,
+];
+/** 1:1 `sRegirock_Funcs` (:471). */
+const sRegirock_Funcs: ReadonlyArray<(taskId: number) => boolean> = [
+  Regi_Init, Regirock_SetGfx, PatternWeave_Blend1, PatternWeave_Blend2, PatternWeave_FinishAppear,
+  PatternWeave_CircularMask,
+];
+/** 1:1 `Task_Aqua`/`Task_Magma`/`Task_Regi*` (:1345-1370). */
+function Task_Aqua(taskId: number): void { while (sAqua_Funcs[gTasks[taskId].data[0]](taskId)); }
+function Task_Magma(taskId: number): void { while (sMagma_Funcs[gTasks[taskId].data[0]](taskId)); }
+function Task_Regice(taskId: number): void { while (sRegice_Funcs[gTasks[taskId].data[0]](taskId)); }
+function Task_Registeel(taskId: number): void { while (sRegisteel_Funcs[gTasks[taskId].data[0]](taskId)); }
+function Task_Regirock(taskId: number): void { while (sRegirock_Funcs[gTasks[taskId].data[0]](taskId)); }
+
 // ─── Câblage sTasks_Main (lancés par Transition_StartMain via __battleTransitionCore) ─
+sTasks_Main[ENUM_B_1.B_TRANSITION_AQUA] = Task_Aqua;
+sTasks_Main[ENUM_B_1.B_TRANSITION_MAGMA] = Task_Magma;
+sTasks_Main[ENUM_B_1.B_TRANSITION_REGICE] = Task_Regice;
+sTasks_Main[ENUM_B_1.B_TRANSITION_REGISTEEL] = Task_Registeel;
+sTasks_Main[ENUM_B_1.B_TRANSITION_REGIROCK] = Task_Regirock;
 sTasks_Main[ENUM_B_1.B_TRANSITION_BIG_POKEBALL] = Task_BigPokeball;
 sTasks_Main[ENUM_B_1.B_TRANSITION_CLOCKWISE_WIPE] = Task_ClockwiseWipe;
 sTasks_Main[ENUM_B_1.B_TRANSITION_RIPPLE] = Task_Ripple;

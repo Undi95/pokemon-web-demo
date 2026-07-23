@@ -72,7 +72,7 @@ import {
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
   REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
 } from '../harness/runtime/decomp-runtime';
-import { callUpdateObjectEventsForCameraUpdate, callAddCameraObject } from './engine/field/field-globals';
+import { callUpdateObjectEventsForCameraUpdate, callAddCameraObject, callRotatingGatePuzzleCameraUpdate } from './engine/field/field-globals';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
@@ -986,6 +986,10 @@ export function CameraUpdate(): void {
         void e;
       }
     }
+    // 1:1 décomp `RotatingGatePuzzleCameraUpdate(deltaX, deltaY)` (field_camera.c:417).
+    // Crée/détruit les sprites de portes tournantes entrant/sortant du viewport
+    // (arène Fortree / Trick House). Bridge anti-cycle via field-globals.
+    callRotatingGatePuzzleCameraUpdate(deltaX, deltaY);
     // Dette R3 doc : 1:1 décomp `SetBerryTreesSeen()` (berry.c:1322) cross-border :
     // iter gObjectEvents avec movementType MOVEMENT_TYPE_BERRY_TREE_GROWTH dans
     // rect cam (left .. left+14, top+3 .. top+3+8) → AllowBerryTreeGrowth(treeId).

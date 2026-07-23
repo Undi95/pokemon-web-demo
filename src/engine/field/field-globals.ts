@@ -43,6 +43,11 @@ interface FieldGlobals {
   addCameraObject: ((followSpriteId: number) => number) | null;
   /** 1:1 décomp `CameraObjectReset(void)` (event_object_movement.c:2286). */
   cameraObjectReset: (() => void) | null;
+  /** 1:1 décomp `RotatingGatePuzzleCameraUpdate(s16, s16)` (rotating_gate.c:942).
+   *  Appelé par CameraUpdate (field_camera.c:417) au tile boundary pour créer/
+   *  détruire les sprites de portes entrant/sortant du viewport. Bridge anti-cycle
+   *  (field-camera.ts ↔ rotating_gate.ts). */
+  rotatingGatePuzzleCameraUpdate: ((deltaX: number, deltaY: number) => void) | null;
 }
 
 const _registry: FieldGlobals = {
@@ -52,6 +57,7 @@ const _registry: FieldGlobals = {
   updateObjectEventsForCameraUpdate: null,
   addCameraObject: null,
   cameraObjectReset: null,
+  rotatingGatePuzzleCameraUpdate: null,
 };
 
 // ─── Setup (= called by object-events.ts module init) ──────────────────────
@@ -106,5 +112,18 @@ export function _registerCameraObjectHelpers(
  *  Retourne MAX_SPRITES(64) si pas registered (= boot) ou échec création. */
 export function callAddCameraObject(followSpriteId: number): number {
   return _registry.addCameraObject?.(followSpriteId) ?? 64;
+}
+
+/** Register RotatingGatePuzzleCameraUpdate. À call par rotating_gate.ts au module-level. */
+export function _registerRotatingGatePuzzleCameraUpdate(
+  fn: (deltaX: number, deltaY: number) => void,
+): void {
+  _registry.rotatingGatePuzzleCameraUpdate = fn;
+}
+
+/** Call `RotatingGatePuzzleCameraUpdate(deltaX, deltaY)` depuis CameraUpdate (field-camera.ts)
+ *  au tile boundary. No-op si pas registered (= boot / pas de puzzle sur la map). */
+export function callRotatingGatePuzzleCameraUpdate(deltaX: number, deltaY: number): void {
+  _registry.rotatingGatePuzzleCameraUpdate?.(deltaX, deltaY);
 }
 

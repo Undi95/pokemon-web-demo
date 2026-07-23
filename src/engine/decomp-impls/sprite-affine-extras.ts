@@ -204,3 +204,130 @@ registerAffineAnimTable('sAffineAnim_BallRotate', {
     'sAffineAnim_BallRotate_4',      // BALL_AFFINE_ANIM_4
   ],
 });
+
+// ─── Rotating gates (1:1 décomp src/rotating_gate.c:305-463) ─────────────────
+// Puzzle portes tournantes (arène Fortree badge 6 + Trick House puzzle 6). Table
+// `sSpriteAffineAnimTable_RotatingGate` (rotating_gate.c:441-463), 20 anims :
+//   0-3   : Rotated0/90/180/270  — hold statique de l'orientation courante (FRAME + JUMP(0)).
+//   4-7   : RotatingAnticlockwise{360to270,90to0,180to90,270to180}   (vitesse normale, ±4/frame×16).
+//   8-11  : RotatingClockwise{0to90,90to180,180to270,270to360}       (vitesse normale, ∓4/frame×16).
+//   12-15 : Anticlockwise …Faster (vélo/dash : +8/frame×8).
+//   16-19 : Clockwise …Faster    (vélo/dash : -8/frame×8).
+// Le 1er FRAME (duration 0) pose scale 0x100 + rotation de départ ABSOLUE ; le 2e FRAME
+// (0,0,Δrot,durée) accumule la rotation en relatif jusqu'à END (cf. ApplyAffineAnimFrame).
+
+// rotating_gate.c:305-327 — Rotated0/90/180/270 : FRAME(0x100,0x100,rot,0) + JUMP(0) = hold.
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Rotated0', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 0, duration: 0 }],
+  terminator: 'JUMP', jumpTarget: 0,
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Rotated90', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: -64, duration: 0 }],
+  terminator: 'JUMP', jumpTarget: 0,
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Rotated180', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: -128, duration: 0 }],
+  terminator: 'JUMP', jumpTarget: 0,
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Rotated270', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 64, duration: 0 }],
+  terminator: 'JUMP', jumpTarget: 0,
+});
+
+// rotating_gate.c:357-383 — Anticlockwise (normal, +4/frame × 16 = +64 = 1 quart de tour).
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Anticlockwise360to270', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 0, duration: 0 }, { xScale: 0, yScale: 0, rotation: 4, duration: 16 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Anticlockwise90to0', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: -64, duration: 0 }, { xScale: 0, yScale: 0, rotation: 4, duration: 16 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Anticlockwise180to90', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: -128, duration: 0 }, { xScale: 0, yScale: 0, rotation: 4, duration: 16 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Anticlockwise270to180', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 64, duration: 0 }, { xScale: 0, yScale: 0, rotation: 4, duration: 16 }],
+  terminator: 'END',
+});
+
+// rotating_gate.c:329-355 — Clockwise (normal, -4/frame × 16 = -64).
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Clockwise0to90', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 0, duration: 0 }, { xScale: 0, yScale: 0, rotation: -4, duration: 16 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Clockwise90to180', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: -64, duration: 0 }, { xScale: 0, yScale: 0, rotation: -4, duration: 16 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Clockwise180to270', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: -128, duration: 0 }, { xScale: 0, yScale: 0, rotation: -4, duration: 16 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Clockwise270to360', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 64, duration: 0 }, { xScale: 0, yScale: 0, rotation: -4, duration: 16 }],
+  terminator: 'END',
+});
+
+// rotating_gate.c:413-439 — Anticlockwise Faster (+8/frame × 8 = +64).
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Anticlockwise360to270Faster', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 0, duration: 0 }, { xScale: 0, yScale: 0, rotation: 8, duration: 8 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Anticlockwise90to0Faster', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: -64, duration: 0 }, { xScale: 0, yScale: 0, rotation: 8, duration: 8 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Anticlockwise180to90Faster', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: -128, duration: 0 }, { xScale: 0, yScale: 0, rotation: 8, duration: 8 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Anticlockwise270to180Faster', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 64, duration: 0 }, { xScale: 0, yScale: 0, rotation: 8, duration: 8 }],
+  terminator: 'END',
+});
+
+// rotating_gate.c:385-411 — Clockwise Faster (-8/frame × 8 = -64).
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Clockwise0to90Faster', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 0, duration: 0 }, { xScale: 0, yScale: 0, rotation: -8, duration: 8 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Clockwise90to180Faster', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: -64, duration: 0 }, { xScale: 0, yScale: 0, rotation: -8, duration: 8 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Clockwise180to270Faster', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: -128, duration: 0 }, { xScale: 0, yScale: 0, rotation: -8, duration: 8 }],
+  terminator: 'END',
+});
+registerAffineAnim('sSpriteAffineAnim_RotatingGate_Clockwise270to360Faster', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 64, duration: 0 }, { xScale: 0, yScale: 0, rotation: -8, duration: 8 }],
+  terminator: 'END',
+});
+
+// rotating_gate.c:441-463 — sSpriteAffineAnimTable_RotatingGate (20 entrées, ordre EXACT).
+registerAffineAnimTable('sSpriteAffineAnimTable_RotatingGate', {
+  affineAnims: [
+    'sSpriteAffineAnim_RotatingGate_Rotated0',                     // 0
+    'sSpriteAffineAnim_RotatingGate_Rotated90',                    // 1
+    'sSpriteAffineAnim_RotatingGate_Rotated180',                   // 2
+    'sSpriteAffineAnim_RotatingGate_Rotated270',                   // 3
+    'sSpriteAffineAnim_RotatingGate_Anticlockwise360to270',        // 4
+    'sSpriteAffineAnim_RotatingGate_Anticlockwise90to0',           // 5
+    'sSpriteAffineAnim_RotatingGate_Anticlockwise180to90',         // 6
+    'sSpriteAffineAnim_RotatingGate_Anticlockwise270to180',        // 7
+    'sSpriteAffineAnim_RotatingGate_Clockwise0to90',               // 8
+    'sSpriteAffineAnim_RotatingGate_Clockwise90to180',             // 9
+    'sSpriteAffineAnim_RotatingGate_Clockwise180to270',            // 10
+    'sSpriteAffineAnim_RotatingGate_Clockwise270to360',            // 11
+    'sSpriteAffineAnim_RotatingGate_Anticlockwise360to270Faster',  // 12
+    'sSpriteAffineAnim_RotatingGate_Anticlockwise90to0Faster',     // 13
+    'sSpriteAffineAnim_RotatingGate_Anticlockwise180to90Faster',   // 14
+    'sSpriteAffineAnim_RotatingGate_Anticlockwise270to180Faster',  // 15
+    'sSpriteAffineAnim_RotatingGate_Clockwise0to90Faster',         // 16
+    'sSpriteAffineAnim_RotatingGate_Clockwise90to180Faster',       // 17
+    'sSpriteAffineAnim_RotatingGate_Clockwise180to270Faster',      // 18
+    'sSpriteAffineAnim_RotatingGate_Clockwise270to360Faster',      // 19
+  ],
+});
