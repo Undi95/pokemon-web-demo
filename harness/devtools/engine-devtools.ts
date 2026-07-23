@@ -582,7 +582,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   // dev.battle.startBirchTutorial() → trigger Birch tutorial wild battle inline.
   // Useful pour tester sans chain ChooseStarter → script flow complète.
   // Le flow est ticked chaque frame via le script engine (= ScriptContext_RunScript
-  // appelé par TestOverworldScene.update). On utilise ScriptContext_SetupInlineNative
+  // appelé par OverworldScene.update). On utilise ScriptContext_SetupInlineNative
   // qui crée un native-mode script ctx → tickFn polled jusqu'à TRUE.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const battleNs = (dev.battle as Record<string, unknown> | undefined) ?? {};

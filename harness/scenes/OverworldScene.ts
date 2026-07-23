@@ -1,5 +1,5 @@
 /**
- * TestOverworldScene — sanity check Phase 4.1 map loader.
+ * OverworldScene — sanity check Phase 4.1 map loader.
  *
  * Charge Bourg-en-Vol (= MAP_LITTLEROOT_TOWN) via map-loader.ts native, le
  * compose dans BG1/BG2/BG3 1:1 décomp `sOverworldBgTemplates` (overworld.c:266),
@@ -10,10 +10,10 @@
  *
  * Pas de player avatar / npcs / scripts pour l'instant (= Phase 4.2-4.5).
  *
- * Activation : ajouter dans main.ts scene array, ou `scene.start('TestOverworldScene')`.
+ * Activation : ajouter dans main.ts scene array, ou `scene.start('OverworldScene')`.
  */
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../main';
+import { GAME_W, GAME_H } from '../config';
 import { Gba } from '../gba/gba';
 import { GbaPhaserBridge } from '../gba/phaser-bridge';
 import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../runtime/decomp-runtime';
@@ -278,7 +278,7 @@ const DISPCNT_BG1_ON = 0x200;
 const DISPCNT_BG2_ON = 0x400;
 const DISPCNT_BG3_ON = 0x800;
 
-export class TestOverworldScene extends Phaser.Scene {
+export class OverworldScene extends Phaser.Scene {
   private gba!: Gba;
   rt!: DecompRuntime;
   private bridge!: GbaPhaserBridge;
@@ -309,10 +309,10 @@ export class TestOverworldScene extends Phaser.Scene {
   /** Set true au 1er tick où CB2_NewGame/Continue fire (post-Birch) — anti double-fire. */
   private overworldTransitionStarted = false;
 
-  constructor() { super({ key: 'TestOverworldScene' }); }
+  constructor() { super({ key: 'OverworldScene' }); }
 
   create(): void {
-    console.log('[TestOverworld] create()');
+    console.log('[overworld] create()');
     this.cameras.main.setBackgroundColor('#000000');
 
     // y=14 pour passer SOUS le texte vert de DebugOverlayScene
@@ -349,7 +349,7 @@ export class TestOverworldScene extends Phaser.Scene {
         InitWildEncountersFromJson(data);
         ResetWildEncounterImmunity();
       } catch (e) {
-        console.warn('[TestOverworld] wild-encounters.json load failed:', e);
+        console.warn('[overworld] wild-encounters.json load failed:', e);
       }
     })();
 
@@ -366,7 +366,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // le Start du preset). Start idempotent → double-appel sans effet pour ?debug/?clock.
     void import('../../src/play_time').then(({ PlayTimeCounter_Start }) => {
       PlayTimeCounter_Start();
-      console.log('[TestOverworld] PlayTimeCounter_Start invoked');
+      console.log('[overworld] PlayTimeCounter_Start invoked');
     });
 
     const frameImg = this.add.image(0, 0, 'test-overworld-frame').setOrigin(0, 0);
@@ -398,7 +398,7 @@ export class TestOverworldScene extends Phaser.Scene {
 
     installEngineDevtools(this.rt, {
       setHeldKeys: (mask) => setHeldKeysOverride(this.rt, mask),
-      sceneName: 'TestOverworldScene',
+      sceneName: 'OverworldScene',
     });
 
     // DEVTOOLS debug-maps : arme le provider MAP_DEBUG_* (harness/devtools/debug-maps.ts)
@@ -411,7 +411,7 @@ export class TestOverworldScene extends Phaser.Scene {
 
     // Skip → TestGba si ESC.
     this.input.keyboard?.on('keydown-ESC', () => {
-      console.log('[TestOverworld] ESC → GameScene');
+      console.log('[overworld] ESC → GameScene');
       this.scene.start('GameScene');
     });
 
@@ -448,7 +448,7 @@ export class TestOverworldScene extends Phaser.Scene {
    *  qui étaient implicites quand on jetait le runtime au scene.start. */
   private async transitionToOverworld(mode: 'newgame' | 'continue'): Promise<void> {
     this.overworldTransitionStarted = true;
-    console.log(`[TestOverworld unified] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} → enterOverworld (${mode})`);
+    console.log(`[overworld unified] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} → enterOverworld (${mode})`);
     if (mode === 'continue') {
       // 1:1 GameScene : LOAD la save AVANT de toucher l'état (sinon un save() plus
       // loin écraserait la save avec du vide). decideBootMode lira ensuite la map sauvée.
@@ -621,7 +621,7 @@ export class TestOverworldScene extends Phaser.Scene {
         boot = decideBootMode();
         initFromSavedGame = boot.mode === 'resume';
       }
-      console.log(`[TestOverworld] boot mode = ${boot.mode} → ${boot.mapId} (${boot.x}, ${boot.y})`);
+      console.log(`[overworld] boot mode = ${boot.mode} → ${boot.mapId} (${boot.x}, ${boot.y})`);
       // Étape 5 : resume save → InitMapFromSavedGame (LoadSavedMapView). Les
       // autres modes (newgame/nointro/warp) → InitMap normal (= 1:1 décomp).
       const header = await this.loadAndInitMap(
@@ -1022,9 +1022,9 @@ export class TestOverworldScene extends Phaser.Scene {
         console.log(`[__devGotoMap] pending warp → ${mapId} (${x}, ${y})`);
       };
 
-      console.log('[TestOverworld] boot done');
+      console.log('[overworld] boot done');
     } catch (e) {
-      console.error('[TestOverworld] bootOverworld failed:', e);
+      console.error('[overworld] bootOverworld failed:', e);
       this.statusText?.setText(`ERROR : ${e}`);
     }
   }
@@ -1060,13 +1060,13 @@ export class TestOverworldScene extends Phaser.Scene {
     try {
       framesProcessed = this.rt.tickFixed(deltaMs);
     } catch (e) {
-      console.error('[TestOverworld.update] tickFixed THREW:', e);
+      console.error('[overworld.update] tickFixed THREW:', e);
     }
     if (framesProcessed > 0) {
       try {
         this.bridge.tick();
       } catch (e) {
-        console.error('[TestOverworld.update] bridge.tick THREW:', e);
+        console.error('[overworld.update] bridge.tick THREW:', e);
       }
     }
   }
@@ -1104,7 +1104,7 @@ export class TestOverworldScene extends Phaser.Scene {
   ): Promise<MapHeader> {
     this.statusText?.setText(`Loading ${mapId}...`);
     const header = await loadMapByName(mapId);
-    console.log(`[TestOverworld] Loaded ${header.id} : ${header.mapLayout.width}x${header.mapLayout.height}`);
+    console.log(`[overworld] Loaded ${header.id} : ${header.mapLayout.width}x${header.mapLayout.height}`);
 
     // Port `ApplyCurrentWarp` partiel pour les flux SANS Do*Warp (boot, resume,
     // whiteout direct…) : load_save.ts pose location {mapGroup:0, mapNum:0}

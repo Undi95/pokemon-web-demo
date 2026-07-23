@@ -187,7 +187,7 @@ function applyNoIntroPreset(): void {
   // le preset spawn-direct (?debug/?clock) court-circuite CB2_NewGame → sans ce Start le
   // compteur reste STOPPED (DUREE JEU 00:00 au Panthéon). Start est idempotent (state=RUNNING,
   // ne remet pas le temps à zéro) → robuste même si le Start fire-and-forget de la scène
-  // (TestOverworldScene.create, fallback pour ?nointro-resume/?truck) a déjà tourné.
+  // (OverworldScene.create, fallback pour ?nointro-resume/?truck) a déjà tourné.
   PlayTimeCounter_Start();
   // Nom posé APRÈS NewGameInit, en STRING directe (PAS SetPlayerName : la charmap OW
   // n'est pas chargée au boot → encodeOwText donnerait [0,0,0,0]). GetPlayerNameString

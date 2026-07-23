@@ -47,7 +47,7 @@
  *     "battle_dome"    → InitTilesetAnim_BattleDome     (palette-blend 1:1 ; switchover
  *                        BattleDome2 inerte car Task_BattleTransition_Intro non exporté)
  *
- * Wire dans TestOverworldScene.ts MainCB2_Overworld :
+ * Wire dans OverworldScene.ts MainCB2_Overworld :
  *   UpdateTilesetAnimations();
  *   TransferTilesetAnimsBuffer(rt);
  *

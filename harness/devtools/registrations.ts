@@ -138,7 +138,7 @@ const EASY_CHAT_TYPES: ReadonlyArray<{ t: number; label: string }> = [
 // SetMainCallback2 (bug user 2026-07-10). Le scénario recharge donc en
 // `?nointro` (resume direct de la save ; boot-mode verrouille la SRAM = la
 // vraie save est protégée de la party de test) et le poll attend le VRAI
-// overworld : gMain.callback2 = MainCB2_Overworld (TestOverworldScene.ts:617 ;
+// overworld : gMain.callback2 = MainCB2_Overworld (OverworldScene.ts:617 ;
 // préfixe, car le bundler peut suffixer le nom : « MainCB2_Overworld2 »).
 
 const AUTOBOOT_KEY = '__dvtAutoboot';

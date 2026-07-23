@@ -677,7 +677,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
             //   POP instantané. Le fade ici = ordre 1:1 (musique PUIS FadeInFromBlack).
             // ⚠️ SPÉCIFIQUE au retour COMBAT : PAS dans `_restoreOverworldFromMenu` (partagé
             //   bag/option-menu qui, 1:1 décomp, n'ont PAS de fade-in). Pattern identique aux
-            //   chemins resume (TestOverworldScene:436-442) / warp.
+            //   chemins resume (OverworldScene:436-442) / warp.
             if (_savedOwSong) m4aSongNumStart(_savedOwSong, true);
             const r = getRuntime();
             if (r) {

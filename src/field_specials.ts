@@ -667,7 +667,7 @@ const LOCALID_CAMERA = 127;
  *  InitCameraUpdateCallback) pour qu'il suive CET object event au lieu du joueur. Les
  *  `applymovement LOCALID_CAMERA, …` du script (pans de cutscene) déplacent alors l'object
  *  event → la caméra suit → travelling. Le sprite BOY_1 doit être préchargé (SYNC : notre
- *  spawn lit le PNG en cache ; préchargé au load overworld, cf. TestOverworldScene). */
+ *  spawn lit le PNG en cache ; préchargé au load overworld, cf. OverworldScene). */
 export function SpawnCameraObject(): void {
   const obj = SpawnSpecialObjectEventParameterized(
     'OBJ_EVENT_GFX_BOY_1', 'MOVEMENT_TYPE_FACE_DOWN', LOCALID_CAMERA,

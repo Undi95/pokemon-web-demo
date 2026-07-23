@@ -542,7 +542,7 @@ function SetWarpDestinationToContinueGameWarp(): void {
 /** ADAPTATION port (modèle pending-warp) : équivalent du couple
  *  `sWarpDestination` + déclencheur. Le décomp enchaîne SetupWarp → DoWarp() →
  *  CreateTask(Task_WarpAndLoadMap) → SetMainCallback2(CB2_LoadMap) ; notre scène
- *  (MainCB2_Overworld, harness TestOverworldScene) consomme le warp posé ici via
+ *  (MainCB2_Overworld, harness OverworldScene) consomme le warp posé ici via
  *  `getPendingWarp()` → executeWarp (fade 1:1 + load dest + exit task selon la
  *  tuile d'arrivée). La dest transite PAR VALEUR ({destMap, x, y, warpId}) au
  *  lieu du static sWarpDestination — même chemin que __devGotoMap. */
@@ -814,7 +814,7 @@ function TestPlayerAvatarFlags(flags: number): boolean {
 type WarpData = { mapGroup: number; mapNum: number; warpId: number; x: number; y: number };
 
 /** `mapHeader->music` : chez nous le header JSON porte la STRING 'MUS_*' →
- *  résolution via la table songs (même pattern que TestOverworldScene). */
+ *  résolution via la table songs (même pattern que OverworldScene). */
 function _resolveMusicId(music: string | number | undefined): number {
   if (typeof music === 'number') return music;
   if (typeof music === 'string') return (SongsTable as unknown as Record<string, number>)[music] ?? 0;
@@ -984,7 +984,7 @@ export function Overworld_PlaySpecialMapMusic(): void {
 }
 
 /** 1:1 décomp `static void TransitionMapMusic(void)` (overworld.c:1170-1191) —
- *  exporté chez nous (consommé par le cross-connexion TestOverworldScene, = le
+ *  exporté chez nous (consommé par le cross-connexion OverworldScene, = le
  *  call-site LoadMapFromCameraTransition overworld.c:792). */
 export function TransitionMapMusic(): void {
   if (FlagGet('FLAG_DONT_TRANSITION_MUSIC') !== true) {
@@ -1039,7 +1039,7 @@ export function GetMapMusicFadeoutSpeed(): number {
  *  DoMossdeepGymWarp/DoCableClubWarp/Task_ReturnToWorldFromLinkRoom/
  *  Task_DoDoorWarp/DoContestHallWarp (field_screen_effect.c) + escalator/
  *  Lavaridge/EscapeRope/Teleport (field_effect.c) — chez nous ces flux passent
- *  tous par executeWarp Phase 2 (TestOverworldScene). */
+ *  tous par executeWarp Phase 2 (OverworldScene). */
 export function TryFadeOutOldMapMusic(): void {
   const currentMusic = GetCurrentMapMusic();
   const warpMusic = GetWarpDestinationMusic();
@@ -1342,7 +1342,7 @@ function ReturnToFieldLocal_Manual(): boolean {
       break;
     }
     case 1: {
-      // 1:1 décomp case 1 InitViewGraphics. `_restoreOverworldFromMenu` (TestOverworldScene)
+      // 1:1 décomp case 1 InitViewGraphics. `_restoreOverworldFromMenu` (OverworldScene)
       // fait BG regs + DISPCNT + ShowBg + InitFieldMessageBox + InitMapView + re-spawn NPCs.
       // Async (fetch tilesets/palettes).
       if (!_isRestoringOverworld) {
@@ -1392,7 +1392,7 @@ function ReturnToFieldLocal_Manual(): boolean {
 }
 
 /** 1:1 décomp `static void CB2_ReturnToFieldLocal(void)` (overworld.c:1638).
- *  Notre `CB2_Overworld` = `MainCB2_Overworld` (closure TestOverworldScene via
+ *  Notre `CB2_Overworld` = `MainCB2_Overworld` (closure OverworldScene via
  *  globalThis._overworldMainCB2). */
 export function CB2_ReturnToFieldLocal_Manual(): void {
   if (ReturnToFieldLocal_Manual()) {
@@ -1596,12 +1596,12 @@ const TRAINER_HILL_ENTRANCE = 6;
 //
 // CB2_NewGame (overworld.c:1532) et CB2_ContinueSavedGame (overworld.c:1705) sont
 // les points d'entrée field-init du jeu (truck cinematic neuf / load de la map
-// sauvegardée). Les scènes (TestOverworldScene.update, GameScene, BirchRuntimeScene)
+// sauvegardée). Les scènes (OverworldScene.update, GameScene, BirchRuntimeScene)
 // détectent `gMain.callback2 === CB2_NewGame | CB2_ContinueSavedGame` par IDENTITÉ,
 // null-out le callback AVANT qu'il tourne, puis :
 //   - GameScene / BirchRuntimeScene (legacy ?no-un) : délèguent à decideBootMode
 //     (le corps ne tourne JAMAIS chez eux — juste un jeton d'identité).
-//   - TestOverworldScene (host unifié par défaut) : APPELLE le vrai corps 1:1
+//   - OverworldScene (host unifié par défaut) : APPELLE le vrai corps 1:1
 //     ci-dessous (transitionToOverworld → bootOverworld), le harness ne réalisant
 //     que le chargement async d'assets (ADAPTATION ROM→fetch documentée dans chaque
 //     corps, précédent = executeWarp → loadAndInitMap pour les warps de porte).

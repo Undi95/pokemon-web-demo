@@ -13,7 +13,7 @@
  *    (coords centre-map 5×5 = (2,2), A/B testé contre ROM session 124) ; le
  *    chargement effectif de la map est fait par le boot harness (boot-mode.ts).
  *  - `RunScriptImmediately(EventScript_ResetAllMapFlags)` : réel via byte-VM —
- *    le boot DOIT avoir chargé l'image bytecode avant (TestOverworldScene
+ *    le boot DOIT avoir chargé l'image bytecode avant (OverworldScene
  *    await loadByteVmEngine() avant decideBootMode).
  *  - SB2.playerTrainerId = u32 number (le décomp écrit 4 octets LE via
  *    SetTrainerId ; les helpers byte-array servent aux OTHER trainer ids).

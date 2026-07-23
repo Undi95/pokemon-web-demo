@@ -23,7 +23,7 @@
  * Birch intro). À étendre au fur et à mesure quand on touche d'autres flows.
  *
  * NB : ce module a un side-effect au load (= registerSpecial calls). Doit être
- * importé une fois au boot (= TestOverworldScene ou main entry).
+ * importé une fois au boot (= OverworldScene ou main entry).
  */
 
 import { registerSpecial } from '../../scrcmd';
@@ -396,7 +396,7 @@ registerSpecial('BufferLeadMonSpeciesName', () => {
 /** 1:1 décomp `DoPCTurnOnEffect` (field_specials.c:986-997).
  *  Spawn task qui flicker le metatile PC 5 fois (off→on→off→on→off→on) en
  *  finissant sur ON. Notre port utilise une mini state machine ticked depuis
- *  TestOverworldScene.
+ *  OverworldScene.
  *
  *  1:1 décomp PCTurnOnEffect_SetMetatile (lines 1046-1070) :
  *    - lit gSpecialVar_0x8004 (= PC_LOCATION_OTHER/BRENDANS/MAYS_HOUSE)

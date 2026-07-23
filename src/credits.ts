@@ -785,7 +785,7 @@ function Task_CreditsSoftReset(taskId: number): void {
 
     SoftReset(RESET_ALL);   // 1:1 conservé : LOG l'exemption matérielle (reset BIOS no-op web).
     // REBOOT 1:1 : SoftReset(RESET_ALL) = reboot BIOS → AgbMain → CB2_InitCopyrightScreenAfterBootup.
-    // Sur web on rejoue L'AMORCE DU BOOT INITIAL — exactement ce que le host (TestOverworldScene.create,
+    // Sur web on rejoue L'AMORCE DU BOOT INITIAL — exactement ce que le host (OverworldScene.create,
     // introMode) fait au power-on : registerIntroSpriteCallbacks(rt) + bootIntroSequence(rt) [= preloads
     // async intro/titre/Birch AVANT le CB2, puis SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)].
     // → copyright → intro → titre, chaîne 1:1 identique au démarrage du jeu (plus de saut « bricolé »

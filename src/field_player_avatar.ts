@@ -725,7 +725,7 @@ export async function InitPlayerAvatar(
   // player slot fixe. NPCs spawn (= via findIndex(!active)) skip naturellement
   // ce slot car `InitPlayerObjectEvent` set `active=true`.
   //
-  // Cette init DOIT être avant `SpawnObjectEventsOnMap` (= TestOverworldScene
+  // Cette init DOIT être avant `SpawnObjectEventsOnMap` (= OverworldScene
   // l.836) sinon NPCs spawn dans slot 0 → écrasent player.
   const playerGraphicsKey = gender === 'FEMALE' ? 'May' : 'Brendan';
   InitPlayerObjectEvent(mapX, mapY, direction, playerGraphicsKey);
@@ -3165,7 +3165,7 @@ export function PlayerStep(direction: number, newKeys: number, heldKeys: number)
   // plus utilisés sur ce chemin (la branche lock ci-dessus les garde pour le forced door-walk).
   const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
   if (!playerObjEvent || !playerObjEvent.active || !playerObjEvent.isPlayer) return;
-  // HideShowWarpArrow(playerObjEvent) : piloté par la scène (TestOverworldScene), status quo.
+  // HideShowWarpArrow(playerObjEvent) : piloté par la scène (OverworldScene), status quo.
   if (gPlayerAvatar.preventStep === false) {
     Bike_TryAcroBikeHistoryUpdate(newKeys, heldKeys);
     if (TryInterruptObjectEventSpecialAnim(playerObjEvent, direction) === 0) {
@@ -3277,7 +3277,7 @@ const ARROW_CHECKS: Record<number, (b: number) => boolean> = {
 };
 
 /** 1:1 décomp `HideShowWarpArrow` (field_player_avatar.c:1428). Wrapper coords/dir
- *  séparées (= notre TestOverworldScene actuel ; playerX/Y LOGICAL → INTERNAL). */
+ *  séparées (= notre OverworldScene actuel ; playerX/Y LOGICAL → INTERNAL). */
 export function HideShowWarpArrow(
   rt: DecompRuntime, playerX: number, playerY: number, movementDir: number,
 ): void {

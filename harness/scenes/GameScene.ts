@@ -1,6 +1,6 @@
 /**
  * GameScene — ⚠️ ARCHIVE (chemin legacy 3-scènes, accessible via `?no-un`).
- * Le boot PAR DÉFAUT est le HOST UNIFIÉ (TestOverworldScene introMode, décision
+ * Le boot PAR DÉFAUT est le HOST UNIFIÉ (OverworldScene introMode, décision
  * user 2026-07-10) : cette scène fait l'intro dans SON runtime puis scene.start
  * l'OW dans un runtime NEUF → RNG/seed/état de boot perdus à la transition
  * (pas 1:1). Conservée fonctionnelle comme chemin de secours/comparaison.
@@ -30,7 +30,7 @@
  * CreateTask(Task_Scene1_Load).
  */
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from '../main';
+import { GAME_W, GAME_H } from '../config';
 import { Gba } from '../gba/gba';
 import { GbaPhaserBridge } from '../gba/phaser-bridge';
 import { DecompRuntime, InitKeys } from '../runtime/decomp-runtime';
@@ -277,7 +277,7 @@ export class GameScene extends Phaser.Scene {
     // `LoadSaveblockMapHeader`, `Overworld_GetMapHeaderByGroupAndId`, etc.
     // qui vivent dans auto/src-all et nécessitent le barrel flatten — pas
     // disponible avant que option-menu-impl soit loaded). Notre transition
-    // vers TestOverworldScene gère le resume nativement, donc on bypass
+    // vers OverworldScene gère le resume nativement, donc on bypass
     // l'auto CB2 entièrement.
     // 2 cases handled :
     //   - CB2_NewGame : post-Birch (= NEW_GAME action) → truck cinematic.
@@ -302,7 +302,7 @@ export class GameScene extends Phaser.Scene {
     // any leftover callback2 between detection and scene.start).
     if (this.overworldTransitionStarted) return;
     // Optim : skip bridge.tick si pas de frame logique avancée. Cf
-    // TestOverworldScene.update().
+    // OverworldScene.update().
     let framesProcessed = 0;
     try {
       framesProcessed = this.rt.tickFixed(deltaMs);
@@ -319,7 +319,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** Sync Birch state (playerName, gender) vers gameState + start TestOverworldScene.
+  /** Sync Birch state (playerName, gender) vers gameState + start OverworldScene.
    *  - mode 'newgame' : Clear gameState.map → truck cinematic spawn.
    *  - mode 'continue' : Keep saved gameState.map → spawn at saved location.
    *
@@ -327,10 +327,10 @@ export class GameScene extends Phaser.Scene {
    *  fade Birch soit terminée (`!gPaletteFade.active`) avant de switch CB2.
    *  Notre TS doit pareil sinon le scene.start coupe la fade Birch en cours.
    *  Bug fix session 122 : avant on faisait scene.start synchronement → la
-   *  fade Birch était brutalement remplacée par TestOverworldScene visible. */
+   *  fade Birch était brutalement remplacée par OverworldScene visible. */
   private async transitionToOverworld(mode: 'newgame' | 'continue'): Promise<void> {
     this.overworldTransitionStarted = true;
-    console.log(`[GameScene] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} detected → TestOverworldScene (${mode})`);
+    console.log(`[GameScene] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} detected → OverworldScene (${mode})`);
     const { gSaveBlock2Ptr } = await import('../../src/engine/save/save-block-state');
     if (mode === 'continue') {
       // ⚠️ CRITICAL : LOAD la save AVANT de toucher gameState. Sinon
@@ -390,8 +390,8 @@ export class GameScene extends Phaser.Scene {
     const { FillPalBufferBlack } = await import('../runtime/decomp-globals');
     FillPalBufferBlack();
     const waitFrames = 0;
-    console.log(`[GameScene] fade complete after ${waitFrames} frames → starting TestOverworldScene`);
-    this.scene.start('TestOverworldScene');
+    console.log(`[GameScene] fade complete after ${waitFrames} frames → starting OverworldScene`);
+    this.scene.start('OverworldScene');
   }
 
   // Input handlers : voir src/engine/input-handler.ts (= shared entre toutes

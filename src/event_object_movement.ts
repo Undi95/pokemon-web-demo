@@ -1619,7 +1619,7 @@ export const sOamTable_48x48: ReadonlyArray<NamingSubsprite> = [
   { x:   8, y:  16, shape: 1, size: 0, tileOffset: 34, priority: 2 }, // 16×8 row 5 right
 ];
 
-// Re-export pour autres modules (e.g. TestOverworldScene qui call syncSubspriteOam).
+// Re-export pour autres modules (e.g. OverworldScene qui call syncSubspriteOam).
 export { syncSubspriteOam };
 
 // ─── Movement type → initial facing direction ──────────────────────────────
@@ -5739,7 +5739,7 @@ function _ApplyLevitateMovement(rt: DecompRuntime, state: _LevitateTaskState): v
 }
 
 /** Tick all active levitate tasks per-frame. À appeler depuis le scene tick
- *  loop (= TestOverworldScene). */
+ *  loop (= OverworldScene). */
 export function ApplyLevitateMovement_TickAll(rt: DecompRuntime): void {
   for (const state of _sLevitateTasksByObjEventId.values()) {
     _ApplyLevitateMovement(rt, state);

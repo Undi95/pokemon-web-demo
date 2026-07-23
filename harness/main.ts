@@ -22,7 +22,7 @@ import { mountDevtoolsV2 } from './devtools/panel-v2';
 // jusqu'au nettoyage final (Step 5).
 // import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
 // import { OverworldScene } from './scenes/OverworldScene';  // LEGACY-RETIRÉ — voir test ci-dessous
-import { TestOverworldScene } from './scenes/TestOverworldScene';
+import { OverworldScene } from './scenes/OverworldScene';
 import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
 // Side-effect : install window.cheat debug helpers (= skipIntro/heal/resetSave).
 import './devtools/dev-cheat';
@@ -64,7 +64,7 @@ exposeRtcDevApi();
 // Audit session 126 fix Bug #3 : expose les bridge fns (gMain, FlagSet,
 // Overworld_GetMapHeaderByGroupAndId, MapGridGetCollisionAt, etc) sur globalThis
 // AU BOOT, avant que Phaser.Game crée les scenes. Avant : exposeGbaGlobals() était
-// appelé par GameScene.create() / TestOverworldScene.create(), mais le runtime tick
+// appelé par GameScene.create() / OverworldScene.create(), mais le runtime tick
 // pouvait fire CB2_ContinueSavedGame depuis runOneFrame avant qu'une scene n'ait
 // fait son create() → identifiers libres dans les auto-files (= overworld-all-auto.ts
 // LoadSaveblockMapHeader) cherchaient les fns sur globalThis et trouvaient undefined
@@ -111,7 +111,7 @@ void (async () => {
 // Phase 2 substrat (2026-05-19) : preload constants.json AU BOOT (=
 // species/moves/items/abilities/natures enum→id). AVANT : chargé UNIQUEMENT
 // par OverworldScene (= scène LEGACY, morte dans les 2 chemins vivants :
-// GameScene prod + TestOverworldScene debug) → `constants` singleton null →
+// GameScene prod + OverworldScene debug) → `constants` singleton null →
 // getItemId/getSpeciesId/getMoveId = 0 partout dans la boucle réelle (bug
 // systémique exposé par le sac : liste vide). Aligné sur les autres tables
 // préchargées ici. Idempotent (OverworldScene legacy re-set = même data).
@@ -176,25 +176,20 @@ console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
 // ownership checks.
 SeedRngAndSetTrainerId();
 
-export const TILE_SIZE = 16;
-// Résolution NATIVE Pokemon Émeraude GBA = 240×160 px = 15×10 tiles de 16 px.
-// Le décomp utilise des coords pixel exactes (textbox à x=16, y=120, etc.) qui
-// ne sont valides QUE pour cette résolution. Le zoom Phaser fait l'upscaling
-// pour l'affichage, sans toucher aux coords logiques internes.
-export const MAP_W = 15;
-export const MAP_H = 10;
-export const GAME_W = MAP_W * TILE_SIZE; // 240
-export const GAME_H = MAP_H * TILE_SIZE; // 160
+// Dimensions du host déplacées dans './config' (module sans import, anti-cycle
+// TDZ). Ré-exportées ici pour compat des imports existants `from '../main'`.
+export { TILE_SIZE, MAP_W, MAP_H, GAME_W, GAME_H } from './config';
+import { GAME_W, GAME_H } from './config';
 
 const DEFAULT_ZOOM = 4;
 
 // La "ROM" Pokemon Émeraude tourne intégralement dans GameScene (= 1:1 décomp
-// `AgbMain` boot loop), OU dans TestOverworldScene (host unifié, défaut).
+// `AgbMain` boot loop), OU dans OverworldScene (host unifié, défaut).
 // TestGbaScene (ancien launcher « press A » du lecteur MIDI legacy) a été retiré
 // avec la dissolution du shim son (2026-07-11).
 //
 // Boot flow :
-//   TestOverworldScene (défaut, host unifié) → boote intro + OW dans UN runtime.
+//   OverworldScene (défaut, host unifié) → boote intro + OW dans UN runtime.
 //   GameScene (legacy, ?no-un) → init Gba + DecompRuntime + audio →
 //             SetMainCallback2(CB2_InitCopyrightScreenAfterBootup) → tickFixed 60Hz
 //             → chaîne CB2/Task décomp (Copyright → Intro → Title → Main Menu native).
@@ -209,28 +204,28 @@ const config: Phaser.Types.Core.GameConfig = {
   pixelArt: true,
   backgroundColor: '#000000',
   // Boot scene order :
-  //   - Default : TestOverworldScene en 1ère position (host unifié — boote l'intro
+  //   - Default : OverworldScene en 1ère position (host unifié — boote l'intro
   //     complète puis l'OW dans un seul runtime : Copyright → Anim1/2/3 →
   //     TitleScreen → MainMenu (New Game) → Birch intro (Lotad pokeball + naming)).
-  //   - `?nointro`/`?debug`/… : TestOverworldScene en boot direct OW (introMode=false).
+  //   - `?nointro`/`?debug`/… : OverworldScene en boot direct OW (introMode=false).
   //   - `?no-un` : chemin legacy GameScene (intro dans son runtime) puis OW.
   // Les autres scènes restent dispo via game.scene.start() dans la chain.
   scene: (() => {
-    if (typeof window === 'undefined') return [TestOverworldScene, GameScene];
+    if (typeof window === 'undefined') return [OverworldScene, GameScene];
     const params = new URLSearchParams(window.location.search);
     // ?no-un → chemin LEGACY 2 scènes, ARCHIVÉ mais dispo (décision user 2026-07-10) :
-    // GameScene (chaîne intro dans SON runtime) → scene.start(TestOverworldScene) pour
+    // GameScene (chaîne intro dans SON runtime) → scene.start(OverworldScene) pour
     // l'OW. Chaque scène recrée un runtime → RNG/seed/état de boot PERDUS aux
     // transitions — c'est pour ça que le défaut est désormais le host unifié ci-dessous.
-    if (params.has('no-un')) return [GameScene, TestOverworldScene];
+    if (params.has('no-un')) return [GameScene, OverworldScene];
     // DÉFAUT = HOST UNIFIÉ (ex-?unified du chantier « c », basculé par défaut —
-    // user 2026-07-10) : TestOverworldScene boote TOUT dans UN SEUL runtime
+    // user 2026-07-10) : OverworldScene boote TOUT dans UN SEUL runtime
     // 1:1 AgbMain (Copyright → intro → Title → MainMenu → Birch → OW via
     // SetMainCallback2, ZÉRO scene.start ; RNG/seed/état boot continus).
     // Les presets dev (?nointro/?debug/?clock/?truck) prennent la même scène en
-    // boot direct OW (introMode=false — cf. TestOverworldScene.create).
+    // boot direct OW (introMode=false — cf. OverworldScene.create).
     // GameScene reste ENREGISTRÉE (dispo via ESC / ?no-un).
-    return [TestOverworldScene, GameScene];
+    return [OverworldScene, GameScene];
   })(),
   // Restrict input listeners to the canvas only (= clicks/keys outside the
   // game window don't start/affect the game). Default Phaser behavior is to
@@ -249,7 +244,7 @@ const config: Phaser.Types.Core.GameConfig = {
   //
   // Optim : update() ne fait du rendu que si tickFixed accumule au moins
   // 1 frame logique (= évite gba.tick + putImageData spam quand le tick
-  // est appelé > 60Hz). Voir TestOverworldScene.update().
+  // est appelé > 60Hz). Voir OverworldScene.update().
   fps: {
     target: 60,
     forceSetTimeOut: true,

@@ -17,7 +17,7 @@
  * Flow :
  *   1. `OpenRegionMap()` add GameObjects à la scene Phaser (= Image map +
  *      Sprite cursor + Image player icon + Text title + Text mapsec name)
- *   2. `TickRegionMap()` polled chaque frame depuis TestOverworldScene main loop :
+ *   2. `TickRegionMap()` polled chaque frame depuis OverworldScene main loop :
  *      - D-pad HELD → cursor move avec throttle 4 frames
  *      - A/B NEW → close + SignalWaitState
  *   3. `CloseRegionMap()` destroys GameObjects, restore field

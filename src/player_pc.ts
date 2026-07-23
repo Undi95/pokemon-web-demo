@@ -9,7 +9,7 @@
  *
  * Pattern overlay (= différent du CB2-swap wallclock) :
  *   1. `OpenBedroomPC(isBedroom)` set sIsOpen + spawn UI windows ON TOP of overworld
- *   2. `TickBedroomPC()` polled chaque frame depuis TestOverworldScene main loop
+ *   2. `TickBedroomPC()` polled chaque frame depuis OverworldScene main loop
  *   3. State machine : main_menu → item_storage (sub-menu) → msg_wait → closing
  *   4. À la fermeture (= TurnOff via B-press ou SORTIR selection) :
  *      - BedroomPC mode → ScriptContext_SetupScript(EventScript_TurnOffPlayerPC)

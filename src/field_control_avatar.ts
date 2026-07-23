@@ -18,7 +18,7 @@
  *     Script` chain).
  *
  *  ⚠️ Notre impl actuelle dispatche ces actions via `PlayerStep` (player-avatar.ts)
- *  + `MainCB2_Overworld` (TestOverworldScene.ts) directement. Cette refactor
+ *  + `MainCB2_Overworld` (OverworldScene.ts) directement. Cette refactor
  *  permet d'extraire la logique 1:1 strict dans un module dédié au lieu de
  *  scatter dans des fichiers. Le wiring final (= remplacer les dispatches
  *  scattered par `ProcessPlayerFieldInput`) est progressif.

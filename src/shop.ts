@@ -323,7 +323,7 @@ export function doPokemart(productsLabel: string): () => boolean {
   return () => { if (!opened) return false; return !IsShopMenuOpen(); };
 }
 
-/** Tick pollé chaque frame depuis TestOverworldScene (= overworld actif).
+/** Tick pollé chaque frame depuis OverworldScene (= overworld actif).
  *  Ne gère que le menu overlay (shop_menu) + la transition vers le buy menu
  *  (buy_goto attend le fade). Le buy menu plein écran est tické par Task_BuyMenu
  *  (gTasks) sous son propre CB2. */

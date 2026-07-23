@@ -2,7 +2,7 @@
  * input-handler.ts — handler keyboard partagé pour toutes les scenes runtime.
  *
  * Pourquoi ce module :
- *   3 scenes (GameScene + BirchRuntimeScene + TestOverworldScene) avaient
+ *   3 scenes (GameScene + BirchRuntimeScene + OverworldScene) avaient
  *   chacune leur propre `private heldKeys = 0` + `installKeyHandlers()` +
  *   `pollInput()` qui copiait dans `rt.gMain.heldKeys`. C'était de la
  *   duplication. Cette factorisation 1:1 décomp utilise directement

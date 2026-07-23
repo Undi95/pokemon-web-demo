@@ -137,7 +137,7 @@ export { gCamera };
 
 /** 1:1 décomp `struct CameraObject gFieldCamera` (field_camera.c:42).
  *  Tracks player sprite for camera follow. Phase 4.2 : version simplifiée
- *  sans sprite tracking (= driven directement par TestOverworldScene). */
+ *  sans sprite tracking (= driven directement par OverworldScene). */
 export interface FieldCameraObject {
   movementSpeedX: number;
   movementSpeedY: number;
@@ -1032,7 +1032,7 @@ export function SetCameraPanning(horizontal: number, vertical: number): void {
 export function GetCameraPanX(): number { return sHorizontalCameraPan; }
 export function GetCameraPanY(): number { return sVerticalCameraPan - 32; }
 
-// ─── Public state accessors (pour debug + intégration TestOverworldScene) ───
+// ─── Public state accessors (pour debug + intégration OverworldScene) ───
 
 export function GetCameraOffsetState(): Readonly<FieldCameraOffset> {
   return sFieldCameraOffset;

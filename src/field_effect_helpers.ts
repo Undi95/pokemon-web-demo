@@ -4990,7 +4990,7 @@ function Task_FlyIntoMap(task: DecompTask): void {
 
 /** 1:1 `FieldCallback_FlyIntoMap` (field_effect.c:1380) — décomp : posé comme `gFieldCallback`
  *  par Task_UseFly, consommé à l'arrivée par CB2_LoadMap ; port : appelé DIRECTEMENT par
- *  executeWarp Phase 5 (kind 'fly', TestOverworldScene) = même point du flux, à l'abri du
+ *  executeWarp Phase 5 (kind 'fly', OverworldScene) = même point du flux, à l'abri du
  *  clobber warp-exit. Les 2 premiers appels du décomp (:1382-1383) sont RELOCALISÉS dans
  *  executeWarp : Overworld_PlaySpecialMapMusic → loadAndInitMap (Phase 3) ; FadeInFromBlack
  *  → Phase 4 (FillPalBufferBlack + fade FROM_BLACK). Rend le joueur invisible (l'oiseau le

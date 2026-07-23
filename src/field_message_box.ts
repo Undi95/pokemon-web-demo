@@ -68,7 +68,7 @@ let sStateStep = 0;
  *  on n'a plus besoin de gStandardMenuPalette ; gMessageBox_Pal couvre tout
  *  (= frame border colors aux idx 11-14, text bg/fg/shadow aux idx 1-3). */
 export async function preloadStandardMenuPalette(): Promise<void> {
-  /* no-op — kept for backward compat with TestOverworldScene boot */
+  /* no-op — kept for backward compat with OverworldScene boot */
 }
 
 /** 1:1 STRICT décomp `InitFieldMessageBox(void)` (field_message_box.c:14-21) :

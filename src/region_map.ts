@@ -1920,7 +1920,7 @@ function ReturnToFieldFromFlyMapSelect(): void {
   };
   const rt = getRuntime();
   // HOLD-BLACK pendant tout le retour-field (pattern executeWarp Phase 3→4,
-  // TestOverworldScene : gPaletteFade.bufferTransferDisabled) : sans ça, les
+  // OverworldScene : gPaletteFade.bufferTransferDisabled) : sans ça, les
   // LoadPalette+flushTo du restore poussent des couleurs VIVES sur un écran en
   // pleine reconstruction (tilemap fly-map affine relu en mode texte = RAYURES,
   // film user frame 1.26s). Le décomp reste NOIR tout CB2_ReturnToField — le

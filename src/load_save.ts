@@ -546,7 +546,7 @@ export function SetCurrentMap(v: { name: string; x: number; y: number; facing?: 
 //
 //   - `save-system.ts:SaveGame()` → SyncPlayerPositionToBlock +
 //     SaveMapView + CopyPartyAndObjectsToSave (= 1:1 HandleSavingData).
-//   - `TestOverworldScene.ts` post-load → CopyPartyAndObjectsFromSave
+//   - `OverworldScene.ts` post-load → CopyPartyAndObjectsFromSave
 //     (= 1:1 décomp call direct).
 
 // Re-export pour facilité d'access.
