@@ -32,6 +32,7 @@ import { BG_PLTT_ID } from '../harness/runtime/decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from '../harness/gba/png-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { ReadMail } from './mail';
+import { DoBerryTagScreen } from './berry_tag_screen';
 import type { Mail } from './engine/save/save-blocks';
 import { MALE } from '../harness/runtime/decomp-globals';
 import { ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2, ITEMMENU_SWAP_LINE_LENGTH } from '../include/item_menu';
@@ -3629,11 +3630,16 @@ function ItemMenu_UseInBattle(task: DecompTask): void {
   }
 }
 
-/** 1:1 décomp `ItemMenu_CheckTag(u8 taskId)` (item_menu.c:1979) — dette R3
- *  doc : cascade DoBerryTagScreen (= berry tag UI complet U-tier). */
+/** 1:1 décomp `ItemMenu_CheckTag(u8 taskId)` (item_menu.c:1979) :
+ *      gBagMenu->newScreenCallback = DoBerryTagScreen;
+ *      Task_FadeAndCloseBagMenu(taskId);
+ *  → berry_tag_screen.ts (écran ÉTIQUETTE 1:1). newScreenCallback est lu par
+ *  Task_CloseBagMenu → SetMainCallback2(DoBerryTagScreen). Import en corps de
+ *  fonction évité : ESM live binding (cycle item_menu ↔ berry_tag_screen safe,
+ *  usage déféré). */
 function ItemMenu_CheckTag(task: DecompTask): void {
-  RemoveContextWindow();
-  _returnToList(task);
+  if (gBagMenu) gBagMenu.newScreenCallback = DoBerryTagScreen;
+  Task_FadeAndCloseBagMenu(task);
 }
 
 /** 1:1 décomp `ItemMenu_Show(u8 taskId)` (item_menu.c, Apprentice ACTION_SHOW)

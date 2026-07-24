@@ -18,7 +18,9 @@ import {
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
   LoadCompressedSpriteSheet,
   LoadSpritePalette,
+  assetCache,
 } from '../harness/runtime/decomp-globals';
+import { loadTileBin, loadGbaPal } from '../harness/gba/png-loader';
 import { DestroySprite } from './sprite';
 import { getItemKeyById } from '../harness/runtime/data-tables';
 import { ENUM_ITEMMENUSPRITE_2 } from '../include/item_menu';
@@ -462,4 +464,100 @@ function UpdateSwitchPocketRotatingBallCoords(sprite: DecompSprite): void {
   const adj = sprite.data[1] - ((sprite.data[3] + 1) & 1);
   sprite.centerToCornerVecX = adj;
   sprite.centerToCornerVecY = adj;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BERRY TAG SCREEN sprites (item_menu_icons.c:374-663) — foyer 1:1 du .c.
+// Consommés par src/berry_tag_screen.ts (DoBerryTagScreen). Sprite baie +
+// 5 cercles de saveur + libération palette.
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1:1 décomp item_menu_icons.h:20-21.
+const TAG_BERRY_CHECK_CIRCLE_GFX = 10000;
+const TAG_BERRY_PIC_PAL = 30020;
+
+let _berryCircleSheetLoaded = false;
+let _berryPicTodoWarned = false;
+
+/** Précharge la sprite sheet + palette du cercle de saveur (check_berry_circle,
+ *  64×64 4bpp = 0x800). Adaptation moteur (pattern item-icon.ts _preloadOne :
+ *  loadTileBin/loadGbaPal → assetCache → LoadCompressedSpriteSheet). Idempotent.
+ *  1:1 décomp = LoadCompressedSpriteSheet(&gBerryCheckCircleSpriteSheet) +
+ *  LoadCompressedSpritePalette(&gBerryCheckCirclePaletteTable) (berry_tag LoadBerryTagGfx). */
+export async function prefetchBerryTagSprites(): Promise<void> {
+  if (_berryCircleSheetLoaded) return;
+  try {
+    const [tiles, pal] = await Promise.all([
+      loadTileBin('decomp/em/bag/check_berry_circle.png', 4),
+      loadGbaPal('decomp/em/bag/check_berry_circle.gbapal'),
+    ]);
+    assetCache.set('__berryCheckCircleTiles', tiles);
+    assetCache.set('__berryCheckCirclePal', pal);
+    _berryCircleSheetLoaded = true;
+  } catch (e) {
+    console.error('[berry-tag] prefetchBerryTagSprites : cercle de saveur non chargé', e);
+  }
+}
+
+/** 1:1 décomp `u8 CreateBerryFlavorCircleSprite(s16 x)` (item_menu_icons.c:659) :
+ *  `return CreateSprite(&sBerryCheckCircleSpriteTemplate, x, 116, 0)`.
+ *  sBerryCheckCircleOamData (:384) : shape=SPRITE_SHAPE(64x64)=square(0),
+ *  size=SPRITE_SIZE(64x64)=3, 4bpp, AFFINE_OFF, priority=1, tag=TAG_BERRY_CHECK_CIRCLE_GFX.
+ *  Substrat sprite dynamique (pattern AddBagVisualSprite : tag→tileStart/palBank
+ *  → CreateSpriteAtOam). Retour = spriteId (0xFF si asset absent). */
+export function CreateBerryFlavorCircleSprite(x: number): number {
+  const rt = getRuntime() as unknown as {
+    CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
+    gSprites?: Array<DecompSprite | undefined>;
+  } | null;
+  if (!rt) return SPRITE_NONE;
+  // Charge la sheet (idempotent — enregistrée par prefetchBerryTagSprites).
+  LoadCompressedSpriteSheet({ data: '__berryCheckCircleTiles', size: 0x800, tag: TAG_BERRY_CHECK_CIRCLE_GFX });
+  LoadSpritePalette({ data: '__berryCheckCirclePal', tag: TAG_BERRY_CHECK_CIRCLE_GFX });
+  const tileStartRaw = _spGetSpriteTileStartByTag(TAG_BERRY_CHECK_CIRCLE_GFX);
+  const tileStart = tileStartRaw === 0xFFFF ? 0 : tileStartRaw;
+  const palBankRaw = IndexOfSpritePaletteTag(TAG_BERRY_CHECK_CIRCLE_GFX);
+  const palBank = palBankRaw === 0xFF ? 0 : palBankRaw;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: tileStart, paletteBank: palBank,
+    x, y: 116, shape: 0, size: 3, priority: 1, subpriority: 0,
+    affineMode: 0, affineParamIndex: 0,
+  });
+  return spriteId;
+}
+
+/** 1:1 décomp `u8 CreateBerryTagSprite(u8 id, s16 x, s16 y)` (item_menu_icons.c:634) :
+ *  `LoadBerryGfx(id); return CreateSprite(&sBerryPicSpriteTemplate, x, y, 0)`.
+ *
+ *  ⚠️ TODO-ASSET (Règle DATA) : LoadBerryGfx (:618) déroule sBerryPicTable[id]
+ *  (44 gfx/pal compressés par-baie) + ArrangeBerryGfx (:590, 6×6 tuiles → 8×8
+ *  64×64 avec marges) → sprite `images`-based (sBerryPicSpriteTemplate). Ce
+ *  pipeline per-baie (table + arrange + pic PNG public/decomp/em/berries/*.png)
+ *  n'est pas encore branché. On crée un sprite 64×64 INVISIBLE (pas d'art fake,
+ *  honnête) pour que berrySpriteId soit valide et que le scroll (y2) fonctionne ;
+ *  l'image de la baie reste à câbler. */
+export function CreateBerryTagSprite(id: number, x: number, y: number): number {
+  void id;
+  if (!_berryPicTodoWarned) {
+    console.warn('[berry-tag] CreateBerryTagSprite : pic baie TODO-ASSET (sBerryPicTable + ArrangeBerryGfx non câblés) — sprite invisible');
+    _berryPicTodoWarned = true;
+  }
+  const rt = getRuntime() as unknown as {
+    CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
+    gSprites?: Array<DecompSprite | undefined>;
+  } | null;
+  if (!rt) return SPRITE_NONE;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: 0, paletteBank: 0,
+    x, y, shape: 0, size: 3, priority: 1, subpriority: 0,
+    affineMode: 0, affineParamIndex: 0,
+  });
+  const spr = rt.gSprites?.[spriteId];
+  if (spr) spr.invisible = true; // pas d'art → invisible (pas de garbage tile 0)
+  return spriteId;
+}
+
+/** 1:1 décomp `void FreeBerryTagSpritePalette(void)` (item_menu_icons.c:640) :
+ *  `FreeSpritePaletteByTag(TAG_BERRY_PIC_PAL)`. */
+export function FreeBerryTagSpritePalette(): void {
+  _spFreeSpritePaletteByTag(TAG_BERRY_PIC_PAL);
 }
