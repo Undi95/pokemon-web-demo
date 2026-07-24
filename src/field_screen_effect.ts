@@ -48,7 +48,10 @@ import {
 } from '../harness/runtime/decomp-globals';
 import { CreateTask, DestroyTask, gTasks } from './task';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_Enable } from './script';
-import { SE_WARP_OUT } from '../include/constants/songs';
+import { SE_WARP_OUT, SE_ESCALATOR, SE_M_EXPLOSION, SE_M_DIG, SE_LAVARIDGE_FALL_WARP } from '../include/constants/songs';
+import { Cos, Sin } from './trig';
+import { MB_UP_ESCALATOR, MB_DOWN_ESCALATOR } from '../include/constants/metatile_behaviors';
+import { FLDEFF_ASH_LAUNCH, FLDEFF_ASH_PUFF } from '../include/constants/field_effects';
 import { MetatileBehavior_IsDoor, MetatileBehavior_IsNonAnimDoor } from './metatile_behavior';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './fieldmap';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
@@ -692,6 +695,789 @@ export function FieldCB_SpinEnterWarp(): void {
 }
 // Exposé pour câblage 'aqua_teleport' (chemin warp verrouillé — cf. OverworldScene Phase 5).
 (globalThis as Record<string, unknown>).__FieldCB_SpinEnterWarp = FieldCB_SpinEnterWarp;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ESCALATOR + LAVARIDGE GYM WARPS — transcription 1:1 (INERTE)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// SOURCE DE VÉRITÉ :
+//  - Wrappers `DoEscalatorWarp` / `DoLavaridgeGymB1FWarp` / `DoLavaridgeGym1FWarp`
+//    = field_screen_effect.c:528-543 (= CE fichier côté décomp).
+//  - Familles `StartEscalatorWarp` / `Task_EscalatorWarpOut`/`In` (+ FieldCB) et
+//    `StartLavaridgeGym*Warp` / `Task_LavaridgeGym*` (+ FieldCB) = field_effect.c:
+//    1562-1826 (escalator) et 1948-2223 (lavaridge). Le foyer 1:1 de ces tasks
+//    serait `field_effect_helpers.ts` (comme `FieldCallback_FlyIntoMap` /
+//    `FieldCB_FallWarpExit`, câblés par 485297625/573549591), HORS de mon
+//    périmètre ce tour → HÉBERGÉ ici (précédent : `Task_SpinEnterWarp` hébergé
+//    ici alors qu'il vient bien de field_screen_effect.c ; ici la déviation de
+//    fichier est notée). Le pilote pourra les redéplacer vers field_effect_helpers.
+//
+// ── POURQUOI INERTE (non câblé dans executeWarp) ────────────────────────────
+// Le port a REMPLACÉ le modèle décomp « task auto-pilotée →
+// WarpFadeOutScreen → WarpIntoMap → SetMainCallback2(CB2_LoadMap) → gFieldCallback »
+// par l'adaptation asynchrone `OverworldScene.executeWarp` (fade-out → load async →
+// fade-in → exit-task), exactement comme pour fly/fall/spin où SEULE l'arrivée
+// (FieldCB) est portée 1:1, executeWarp possédant fade+load. Conséquences :
+//   1. `WarpFadeOutScreen` / `WarpFadeInScreen` / `CB2_LoadMap` NE SONT PAS des
+//      symboles exportés par le port → les sites d'appel décomp sont transcrits
+//      via des accès paresseux qui restent NULL (INERTE, ne fire jamais). Le vrai
+//      chemin de câblage = executeWarp (cf. plan pilote en fin de section).
+//   2. LAVARIDGE dépend de `FLDEFF_ASH_LAUNCH` / `FLDEFF_ASH_PUFF` (le geyser de
+//      cendre / la bouffée) dont les handlers `FldEff_AshLaunch` / `FldEff_AshPuff`
+//      + templates `FLDEFFOBJ_ASH_*` vivent dans field_effect.c → field_effect.ts,
+//      NON PORTÉS et HORS de mon périmètre. Les tasks Lavaridge gatent sur
+//      `gSprites[data[1]].animCmdIndex` (sprite ash) qui n'avancerait pas → HANG.
+//      Donc Lavaridge NE PEUT PAS être câblé sans cette dette amont (Règle 1 :
+//      intranscriptible dans mon périmètre → transcrit INERTE + signalé).
+//   3. Ces tasks manipulent `sprite->oam.priority` / `sprite->subspriteMode =
+//      SUBSPRITES_IGNORE_PRIORITY` / `sprite->centerToCornerVecY` / `gSpriteCoordOffsetY`
+//      dont le modèle renderer du port diffère (priority via oamIndex, subspriteMode
+//      = union string). Accès via shims documentés (INERTE) → à reconnecter au câblage.
+//
+// ── PLAN DE CÂBLAGE POUR LE PILOTE (test EN JEU obligatoire, Règle 5) ────────
+// Les métatuiles déclencheuses sont DÉJÀ mappées (field_control_avatar.ts VERROUILLÉ,
+// déjà fait) : getWarpKindFor → 'escalator_up'/'escalator_down'/'lavaridge_b1f'/
+// 'lavaridge_1f' → setPendingWarp → executeWarp(kind). executeWarp reçoit donc déjà
+// ces kinds. Reste (côté pilote, executeWarp) :
+//   A. ESCALATOR : Phase 1 pré-anim de MONTÉE/DESCENTE (= EscalatorWarpOut ride,
+//      RideUp/DownEscalatorOut) sur le modèle 'door' (Task_DoDoorWarp inline) ;
+//      puis Phase 5 arrivée = `FieldCallback_EscalatorWarpIn` (ci-dessous) sur le
+//      modèle fly/fall/spin. StartEscalator/StopEscalator (fldeff_escalator.ts) OK.
+//   B. LAVARIDGE : BLOQUÉ tant que FLDEFF_ASH_LAUNCH/PUFF (field_effect.ts) non
+//      portés. Une fois portés : b1f arrivée = `FieldCB_LavaridgeGymB1FWarpExit`,
+//      1f arrivée = `FieldCB_FallWarpExit` (déjà porté), pré-anim = Task_Lavaridge*.
+//
+// Les 3 wrappers + les familles sont exposés en fin de section (ponts __*).
+
+// ─── Refs paresseuses (protègent le cycle ESM boot, cf. discipline du fichier) ─
+// INERTE : si une ref reste null, la fonction ne fire jamais (aucun câblage runtime).
+let _CameraObjectFreeze: (() => void) | null = null;
+let _CameraObjectReset: (() => void) | null = null;
+let _ObjectEventIsMovementOverridden: ((oe: unknown) => boolean) | null = null;
+let _ObjectEventClearHeldMovementIfFinished: ((oe: unknown) => boolean) | null = null;
+let _ObjectEventClearHeldMovementIfActive: ((oe: unknown) => void) | null = null;
+let _ObjectEventSetHeldMovement: ((oe: unknown, action: number) => void) | null = null;
+let _GetFaceDirectionMovementAction: ((dir: number) => number) | null = null;
+let _GetWalkNormalMovementAction: ((dir: number) => number) | null = null;
+let _GetJumpMovementAction: ((dir: number) => number) | null = null;
+let _GetWalkInPlaceFasterMovementAction: ((dir: number) => number) | null = null;
+let _gObjectEvents: Array<Record<string, unknown>> | null = null;
+import('./event_object_movement').then((m) => {
+  _CameraObjectFreeze = m.CameraObjectFreeze;
+  _CameraObjectReset = m.CameraObjectReset;
+  _ObjectEventIsMovementOverridden = m.ObjectEventIsMovementOverridden as unknown as (oe: unknown) => boolean;
+  _ObjectEventClearHeldMovementIfFinished = m.ObjectEventClearHeldMovementIfFinished as unknown as (oe: unknown) => boolean;
+  _ObjectEventClearHeldMovementIfActive = m.ObjectEventClearHeldMovementIfActive as unknown as (oe: unknown) => void;
+  _ObjectEventSetHeldMovement = m.ObjectEventSetHeldMovement as unknown as (oe: unknown, action: number) => void;
+  _GetFaceDirectionMovementAction = m.GetFaceDirectionMovementAction as unknown as (dir: number) => number;
+  _GetWalkNormalMovementAction = m.GetWalkNormalMovementAction as unknown as (dir: number) => number;
+  _GetJumpMovementAction = m.GetJumpMovementAction as unknown as (dir: number) => number;
+  // GetWalkInPlaceFasterMovementAction (event_object_movement.c:4973) N'EST PAS porté
+  // (le port a InPlaceFast/WalkFaster mais pas InPlaceFaster) → reste null (INERTE, Lavaridge
+  // non câblé). À porter par le pilote au câblage Lavaridge (Règle 1 : pas de substitut inventé).
+  _GetWalkInPlaceFasterMovementAction =
+    ((m as unknown as Record<string, unknown>).GetWalkInPlaceFasterMovementAction as ((dir: number) => number) | undefined) ?? null;
+  _gObjectEvents = m.gObjectEvents as unknown as Array<Record<string, unknown>>;
+}).catch((e) => console.error('[field_screen_effect] import event_object_movement (escalator/lavaridge) a échoué', e));
+
+let _gPlayerAvatar: { spriteId: number; objectEventId: number; preventStep: boolean } | null = null;
+let _GetPlayerFacingDirection: (() => number) | null = null;
+import('./field_player_avatar').then((m) => {
+  _gPlayerAvatar = m.gPlayerAvatar as unknown as { spriteId: number; objectEventId: number; preventStep: boolean };
+  _GetPlayerFacingDirection = m.GetPlayerFacingDirection;
+}).catch((e) => console.error('[field_screen_effect] import field_player_avatar (escalator/lavaridge) a échoué', e));
+
+let _StartEscalator: ((goingUp: boolean) => void) | null = null;
+let _StopEscalator: (() => void) | null = null;
+let _IsEscalatorMoving: (() => boolean) | null = null;
+import('./fldeff_escalator').then((m) => {
+  _StartEscalator = m.StartEscalator;
+  _StopEscalator = m.StopEscalator;
+  _IsEscalatorMoving = m.IsEscalatorMoving;
+}).catch((e) => console.error('[field_screen_effect] import fldeff_escalator a échoué', e));
+
+let _FieldEffectStart: ((id: number) => number) | null = null;
+let _FieldEffectActiveListContains: ((id: number) => boolean) | null = null;
+let _gFieldEffectArguments: number[] | null = null;
+import('./field_effect').then((m) => {
+  _FieldEffectStart = m.FieldEffectStart;
+  _FieldEffectActiveListContains = m.FieldEffectActiveListContains;
+  _gFieldEffectArguments = m.gFieldEffectArguments;
+}).catch((e) => console.error('[field_screen_effect] import field_effect (ash fldeff) a échoué', e));
+
+let _WarpIntoMap: (() => void) | null = null;
+let _TryFadeOutOldMapMusic: (() => void) | null = null;
+let _BGMusicStopped: (() => boolean) | null = null;
+// _owGetPendingWarp/_owSetPendingWarp déjà capturés plus haut (anti-TDZ overworld).
+import('./overworld').then((m) => {
+  _WarpIntoMap = m.WarpIntoMap;
+  _TryFadeOutOldMapMusic = m.TryFadeOutOldMapMusic;
+  _BGMusicStopped = m.BGMusicStopped;
+}).catch((e) => console.error('[field_screen_effect] import overworld (warp/music escalator) a échoué', e));
+
+// Symboles NON exportés par le port (le décomp les appelle ; ici INERTE) :
+//   WarpFadeOutScreen / WarpFadeInScreen / SetMainCallback2(CB2_LoadMap).
+// Le vrai chemin = executeWarp (fade+load). Accès paresseux via globalThis (restent
+// null → no-op INERTE), avec HURLEMENT si jamais appelés sans câblage (Règle 3).
+function _WarpFadeOutScreen(): void {
+  const f = (globalThis as Record<string, unknown>).__WarpFadeOutScreen as (() => void) | undefined;
+  if (f) f(); else console.error('[field_screen_effect] WarpFadeOutScreen absent (port = executeWarp) — escalator/lavaridge INERTE');
+}
+function _WarpFadeInScreen(): void {
+  const f = (globalThis as Record<string, unknown>).__WarpFadeInScreen as (() => void) | undefined;
+  if (f) f(); else console.error('[field_screen_effect] WarpFadeInScreen absent (port = executeWarp) — escalator/lavaridge INERTE');
+}
+function _SetMainCallback2_LoadMap(): void {
+  const f = (globalThis as Record<string, unknown>).__SetMainCallback2LoadMap as (() => void) | undefined;
+  if (f) f(); else console.error('[field_screen_effect] CB2_LoadMap absent (port = executeWarp) — escalator/lavaridge INERTE');
+}
+/** Runtime live (window.__rt) — gSprites / gSpriteCoordOffsetY / gPaletteFade
+ *  (état renderer non exporté en module ; cf. mémoire « runtime live = window.__rt »). */
+function _runtime(): Record<string, unknown> {
+  return ((globalThis as Record<string, unknown>).__rt as Record<string, unknown> | undefined) ?? {};
+}
+function _playerSprite(): Record<string, unknown> | undefined {
+  const spr = _runtime().gSprites as Array<Record<string, unknown>> | undefined;
+  if (!spr || !_gPlayerAvatar) return undefined;
+  return spr[_gPlayerAvatar.spriteId];
+}
+function _spriteAt(id: number): Record<string, unknown> | undefined {
+  const spr = _runtime().gSprites as Array<Record<string, unknown>> | undefined;
+  return spr ? spr[id] : undefined;
+}
+function _playerObjEvent(): Record<string, unknown> | undefined {
+  if (!_gObjectEvents || !_gPlayerAvatar) return undefined;
+  return _gObjectEvents[_gPlayerAvatar.objectEventId];
+}
+function _paletteFadeActive(): boolean {
+  const pf = _runtime().gPaletteFade as { active?: boolean } | undefined;
+  return pf?.active === true;
+}
+/** 1:1 `SUBSPRITES_IGNORE_PRIORITY` (include/sprite.h) = 2 (modèle décomp ; le port
+ *  utilise une union string pour subspriteMode → shim au câblage, cf. commentaire section). */
+const SUBSPRITES_IGNORE_PRIORITY = 2;
+
+// ─── DoEscalatorWarp / DoLavaridge* — 1:1 field_screen_effect.c:528-543 ───────
+
+/** 1:1 décomp `void DoEscalatorWarp(u8 metatileBehavior)` (field_screen_effect.c:528) :
+ *    LockPlayerFieldControls();
+ *    StartEscalatorWarp(metatileBehavior, 10); */
+export function DoEscalatorWarp(metatileBehavior: number): void {
+  LockPlayerFieldControls();
+  StartEscalatorWarp(metatileBehavior, 10);
+}
+
+/** 1:1 décomp `void DoLavaridgeGymB1FWarp(void)` (field_screen_effect.c:534) :
+ *    LockPlayerFieldControls();
+ *    StartLavaridgeGymB1FWarp(10); */
+export function DoLavaridgeGymB1FWarp(): void {
+  LockPlayerFieldControls();
+  StartLavaridgeGymB1FWarp(10);
+}
+
+/** 1:1 décomp `void DoLavaridgeGym1FWarp(void)` (field_screen_effect.c:540) :
+ *    LockPlayerFieldControls();
+ *    StartLavaridgeGym1FWarp(10); */
+export function DoLavaridgeGym1FWarp(): void {
+  LockPlayerFieldControls();
+  StartLavaridgeGym1FWarp(10);
+}
+
+// ─── ESCALATOR — 1:1 field_effect.c:1562-1826 ───────────────────────────────
+// #define tState data[0] ; #define tGoingUp data[1]. Les subfuncs prennent le
+// taskId et lisent gTasks[taskId].data (adaptation du `struct Task *task` décomp,
+// même style que les tasks de ce fichier). La boucle `while(funcs[state](task))`
+// est reproduite dans Task_EscalatorWarpOut/In.
+const _E_tState = 0, _E_tGoingUp = 1;
+
+/** 1:1 `void StartEscalatorWarp(u8 metatileBehavior, u8 priority)` (field_effect.c:1562). */
+export function StartEscalatorWarp(metatileBehavior: number, priority: number): void {
+  const taskId = _createTask(Task_EscalatorWarpOut, priority);
+  gTasks[taskId].data[_E_tGoingUp] = 0;   // FALSE
+  if (metatileBehavior === MB_UP_ESCALATOR) {
+    gTasks[taskId].data[_E_tGoingUp] = 1; // TRUE
+  }
+}
+
+const sEscalatorWarpOutFieldEffectFuncs: ReadonlyArray<(taskId: number) => boolean> = [
+  EscalatorWarpOut_Init,
+  EscalatorWarpOut_WaitForPlayer,
+  EscalatorWarpOut_Up_Ride,
+  EscalatorWarpOut_Up_End,
+  EscalatorWarpOut_Down_Ride,
+  EscalatorWarpOut_Down_End,
+];
+
+/** 1:1 `static void Task_EscalatorWarpOut(u8 taskId)` (field_effect.c:1573). */
+function Task_EscalatorWarpOut(taskId: number): void {
+  while (sEscalatorWarpOutFieldEffectFuncs[gTasks[taskId].data[_E_tState]](taskId));
+}
+
+/** 1:1 `EscalatorWarpOut_Init` (field_effect.c:1580). */
+function EscalatorWarpOut_Init(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  _FreezeObjectEvents?.();
+  _CameraObjectFreeze?.();
+  _StartEscalator?.(d[_E_tGoingUp] !== 0);
+  d[_E_tState]++;
+  return false;
+}
+
+/** 1:1 `EscalatorWarpOut_WaitForPlayer` (field_effect.c:1589). */
+function EscalatorWarpOut_WaitForPlayer(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const objectEvent = _playerObjEvent();
+  if (!_ObjectEventIsMovementOverridden?.(objectEvent) || _ObjectEventClearHeldMovementIfFinished?.(objectEvent)) {
+    _ObjectEventSetHeldMovement?.(objectEvent, _GetFaceDirectionMovementAction?.(_GetPlayerFacingDirection?.() ?? 0) ?? 0);
+    d[_E_tState]++;
+    d[2] = 0;
+    d[3] = 0;
+    if ((d[_E_tGoingUp] & 0xFF) === 0) {   // (u8)task->tGoingUp == FALSE
+      d[_E_tState] = 4;  // jump to EscalatorWarpOut_Down_Ride
+    }
+    PlaySE(SE_ESCALATOR);
+  }
+  return false;
+}
+
+/** 1:1 `EscalatorWarpOut_Up_Ride` (field_effect.c:1610). */
+function EscalatorWarpOut_Up_Ride(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  RideUpEscalatorOut(taskId);
+  if (d[2] > 3) {
+    FadeOutAtEndOfEscalator();
+    d[_E_tState]++;
+  }
+  return false;
+}
+
+/** 1:1 `EscalatorWarpOut_Up_End` (field_effect.c:1621). */
+function EscalatorWarpOut_Up_End(taskId: number): boolean {
+  RideUpEscalatorOut(taskId);
+  WarpAtEndOfEscalator();
+  return false;
+}
+
+/** 1:1 `EscalatorWarpOut_Down_Ride` (field_effect.c:1628). */
+function EscalatorWarpOut_Down_Ride(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  RideDownEscalatorOut(taskId);
+  if (d[2] > 3) {
+    FadeOutAtEndOfEscalator();
+    d[_E_tState]++;
+  }
+  return false;
+}
+
+/** 1:1 `EscalatorWarpOut_Down_End` (field_effect.c:1639). */
+function EscalatorWarpOut_Down_End(taskId: number): boolean {
+  RideDownEscalatorOut(taskId);
+  WarpAtEndOfEscalator();
+  return false;
+}
+
+/** 1:1 `static void RideUpEscalatorOut(struct Task *task)` (field_effect.c:1646). */
+function RideUpEscalatorOut(taskId: number): void {
+  const d = gTasks[taskId].data;
+  const sprite = _playerSprite();
+  if (sprite) {
+    sprite.x2 = Cos(0x84, d[2]);
+    sprite.y2 = Sin(0x94, d[2]);
+  }
+  d[3]++;
+  if (d[3] & 1) {
+    d[2]++;
+  }
+}
+
+/** 1:1 `static void RideDownEscalatorOut(struct Task *task)` (field_effect.c:1660). */
+function RideDownEscalatorOut(taskId: number): void {
+  const d = gTasks[taskId].data;
+  const sprite = _playerSprite();
+  if (sprite) {
+    sprite.x2 = Cos(0x7c, d[2]);
+    sprite.y2 = Sin(0x76, d[2]);
+  }
+  d[3]++;
+  if (d[3] & 1) {
+    d[2]++;
+  }
+}
+
+/** 1:1 `static void FadeOutAtEndOfEscalator(void)` (field_effect.c:1674). */
+function FadeOutAtEndOfEscalator(): void {
+  _TryFadeOutOldMapMusic?.();
+  _WarpFadeOutScreen();
+}
+
+/** 1:1 `static void WarpAtEndOfEscalator(void)` (field_effect.c:1680). */
+function WarpAtEndOfEscalator(): void {
+  if (!_paletteFadeActive() && _BGMusicStopped?.() === true) {
+    _StopEscalator?.();
+    _WarpIntoMap?.();
+    (globalThis as Record<string, unknown>).gFieldCallback = FieldCallback_EscalatorWarpIn;
+    _SetMainCallback2_LoadMap();
+    DestroyTask(FindTaskIdByFunc(Task_EscalatorWarpOut));
+  }
+}
+
+/** 1:1 `static void FieldCallback_EscalatorWarpIn(void)` (field_effect.c:1691). */
+export function FieldCallback_EscalatorWarpIn(): void {
+  Overworld_PlaySpecialMapMusic();
+  _WarpFadeInScreen();
+  LockPlayerFieldControls();
+  _createTask(Task_EscalatorWarpIn, 0);
+  (globalThis as Record<string, unknown>).gFieldCallback = null;
+}
+
+const sEscalatorWarpInFieldEffectFuncs: ReadonlyArray<(taskId: number) => boolean> = [
+  EscalatorWarpIn_Init,
+  EscalatorWarpIn_Down_Init,
+  EscalatorWarpIn_Down_Ride,
+  EscalatorWarpIn_Up_Init,
+  EscalatorWarpIn_Up_Ride,
+  EscalatorWarpIn_WaitForMovement,
+  EscalatorWarpIn_End,
+];
+
+/** 1:1 `static void Task_EscalatorWarpIn(u8 taskId)` (field_effect.c:1702). */
+function Task_EscalatorWarpIn(taskId: number): void {
+  while (sEscalatorWarpInFieldEffectFuncs[gTasks[taskId].data[_E_tState]](taskId));
+}
+
+/** 1:1 `EscalatorWarpIn_Init` (field_effect.c:1709). */
+function EscalatorWarpIn_Init(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  _CameraObjectFreeze?.();
+  const objectEvent = _playerObjEvent();
+  _ObjectEventSetHeldMovement?.(objectEvent, _GetFaceDirectionMovementAction?.(3 /* DIR_EAST */) ?? 0);
+  const coords = _playerGetDestCoordsInline();
+  let behavior = MapGridGetMetatileBehaviorAt(coords.x, coords.y);
+  d[_E_tState]++;
+  d[1] = 16;
+  if (behavior === MB_DOWN_ESCALATOR) {
+    // dest = down escalator → le joueur monte (riding up)
+    behavior = 1;   // TRUE
+    d[_E_tState] = 3;   // jump to EscalatorWarpIn_Up_Init
+  } else {  // MB_UP_ESCALATOR → riding down
+    behavior = 0;   // FALSE
+  }
+  _StartEscalator?.(behavior !== 0);
+  return true;
+}
+
+/** 1:1 `EscalatorWarpIn_Down_Init` (field_effect.c:1739). */
+function EscalatorWarpIn_Down_Init(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const sprite = _playerSprite();
+  if (sprite) {
+    sprite.x2 = Cos(0x84, d[1]);
+    sprite.y2 = Sin(0x94, d[1]);
+  }
+  d[_E_tState]++;
+  return false;
+}
+
+/** 1:1 `EscalatorWarpIn_Down_Ride` (field_effect.c:1750). */
+function EscalatorWarpIn_Down_Ride(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const sprite = _playerSprite();
+  if (sprite) {
+    sprite.x2 = Cos(0x84, d[1]);
+    sprite.y2 = Sin(0x94, d[1]);
+  }
+  d[2]++;
+  if (d[2] & 1) {
+    d[1]--;
+  }
+  if (d[1] === 0) {
+    if (sprite) { sprite.x2 = 0; sprite.y2 = 0; }
+    d[_E_tState] = 5;
+  }
+  return false;
+}
+
+/** 1:1 `EscalatorWarpIn_Up_Init` (field_effect.c:1768). */
+function EscalatorWarpIn_Up_Init(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const sprite = _playerSprite();
+  if (sprite) {
+    sprite.x2 = Cos(0x7c, d[1]);
+    sprite.y2 = Sin(0x76, d[1]);
+  }
+  d[_E_tState]++;
+  return false;
+}
+
+/** 1:1 `EscalatorWarpIn_Up_Ride` (field_effect.c:1779). */
+function EscalatorWarpIn_Up_Ride(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  const sprite = _playerSprite();
+  if (sprite) {
+    sprite.x2 = Cos(0x7c, d[1]);
+    sprite.y2 = Sin(0x76, d[1]);
+  }
+  d[2]++;
+  if (d[2] & 1) {
+    d[1]--;
+  }
+  if (d[1] === 0) {
+    if (sprite) { sprite.x2 = 0; sprite.y2 = 0; }
+    d[_E_tState]++;
+  }
+  return false;
+}
+
+/** 1:1 `EscalatorWarpIn_WaitForMovement` (field_effect.c:1797). */
+function EscalatorWarpIn_WaitForMovement(taskId: number): boolean {
+  const d = gTasks[taskId].data;
+  if (_IsEscalatorMoving?.()) {
+    return false;
+  }
+  _StopEscalator?.();
+  d[_E_tState]++;
+  return true;
+}
+
+/** 1:1 `EscalatorWarpIn_End` (field_effect.c:1808). */
+function EscalatorWarpIn_End(taskId: number): boolean {
+  const objectEvent = _playerObjEvent();
+  if (_ObjectEventClearHeldMovementIfFinished?.(objectEvent)) {
+    _CameraObjectReset?.();
+    UnlockPlayerFieldControls();
+    _ObjectEventSetHeldMovement?.(objectEvent, _GetWalkNormalMovementAction?.(3 /* DIR_EAST */) ?? 0);
+    DestroyTask(FindTaskIdByFunc(Task_EscalatorWarpIn));
+  }
+  return false;
+}
+
+/** Inline de `PlayerGetDestCoords(&x, &y)` — coords INTERNES (map+MAP_OFFSET).
+ *  `getMetatileBehaviorAtPlayerPos` (ci-dessus) lit déjà pos+MAP_OFFSET ; ici on
+ *  retourne le couple pour MapGridGetMetatileBehaviorAt. */
+function _playerGetDestCoordsInline(): { x: number; y: number } {
+  return { x: gSaveBlock1Ptr.pos.x + MAP_OFFSET, y: gSaveBlock1Ptr.pos.y + MAP_OFFSET };
+}
+
+// ─── LAVARIDGE GYM B1F WARP (geyser) — 1:1 field_effect.c:1948-2126 ──────────
+// data[0] = state. Les subfuncs prennent taskId ; objectEvent/sprite = récupérés
+// via gObjectEvents[gPlayerAvatar.objectEventId] / gSprites[gPlayerAvatar.spriteId]
+// (= les args exacts du dispatcher décomp). BLOQUÉ EN JEU : FLDEFF_ASH_LAUNCH/PUFF
+// non portés (cf. entête de section). oam.priority/subspriteMode = shims documentés.
+
+/** 1:1 `void StartLavaridgeGymB1FWarp(u8 priority)` (field_effect.c:1948). */
+export function StartLavaridgeGymB1FWarp(priority: number): void {
+  _createTask(Task_LavaridgeGymB1FWarp, priority);
+}
+
+const sLavaridgeGymB1FWarpEffectFuncs: ReadonlyArray<(taskId: number) => boolean> = [
+  LavaridgeGymB1FWarpEffect_Init,
+  LavaridgeGymB1FWarpEffect_CameraShake,
+  LavaridgeGymB1FWarpEffect_Launch,
+  LavaridgeGymB1FWarpEffect_Rise,
+  LavaridgeGymB1FWarpEffect_FadeOut,
+  LavaridgeGymB1FWarpEffect_Warp,
+];
+
+/** 1:1 `static void Task_LavaridgeGymB1FWarp(u8 taskId)` (field_effect.c:1953). */
+function Task_LavaridgeGymB1FWarp(taskId: number): void {
+  while (sLavaridgeGymB1FWarpEffectFuncs[gTasks[taskId].data[0]](taskId));
+}
+
+/** 1:1 `LavaridgeGymB1FWarpEffect_Init` (field_effect.c:1958). */
+function LavaridgeGymB1FWarpEffect_Init(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  const objectEvent = _playerObjEvent();
+  _FreezeObjectEvents?.();
+  _CameraObjectFreeze?.();
+  SetCameraPanningCallback(null);
+  if (_gPlayerAvatar) _gPlayerAvatar.preventStep = true;
+  if (objectEvent) objectEvent.fixedPriority = 1;
+  task[1] = 1;
+  task[0]++;
+  return true;
+}
+
+/** 1:1 `LavaridgeGymB1FWarpEffect_CameraShake` (field_effect.c:1969). */
+function LavaridgeGymB1FWarpEffect_CameraShake(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  SetCameraPanning(0, task[1]);
+  task[1] = -task[1];
+  task[2]++;
+  if (task[2] > 7) {
+    task[2] = 0;
+    task[0]++;
+  }
+  return false;
+}
+
+/** 1:1 `LavaridgeGymB1FWarpEffect_Launch` (field_effect.c:1982). */
+function LavaridgeGymB1FWarpEffect_Launch(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  const objectEvent = _playerObjEvent();
+  const sprite = _playerSprite();
+  if (sprite) sprite.y2 = 0;
+  task[3] = 1;
+  if (_gFieldEffectArguments && objectEvent && sprite) {
+    _gFieldEffectArguments[0] = (objectEvent.currentCoords as { x: number }).x;
+    _gFieldEffectArguments[1] = (objectEvent.currentCoords as { y: number }).y;
+    _gFieldEffectArguments[2] = (sprite.subpriority as number) - 1;
+    _gFieldEffectArguments[3] = _oamPriority(sprite);
+  }
+  _FieldEffectStart?.(FLDEFF_ASH_LAUNCH);
+  PlaySE(SE_M_EXPLOSION);
+  task[0]++;
+  return true;
+}
+
+/** 1:1 `LavaridgeGymB1FWarpEffect_Rise` (field_effect.c:2000). */
+function LavaridgeGymB1FWarpEffect_Rise(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  const objectEvent = _playerObjEvent();
+  const sprite = _playerSprite();
+  let centerToCornerVecY: number;
+  SetCameraPanning(0, task[1]);
+  if ((task[1] = -task[1], ++task[2] <= 17)) {
+    if (!(task[2] & 1) && (task[1] <= 3)) {
+      task[1] <<= 1;
+    }
+  } else if (!(task[2] & 4) && (task[1] > 0)) {
+    task[1] >>= 1;
+  }
+  if (sprite && task[2] > 6) {
+    const ctcv = (sprite.centerToCornerVecY as number) | 0;
+    const coordOffY = (_runtime().gSpriteCoordOffsetY as number) | 0;
+    centerToCornerVecY = -(ctcv << 1);
+    if ((sprite.y2 as number) > -((sprite.y as number) + ctcv + coordOffY + centerToCornerVecY)) {
+      sprite.y2 = (sprite.y2 as number) - task[3];
+      if (task[3] <= 7) {
+        task[3]++;
+      }
+    } else {
+      task[4] = 1;
+    }
+  }
+  if (sprite && task[5] === 0 && (sprite.y2 as number) < -0x10) {
+    task[5]++;
+    if (objectEvent) objectEvent.fixedPriority = 1;
+    _setOamPriority(sprite, 1);
+    sprite.subspriteMode = SUBSPRITES_IGNORE_PRIORITY;   // shim (port : union string)
+  }
+  if (task[1] === 0 && task[4] !== 0) {
+    task[0]++;
+  }
+  return false;
+}
+
+/** 1:1 `LavaridgeGymB1FWarpEffect_FadeOut` (field_effect.c:2040). */
+function LavaridgeGymB1FWarpEffect_FadeOut(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  _TryFadeOutOldMapMusic?.();
+  _WarpFadeOutScreen();
+  task[0]++;
+  return false;
+}
+
+/** 1:1 `LavaridgeGymB1FWarpEffect_Warp` (field_effect.c:2048). */
+function LavaridgeGymB1FWarpEffect_Warp(taskId: number): boolean {
+  if (!_paletteFadeActive() && _BGMusicStopped?.() === true) {
+    _WarpIntoMap?.();
+    (globalThis as Record<string, unknown>).gFieldCallback = FieldCB_LavaridgeGymB1FWarpExit;
+    _SetMainCallback2_LoadMap();
+    DestroyTask(FindTaskIdByFunc(Task_LavaridgeGymB1FWarp));
+  }
+  return false;
+}
+
+/** 1:1 `static void FieldCB_LavaridgeGymB1FWarpExit(void)` (field_effect.c:2062). */
+export function FieldCB_LavaridgeGymB1FWarpExit(): void {
+  Overworld_PlaySpecialMapMusic();
+  _WarpFadeInScreen();
+  LockPlayerFieldControls();
+  (globalThis as Record<string, unknown>).gFieldCallback = null;
+  _createTask(Task_LavaridgeGymB1FWarpExit, 0);
+}
+
+const sLavaridgeGymB1FWarpExitEffectFuncs: ReadonlyArray<(taskId: number) => boolean> = [
+  LavaridgeGymB1FWarpExitEffect_Init,
+  LavaridgeGymB1FWarpExitEffect_StartPopOut,
+  LavaridgeGymB1FWarpExitEffect_PopOut,
+  LavaridgeGymB1FWarpExitEffect_End,
+];
+
+/** 1:1 `static void Task_LavaridgeGymB1FWarpExit(u8 taskId)` (field_effect.c:2071). */
+function Task_LavaridgeGymB1FWarpExit(taskId: number): void {
+  while (sLavaridgeGymB1FWarpExitEffectFuncs[gTasks[taskId].data[0]](taskId));
+}
+
+/** 1:1 `LavaridgeGymB1FWarpExitEffect_Init` (field_effect.c:2076). */
+function LavaridgeGymB1FWarpExitEffect_Init(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  const objectEvent = _playerObjEvent();
+  _CameraObjectFreeze?.();
+  _FreezeObjectEvents?.();
+  if (_gPlayerAvatar) _gPlayerAvatar.preventStep = true;
+  if (objectEvent) objectEvent.invisible = true;
+  task[0]++;
+  return false;
+}
+
+/** 1:1 `LavaridgeGymB1FWarpExitEffect_StartPopOut` (field_effect.c:2086). */
+function LavaridgeGymB1FWarpExitEffect_StartPopOut(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  const objectEvent = _playerObjEvent();
+  const sprite = _playerSprite();
+  if (IsWeatherNotFadingIn()) {
+    if (_gFieldEffectArguments && objectEvent && sprite) {
+      _gFieldEffectArguments[0] = (objectEvent.currentCoords as { x: number }).x;
+      _gFieldEffectArguments[1] = (objectEvent.currentCoords as { y: number }).y;
+      _gFieldEffectArguments[2] = (sprite.subpriority as number) - 1;
+      _gFieldEffectArguments[3] = _oamPriority(sprite);
+    }
+    task[1] = _FieldEffectStart?.(FLDEFF_ASH_PUFF) ?? 0;
+    task[0]++;
+  }
+  return false;
+}
+
+/** 1:1 `LavaridgeGymB1FWarpExitEffect_PopOut` (field_effect.c:2100). */
+function LavaridgeGymB1FWarpExitEffect_PopOut(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  const objectEvent = _playerObjEvent();
+  const sprite = _spriteAt(task[1]);
+  if (sprite && (sprite.animCmdIndex as number) > 1) {
+    task[0]++;
+    if (objectEvent) objectEvent.invisible = false;
+    _CameraObjectReset?.();
+    PlaySE(SE_M_DIG);
+    _ObjectEventSetHeldMovement?.(objectEvent, _GetJumpMovementAction?.(3 /* DIR_EAST */) ?? 0);
+  }
+  return false;
+}
+
+/** 1:1 `LavaridgeGymB1FWarpExitEffect_End` (field_effect.c:2114). */
+function LavaridgeGymB1FWarpExitEffect_End(taskId: number): boolean {
+  const objectEvent = _playerObjEvent();
+  if (_ObjectEventClearHeldMovementIfFinished?.(objectEvent)) {
+    if (_gPlayerAvatar) _gPlayerAvatar.preventStep = false;
+    UnlockPlayerFieldControls();
+    _UnfreezeObjectEvents?.();
+    DestroyTask(FindTaskIdByFunc(Task_LavaridgeGymB1FWarpExit));
+  }
+  return false;
+}
+
+// ─── LAVARIDGE GYM 1F WARP (chute cendre) — 1:1 field_effect.c:2143-2223 ─────
+
+/** 1:1 `void StartLavaridgeGym1FWarp(u8 priority)` (field_effect.c:2143). */
+export function StartLavaridgeGym1FWarp(priority: number): void {
+  _createTask(Task_LavaridgeGym1FWarp, priority);
+}
+
+const sLavaridgeGym1FWarpEffectFuncs: ReadonlyArray<(taskId: number) => boolean> = [
+  LavaridgeGym1FWarpEffect_Init,
+  LavaridgeGym1FWarpEffect_AshPuff,
+  LavaridgeGym1FWarpEffect_Disappear,
+  LavaridgeGym1FWarpEffect_FadeOut,
+  LavaridgeGym1FWarpEffect_Warp,
+];
+
+/** 1:1 `static void Task_LavaridgeGym1FWarp(u8 taskId)` (field_effect.c:2148). */
+function Task_LavaridgeGym1FWarp(taskId: number): void {
+  while (sLavaridgeGym1FWarpEffectFuncs[gTasks[taskId].data[0]](taskId));
+}
+
+/** 1:1 `LavaridgeGym1FWarpEffect_Init` (field_effect.c:2153). */
+function LavaridgeGym1FWarpEffect_Init(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  const objectEvent = _playerObjEvent();
+  _FreezeObjectEvents?.();
+  _CameraObjectFreeze?.();
+  if (_gPlayerAvatar) _gPlayerAvatar.preventStep = true;
+  if (objectEvent) objectEvent.fixedPriority = 1;
+  task[0]++;
+  return false;
+}
+
+/** 1:1 `LavaridgeGym1FWarpEffect_AshPuff` (field_effect.c:2163). */
+function LavaridgeGym1FWarpEffect_AshPuff(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  const objectEvent = _playerObjEvent();
+  const sprite = _playerSprite();
+  if (_ObjectEventClearHeldMovementIfFinished?.(objectEvent)) {
+    if (task[1] > 3) {
+      if (_gFieldEffectArguments && objectEvent && sprite) {
+        _gFieldEffectArguments[0] = (objectEvent.currentCoords as { x: number }).x;
+        _gFieldEffectArguments[1] = (objectEvent.currentCoords as { y: number }).y;
+        _gFieldEffectArguments[2] = (sprite.subpriority as number) - 1;
+        _gFieldEffectArguments[3] = _oamPriority(sprite);
+      }
+      task[1] = _FieldEffectStart?.(FLDEFF_ASH_PUFF) ?? 0;
+      task[0]++;
+    } else {
+      task[1]++;
+      _ObjectEventSetHeldMovement?.(objectEvent,
+        _GetWalkInPlaceFasterMovementAction?.(((objectEvent?.facingDirection as number) | 0)) ?? 0);
+      PlaySE(SE_LAVARIDGE_FALL_WARP);
+    }
+  }
+  return false;
+}
+
+/** 1:1 `LavaridgeGym1FWarpEffect_Disappear` (field_effect.c:2186). */
+function LavaridgeGym1FWarpEffect_Disappear(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  const objectEvent = _playerObjEvent();
+  const ashSprite = _spriteAt(task[1]);
+  if (ashSprite && (ashSprite.animCmdIndex as number) === 2) {
+    if (objectEvent) objectEvent.invisible = true;
+    task[0]++;
+  }
+  return false;
+}
+
+/** 1:1 `LavaridgeGym1FWarpEffect_FadeOut` (field_effect.c:2197). */
+function LavaridgeGym1FWarpEffect_FadeOut(taskId: number): boolean {
+  const task = gTasks[taskId].data;
+  if (!_FieldEffectActiveListContains?.(FLDEFF_ASH_PUFF)) {
+    _TryFadeOutOldMapMusic?.();
+    _WarpFadeOutScreen();
+    task[0]++;
+  }
+  return false;
+}
+
+/** 1:1 `LavaridgeGym1FWarpEffect_Warp` (field_effect.c:2208). */
+function LavaridgeGym1FWarpEffect_Warp(taskId: number): boolean {
+  if (!_paletteFadeActive() && _BGMusicStopped?.() === true) {
+    _WarpIntoMap?.();
+    // 1:1 : gFieldCallback = FieldCB_FallWarpExit (arrivée réutilisée — déjà porté
+    // field_effect_helpers.ts, exposé __FieldCB_FallWarpExit, cf. DoFallWarp).
+    (globalThis as Record<string, unknown>).gFieldCallback =
+      (globalThis as Record<string, unknown>).__FieldCB_FallWarpExit;
+    _SetMainCallback2_LoadMap();
+    DestroyTask(FindTaskIdByFunc(Task_LavaridgeGym1FWarp));
+  }
+  return false;
+}
+
+// ── Shims oam.priority (port : priority via oamIndex, pas de champ oam.priority
+// direct sur DecompSprite — INERTE, à reconnecter au câblage par le pilote). ──
+function _oamPriority(sprite: Record<string, unknown>): number {
+  const oam = sprite.oam as { priority?: number } | undefined;
+  return oam?.priority ?? ((sprite.priority as number | undefined) ?? 0);
+}
+function _setOamPriority(sprite: Record<string, unknown>, value: number): void {
+  const oam = sprite.oam as { priority?: number } | undefined;
+  if (oam) oam.priority = value;
+  else sprite.priority = value;
+}
+
+// ─── Ponts globalThis (câblage pilote — anti-cycle, cf. __DoFallWarp) ────────
+(globalThis as Record<string, unknown>).__DoEscalatorWarp = DoEscalatorWarp;
+(globalThis as Record<string, unknown>).__DoLavaridgeGymB1FWarp = DoLavaridgeGymB1FWarp;
+(globalThis as Record<string, unknown>).__DoLavaridgeGym1FWarp = DoLavaridgeGym1FWarp;
+(globalThis as Record<string, unknown>).__FieldCallback_EscalatorWarpIn = FieldCallback_EscalatorWarpIn;
+(globalThis as Record<string, unknown>).__FieldCB_LavaridgeGymB1FWarpExit = FieldCB_LavaridgeGymB1FWarpExit;
 
 // ─── Ponts globalThis anti-cycle (lus par overworld/scrcmd sans import statique) ─
 // overworld.ts::InitCurrentFlashLevelScanlineEffect (1:1 overworld.c:1794) appelle ces
