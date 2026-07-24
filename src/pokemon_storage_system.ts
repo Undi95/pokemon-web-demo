@@ -20,7 +20,7 @@ import {
 } from './engine/battle/party-storage';
 // CopyMon/ZeroMonData : foyer pokemon.c (pokemon.ts n'importe PAS ce module —
 // il passe par le hook __getPokemonStorage — donc pas de cycle).
-import { CopyMon, ZeroMonData, GetGenderFromSpeciesAndPersonality, SetMonData, GetLevelFromBoxMonExp, CreateBoxMon, BoxMonToMon, type Pokemon } from './pokemon';
+import { CopyMon, ZeroMonData, GetGenderFromSpeciesAndPersonality, SetMonData, GetLevelFromBoxMonExp, CreateBoxMon, BoxMonToMon, BoxMonRestorePP, type Pokemon } from './pokemon';
 import { VarGet } from './event_data';
 import { PARTY_SIZE } from '../include/constants/global';
 // ─── PC MAIN MENU (phase 1) : helpers UI portés ────────────────────────────
@@ -1334,6 +1334,14 @@ export function CountPartyAliveNonEggMons_IgnoreVar0x8004Slot(): number {
 const FONT_SMALL = 0, FONT_SHORT = 2;             // fonts.h (FONT_NORMAL=1 déclaré plus bas)
 const MON_PIC_SIZE = 0x800;                       // 64×64 4bpp
 const SPECIES_NONE = 0;
+const SPECIES_EGG = 412;                          // constants/species.h : SPECIES_EGG (= NUM_SPECIES)
+// 1:1 `MON_DATA_SPECIES_OR_EGG` (pokemon.c GetBoxMonData:3986 / GetMonData:4128) : species réel,
+// ou SPECIES_EGG si œuf — c'est ce que le décomp passe à CreateMonIconSprite pour les icônes
+// boîte/équipe (pokemon_storage_system.c:4452/4480/4714/4742/4749/4430), d'où l'icône œuf dédiée.
+function _speciesOrEgg(mon: { species?: number; isEgg?: number | boolean } | null | undefined): number {
+  if (!mon || !mon.species) return SPECIES_NONE;
+  return mon.isEgg ? SPECIES_EGG : mon.species;
+}
 // io_reg offsets 1:1 (gba/io_reg.h) — locaux (le module include n'exporte que DISPCNT).
 const REG_OFFSET_BG0CNT = 0x8, REG_OFFSET_BG1CNT = 0xA, REG_OFFSET_BG2CNT = 0xC, REG_OFFSET_BG3CNT = 0xE;
 const REG_OFFSET_BG2HOFS = 0x18, REG_OFFSET_BG2VOFS = 0x1A, REG_OFFSET_BG3HOFS = 0x1C, REG_OFFSET_BG3VOFS = 0x1E;
@@ -2459,12 +2467,12 @@ const DISPLAY_HEIGHT = 160;
 // :4739 CreatePartyMonsSprites — les 6 icônes de l'équipe (slot 0 en haut-gauche, 1-5 à droite).
 function CreatePartyMonsSprites(visible: boolean): void {
   const s = sStorage!;
-  let species = (gPlayerParty[0] as Pokemon | undefined)?.species ?? SPECIES_NONE;
+  let species = _speciesOrEgg(gPlayerParty[0] as Pokemon | undefined); // :4742 MON_DATA_SPECIES_OR_EGG
   let personality = (gPlayerParty[0] as Pokemon | undefined)?.personality ?? 0;
   s.partySprites[0] = CreateMonIconSprite(species, personality, 104, 64, 1, _sub(12));
   let count = 1;
   for (let i = 1; i < PARTY_SIZE; i++) {
-    species = (gPlayerParty[i] as Pokemon | undefined)?.species ?? SPECIES_NONE;
+    species = _speciesOrEgg(gPlayerParty[i] as Pokemon | undefined); // :4749 MON_DATA_SPECIES_OR_EGG
     if (species !== SPECIES_NONE) {
       personality = (gPlayerParty[i] as Pokemon).personality ?? 0;
       s.partySprites[i] = CreateMonIconSprite(species, personality, 152, 8 * (3 * (i - 1)) + 16, 1, _sub(12));
@@ -2915,7 +2923,7 @@ function InitBoxMonSprites(boxId: number): void {
   for (let i = 0; i < IN_BOX_ROWS; i++) {
     for (let j = 0; j < IN_BOX_COLUMNS; j++) {
       const mon = _boxMonAt(boxId, boxPosition);
-      const species = mon && mon.species ? mon.species : SPECIES_NONE;
+      const species = _speciesOrEgg(mon); // :4452 GetBoxMonDataAt(MON_DATA_SPECIES_OR_EGG)
       if (species !== SPECIES_NONE) {
         const personality = mon!.personality ?? 0;
         s.boxMonsSprites[count] = CreateMonIconSprite(species, personality, 8 * (3 * j) + 100, 8 * (3 * i) + 44, 2, _sub(19 - j));
@@ -2931,7 +2939,7 @@ function InitBoxMonSprites(boxId: number): void {
 function CreateBoxMonIconAtPos(boxPosition: number): void {
   const s = sStorage!;
   const mon = _boxMonAt(StorageGetCurrentBox(), boxPosition);
-  const species = mon && mon.species ? mon.species : SPECIES_NONE;
+  const species = _speciesOrEgg(mon); // :4480 GetCurrentBoxMonData(MON_DATA_SPECIES_OR_EGG)
   if (species !== SPECIES_NONE) {
     const x = 8 * (3 * (boxPosition % IN_BOX_COLUMNS)) + 100;
     const y = 8 * (3 * Math.floor(boxPosition / IN_BOX_COLUMNS)) + 44;
@@ -3069,7 +3077,7 @@ function GetIncomingBoxMonData(boxId: number): void {
     for (let j = 0; j < IN_BOX_COLUMNS; j++) {
       // GetBoxMonDataAt(boxId, pos, MON_DATA_*) → _boxMonAt chez nous (champs directs du save block).
       const mon = _boxMonAt(boxId, boxPosition);
-      s.boxSpecies[boxPosition] = mon && mon.species ? mon.species : SPECIES_NONE;
+      s.boxSpecies[boxPosition] = _speciesOrEgg(mon); // :4714 MON_DATA_SPECIES_OR_EGG
       if (s.boxSpecies[boxPosition] !== SPECIES_NONE)
         s.boxPersonalities[boxPosition] = mon!.personality ?? 0;
       boxPosition++;
@@ -3741,15 +3749,15 @@ const DPAD_RIGHT = 0x0010, DPAD_LEFT = 0x0020, START_BUTTON = 0x0008, SELECT_BUT
 const FONT_NORMAL = 1, TEXT_COLOR_DARK_GRAY = 2, TEXT_COLOR_WHITE = 1, TEXT_COLOR_LIGHT_GRAY = 3;
 const COPYWIN_FULL = 3, TEXT_SKIP_DRAW = 0xFF, PIXEL_FILL_1 = 0x11;
 
-/** 1:1 `sMainMenuTexts` (:882) — {text=libellé menu, desc=description}. Libellés FR ≈ gText_*
- *  du décomp (à câbler sur les vraies strings gba au raffinement). */
+/** 1:1 `sMainMenuTexts` (:882) — {text, desc} = NOMS gText_* (PAS de texte hardcodé) résolus
+ *  via getString depuis strings.json (feedback-never-hardcode-decomp-strings ; même pattern que
+ *  sMenuTexts:4459). Ordre = OPTION_* (:53-61). */
 const sMainMenuTexts: ReadonlyArray<{ text: string; desc: string }> = [
-  // 1:1 strings.c:932-941 (décomp FR) — libellés (gText_*) + descriptions (gText_*Description).
-  { text: 'RETIRER POKéMON', desc: "Intégrer dans l'équipe des POKéMON se\ntrouvant dans les BOITES." },   // OPTION_WITHDRAW
-  { text: 'DEPOSER POKéMON', desc: "Déposer des POKéMON de l'équipe\ndans des BOITES." },                   // OPTION_DEPOSIT
-  { text: 'DEPLACER POKéMON', desc: "Organiser les POKéMON dans les BOITES\net dans l'équipe." },           // OPTION_MOVE_MONS
-  { text: 'DEPLACER OBJETS', desc: "Déplacer des objets tenus\ndans une BOITE ou par l'équipe." },          // OPTION_MOVE_ITEMS
-  { text: 'SALUT!', desc: 'Retour au menu précédent.' },                                                    // OPTION_EXIT
+  { text: 'gText_WithdrawPokemon', desc: 'gText_WithdrawMonDescription' }, // OPTION_WITHDRAW
+  { text: 'gText_DepositPokemon',  desc: 'gText_DepositMonDescription' },  // OPTION_DEPOSIT
+  { text: 'gText_MovePokemon',     desc: 'gText_MoveMonDescription' },     // OPTION_MOVE_MONS
+  { text: 'gText_MoveItems',       desc: 'gText_MoveItemsDescription' },   // OPTION_MOVE_ITEMS
+  { text: 'gText_SeeYa',           desc: 'gText_SeeYaDescription' },       // OPTION_EXIT
 ];
 // 1:1 `sWindowTemplate_MainMenu` (:891)
 const sWindowTemplate_MainMenu = { bg: 0, tilemapLeft: 1, tilemapTop: 1, width: 17, height: 10, paletteNum: 15, baseBlock: 0x1 };
@@ -3757,12 +3765,12 @@ const sWindowTemplate_MainMenu = { bg: 0, tilemapLeft: 1, tilemapTop: 1, width: 
 // task data (:1532) : tState=data[0] tSelectedOption=data[1] tInput=data[2] tNextOption=data[3] tWindowId=data[15]
 
 function _mainMenuActions(): MenuAction[] {
-  return sMainMenuTexts.map((t) => ({ text: t.text, func: () => {} } as unknown as MenuAction));
+  return sMainMenuTexts.map((t) => ({ text: getString(t.text), func: () => {} } as unknown as MenuAction));
 }
 
 function _printDesc(option: number, skipDraw: number): void {
   FillWindowPixelBuffer(0, PIXEL_FILL_1);
-  AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[option].desc, skipDraw, null as never, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+  AddTextPrinterParameterized2(0, FONT_NORMAL, getString(sMainMenuTexts[option].desc), skipDraw, null as never, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
 }
 
 /** 1:1 `CreateMainMenu` (pokemon_storage_system.c:1678). */
@@ -4138,7 +4146,8 @@ function CreateMovingMonIcon(): void {
   const s = sStorage!;
   const mon = s.movingMon; if (!mon) return;
   const priority = GetMonIconPriorityByCursorPos();
-  s.movingMonSprite = CreateMonIconSprite(mon.species ?? 0, mon.personality ?? 0, 0, 0, priority, _sub(7));
+  // :4430 GetMonData(&sStorage->movingMon, MON_DATA_SPECIES_OR_EGG)
+  s.movingMonSprite = CreateMonIconSprite(_speciesOrEgg(mon), mon.personality ?? 0, 0, 0, priority, _sub(7));
   const spr = _spr(s.movingMonSprite);
   if (spr) spr.callback = SpriteCB_HeldMon;
 }
@@ -4166,7 +4175,11 @@ function SetMovingMonData(boxId: number, position: number): void {
 function SetPlacedMonData(boxId: number, position: number): void {
   const s = sStorage!;
   if (boxId === TOTAL_BOXES_COUNT) { if (s.movingMon) gPlayerParty[position] = s.movingMon as never; }
-  else { const st = GetPokemonStorage(); if (st.boxes[boxId]) st.boxes[boxId][position] = s.movingMon as never; }
+  else {
+    // :6373 BoxMonRestorePP(&movingMon.box) : au dépôt en BOÎTE, chaque move est restauré à son PP MAX.
+    if (s.movingMon) BoxMonRestorePP(s.movingMon as never);
+    const st = GetPokemonStorage(); if (st.boxes[boxId]) st.boxes[boxId][position] = s.movingMon as never;
+  }
 }
 function PurgeMonOrBoxMon(boxId: number, position: number): void {
   if (boxId === TOTAL_BOXES_COUNT) ZeroMonData(gPlayerParty[position]);
@@ -4750,8 +4763,8 @@ function Task_OnSelectedMon(_taskId: number): void {
         case MENU_PLACE:  // :2623
           PlaySE(0x5); ClearBottomWindow(); SetPokeStorageTask(Task_PlaceMon);
           break;
-        case MENU_SHIFT:  // :2628
-          if (!CanShiftMon()) _pcActionTodo('CHANGER (Task_ShiftMon)');
+        case MENU_SHIFT:  // :2628 — refus (state 3 = MSG_LAST_POKE) si le shift viderait la party
+          if (!CanShiftMon()) s.state = 3;
           else { PlaySE(0x5); ClearBottomWindow(); SetPokeStorageTask(Task_ShiftMon); }
           break;
         case MENU_WITHDRAW:  // :2640
@@ -5401,7 +5414,7 @@ function _preloadBoxResources(boxId: number): void {
   const boxes = GetPokemonStorage().boxes;
   for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
     const mon = boxes[boxId]?.[pos];
-    if (mon && mon.species) PreloadMonIcon(GetIconSpeciesNoPersonality(mon.species));
+    if (mon && mon.species) PreloadMonIcon(GetIconSpeciesNoPersonality(_speciesOrEgg(mon)));
   }
   const first = boxes[boxId]?.find((m) => m && m.species);
   if (first) PreloadDisplayMonPic(first.species);
@@ -5410,7 +5423,7 @@ function _boxIconsLoaded(boxId: number): boolean {
   const boxes = GetPokemonStorage().boxes;
   for (let pos = 0; pos < IN_BOX_COUNT; pos++) {
     const mon = boxes[boxId]?.[pos];
-    if (mon && mon.species && !IsMonIconLoaded(GetIconSpeciesNoPersonality(mon.species))) return false;
+    if (mon && mon.species && !IsMonIconLoaded(GetIconSpeciesNoPersonality(_speciesOrEgg(mon)))) return false;
   }
   return true;
 }
@@ -5418,14 +5431,14 @@ function _boxIconsLoaded(boxId: number): boolean {
  *  crée les icônes à la volée (CreateMonIcon charge le gfx), notre CreateMonIconSprite exige le cache. */
 function _preloadPartyIcons(): void {
   for (let i = 0; i < PARTY_SIZE; i++) {
-    const mon = gPlayerParty[i] as { species?: number } | undefined;
-    if (mon && mon.species) PreloadMonIcon(GetIconSpeciesNoPersonality(mon.species));
+    const mon = gPlayerParty[i] as { species?: number; isEgg?: number } | undefined;
+    if (mon && mon.species) PreloadMonIcon(GetIconSpeciesNoPersonality(_speciesOrEgg(mon)));
   }
 }
 function _partyIconsLoaded(): boolean {
   for (let i = 0; i < PARTY_SIZE; i++) {
-    const mon = gPlayerParty[i] as { species?: number } | undefined;
-    if (mon && mon.species && !IsMonIconLoaded(GetIconSpeciesNoPersonality(mon.species))) return false;
+    const mon = gPlayerParty[i] as { species?: number; isEgg?: number } | undefined;
+    if (mon && mon.species && !IsMonIconLoaded(GetIconSpeciesNoPersonality(_speciesOrEgg(mon)))) return false;
   }
   return AreMonIconPalettesLoaded();
 }
