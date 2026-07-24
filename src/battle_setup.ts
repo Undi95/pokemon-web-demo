@@ -1234,6 +1234,11 @@ import { setBattleTypeFlags as _setBattleTypeFlags_BSH } from './engine/battle/s
 import {
   BATTLE_TYPE_FIRST_BATTLE as _BATTLE_TYPE_FIRST_BATTLE_BSH,
   BATTLE_TYPE_TRAINER as _BATTLE_TYPE_TRAINER_BSH,
+  // VIS-14 : combat double « deux dresseurs qui t'aperçoivent » (battle_setup.c:1274-1275).
+  BATTLE_TYPE_DOUBLE as _BATTLE_TYPE_DOUBLE_BSH,
+  BATTLE_TYPE_TWO_OPPONENTS as _BATTLE_TYPE_TWO_OPPONENTS_BSH,
+  // VIS-24 : tuto de capture Wally (battle_setup.c:483).
+  BATTLE_TYPE_WALLY_TUTORIAL as _BATTLE_TYPE_WALLY_TUTORIAL_BSH,
   // VIS-22 : flags des combats légendaires/roamer (battle_setup.c:421-600).
   BATTLE_TYPE_ROAMER as _BATTLE_TYPE_ROAMER_BSH,
   BATTLE_TYPE_LEGENDARY as _BATTLE_TYPE_LEGENDARY_BSH,
@@ -1252,7 +1257,12 @@ import {
   SPECIES_LUGIA as _SPECIES_LUGIA_BSH, SPECIES_HO_OH as _SPECIES_HO_OH_BSH,
   SPECIES_MEW as _SPECIES_MEW_BSH, SPECIES_REGIROCK as _SPECIES_REGIROCK_BSH,
   SPECIES_REGICE as _SPECIES_REGICE_BSH, SPECIES_REGISTEEL as _SPECIES_REGISTEEL_BSH,
+  SPECIES_RALTS as _SPECIES_RALTS_BSH,
 } from '../include/constants/species';
+// VIS-24 : CreateMaleMon (pokemon.c:2350) — deps du tuto Wally.
+import { GetGenderFromSpeciesAndPersonality as _GetGenderFromSpeciesAndPersonality_BSH } from './pokemon';
+import { Random32 as _Random32_BSH } from '../include/random';
+import { MON_MALE as _MON_MALE_BSH, OT_ID_PRESET as _OT_ID_PRESET_BSH } from '../include/constants/pokemon';
 import {
   MetatileBehavior_IsTallGrass as _MB_IsTallGrass_BSH,
   MetatileBehavior_IsLongGrass as _MB_IsLongGrass_BSH,
@@ -1520,6 +1530,53 @@ export function StartFirstBattle(): void {
   _bootDecompBattleLoop_BSH(true);
 }
 
+/** 1:1 décomp `void CreateMaleMon(struct Pokemon *mon, u16 species, u8 level)` (pokemon.c:2350).
+ *  do { otId=Random32(); personality=Random32(); } while (gender != MON_MALE);
+ *  CreateMon(mon, species, level, USE_RANDOM_IVS, TRUE, personality, OT_ID_PRESET, otId).
+ *  Adaptation VIS-24 : CreateMaleMon appartient à pokemon.c mais n'y est pas encore porté
+ *  (pokemon.ts) ; transcrit ici (SEUL appelant = StartWallyTutorialBattle) plutôt que
+ *  d'ouvrir pokemon.ts (hors périmètre agent). Retourne le mon plein (createEmptyPokemon +
+ *  CreateMon 1:1, comme CreateScriptedWildMon plus haut). */
+function _CreateMaleMon_BSH(species: number, level: number): ReturnType<typeof _createEmptyPokemon_BSH> {
+  const mon = _createEmptyPokemon_BSH();
+  let otId: number;
+  let personality: number;
+  do {
+    otId = _Random32_BSH();
+    personality = _Random32_BSH();
+  } while (_GetGenderFromSpeciesAndPersonality_BSH(species, personality) !== _MON_MALE_BSH);
+  // USE_RANDOM_IVS = MAX_PER_STAT_IVS + 1 = 32 (cf. CreateScriptedWildMon ci-dessus).
+  _CreateMon_BSH(mon, species, level, 32, true, personality >>> 0, _OT_ID_PRESET_BSH, otId >>> 0);
+  return mon;
+}
+
+/** 1:1 décomp `void StartWallyTutorialBattle(void)` (battle_setup.c:480-487) — le combat où
+ *  Wally attrape un Tarsal (démo de capture, Pétalbourg). CreateMaleMon(&gEnemyParty[0],
+ *  SPECIES_RALTS, 5) + LockPlayerFieldControls + `gMain.savedCallback =
+ *  CB2_ReturnToFieldContinueScriptPlayMapMusic` + `gBattleTypeFlags = BATTLE_TYPE_WALLY_TUTORIAL`
+ *  + CreateBattleStartTask(B_TRANSITION_SLICE, 0). Notre port : le mon Ralts mâle Lv5 est posé
+ *  dans gEnemyParty[0] via setupEnemyPartyForBattle (MÊME substitution que CreateScriptedWildMon :
+ *  le décomp écrit &gEnemyParty[0] directement). `_bootDecompBattleLoop_BSH(true, {transition,
+ *  song})` = CreateBattleStartTask (transition SLICE, song 0) + savedCallback retour OW-continue-
+ *  script (= CB2_ReturnToFieldContinueScriptPlayMapMusic, MÊME substitution que
+ *  BattleSetup_StartScriptedWildBattle). LockPlayerFieldControls : le script tient déjà le lock
+ *  field (omis comme BattleSetup_StartScriptedWildBattle). Câblé par `special
+ *  StartWallyTutorialBattle` (ci-dessous). ⚠️ RESTE 1:1 : le contrôleur de combat Wally
+ *  (SetControllerToWally / battle_controller_wally.c) n'est PAS porté (fallback player,
+ *  battle_controllers.ts:443) → la démo se joue mais Wally n'est pas piloté automatiquement
+ *  (chantier L séparé, signalé). */
+export function StartWallyTutorialBattle(): void {
+  const ralts = _CreateMaleMon_BSH(_SPECIES_RALTS_BSH, 5);
+  _setupEnemyPartyForBattle_BSH([ralts]);
+  _setBattleTypeFlags_BSH(_BATTLE_TYPE_WALLY_TUTORIAL_BSH >>> 0);
+  _bootDecompBattleLoop_BSH(true, { transition: _B_TRANSITION_BSH.B_TRANSITION_SLICE, song: 0 });
+}
+// 1:1 câblage du special (remplace le stub no-op de specials-registry.ts:776 — celui-ci
+// DOIT être retiré/commenté par le propriétaire de specials-registry.ts pour garantir que
+// cette registration l'emporte, cf. convention « porté 1:1 … RETIRÉ du stub-loop » ;
+// registerSpecial = dernier-écrit-gagne, l'ordre de chargement des 2 modules n'est pas garanti).
+registerSpecial('StartWallyTutorialBattle', () => { StartWallyTutorialBattle(); });
+
 /** 1:1 décomp `BattleSetup_StartTrainerBattle` (battle_setup.c:1272-1325) — single, hors
  *  frontier/hill. `gBattleTypeFlags = BATTLE_TYPE_TRAINER` + `gMain.savedCallback =
  *  CB2_EndTrainerBattle` + `DoTrainerBattle` (459 = CreateBattleStartTask(GetTrainerBattleTransition,0))
@@ -1548,7 +1605,19 @@ export function GetTrainerALoseText(): Uint8Array {
 }
 
 export function BattleSetup_StartTrainerBattle(defeatTextLabel?: string): void {
-  _setBattleTypeFlags_BSH(_BATTLE_TYPE_TRAINER_BSH >>> 0);
+  // 1:1 battle_setup.c:1274-1277 : deux dresseurs qui aperçoivent le joueur ensemble
+  // (gNoOfApproachingTrainers == 2) → combat double 2v2 (DOUBLE | TWO_OPPONENTS | TRAINER),
+  // sinon single (TRAINER). gNoOfApproachingTrainers est encore non-remis-à-zéro ici : le
+  // reset décomp (:1314) est porté par _prepareTrainerBattleStart, appelé APRÈS lecture par le
+  // caller (startTrainerBattleAndGetPoll copie d'abord dans sNoOfPossibleTrainerRetScripts sans
+  // remettre à 0), donc la valeur lue reste la bonne. gEnemyParty des deux dresseurs (A + B)
+  // est peuplé par CreateNPCTrainerParty à l'init du combat (moteur 2v2, chantier-doubles).
+  // Frontier (pyramide/hill : ZeroMonData/FillFrontierTrainersParties + BATTLE_TYPE_PYRAMID/
+  // TRAINER_HILL, :1278-1310) HORS solo → non porté (dette, cf. commentaire d'en-tête).
+  if (gNoOfApproachingTrainers_() === 2)
+    _setBattleTypeFlags_BSH((_BATTLE_TYPE_DOUBLE_BSH | _BATTLE_TYPE_TWO_OPPONENTS_BSH | _BATTLE_TYPE_TRAINER_BSH) >>> 0);
+  else
+    _setBattleTypeFlags_BSH(_BATTLE_TYPE_TRAINER_BSH >>> 0);
   // 1:1 battle_setup.c:168 (TrainerBattleLoadArgs charge sTrainerADefeatSpeech depuis le lose_text
   // du macro). getText(label) = bytes charmap, undefined si absent -> null.
   setTrainerADefeatSpeech(defeatTextLabel ? (_getText_BSH(defeatTextLabel) ?? null) : null);
