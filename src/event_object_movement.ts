@@ -7016,6 +7016,54 @@ export function TryOverrideTemplateCoordsForObjectEvent(objectEvent: ObjectEvent
   if (t !== null) t.movementType = movementType;
 }
 
+/** 1:1 décomp `static void OverrideObjectEventTemplateScript(const struct ObjectEvent *objectEvent, const u8 *script)`
+ *  (event_object_movement.c:2490-2497) :
+ *      objectEventTemplate = GetBaseTemplateForObjectEvent(objectEvent);
+ *      if (objectEventTemplate) objectEventTemplate->script = script;
+ *  `script` = clé string byte-VM ('SecretBase_EventScript_DollInteract'…).
+ *  ADAPTATION port : le décomp lit le TEMPLATE en direct à l'interaction
+ *  (GetObjectEventScriptPointerByObjectEventId). Notre moteur CACHE `scriptLabel`
+ *  sur l'object event au spawn (event_object_movement.ts:7466/7793,
+ *  `npc.scriptLabel = template.script`). InitSecretBaseDecorationSprites override
+ *  APRÈS le spawn → on synchronise aussi le cache live pour que l'interaction A
+ *  (field_control_avatar.ts:787 lit `gObjectEvents[id].scriptLabel`) voie le nouveau script. */
+function OverrideObjectEventTemplateScript(objectEvent: ObjectEvent, script: string): void {
+  const objectEventTemplate = GetBaseTemplateForObjectEvent(objectEvent);
+  if (objectEventTemplate) objectEventTemplate.script = script;
+  objectEvent.scriptLabel = script; // sync cache (voir note ci-dessus)
+}
+
+/** 1:1 STRICT décomp `void TryOverrideObjectEventTemplateCoords(u8 localId, u8 mapNum, u8 mapGroup)`
+ *  (event_object_movement.c:2508-2513) :
+ *      if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId))
+ *          OverrideTemplateCoordsForObjectEvent(&gObjectEvents[objectEventId]);
+ *  Persiste la position courante du décor dans son template (appelé par
+ *  InitSecretBaseDecorationSprites après TryMoveObjectEventToMapCoords). */
+export function TryOverrideObjectEventTemplateCoords(localId: number, mapNum: number, mapGroup: number): void {
+  const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (!notFound) OverrideTemplateCoordsForObjectEvent(gObjectEvents[objectEventId]);
+}
+
+/** 1:1 STRICT décomp `void OverrideSecretBaseDecorationSpriteScript(u8 localId, u8 mapNum, u8 mapGroup, u8 decorationCategory)`
+ *  (event_object_movement.c:2515-2530) : résout l'object event du décor par localId/map,
+ *  puis remplace son script par l'interaction poupée / coussin (Base Secrète). Rend les
+ *  décorations DECORCAT_DOLL / DECORCAT_CUSHION cliquables (VIS-27). `TryGetObjectEventIdByLocalIdAndMap`
+ *  renvoie FALSE (`notFound === false`) si trouvé (= le `!` du décomp). DECORCAT_DOLL=6/CUSHION=7
+ *  (include/constants/decorations.h, cf. decoration_inventory.ts). */
+export function OverrideSecretBaseDecorationSpriteScript(localId: number, mapNum: number, mapGroup: number, decorationCategory: number): void {
+  const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (!notFound) {
+    switch (decorationCategory) {
+      case 6: // DECORCAT_DOLL
+        OverrideObjectEventTemplateScript(gObjectEvents[objectEventId], 'SecretBase_EventScript_DollInteract');
+        break;
+      case 7: // DECORCAT_CUSHION
+        OverrideObjectEventTemplateScript(gObjectEvents[objectEventId], 'SecretBase_EventScript_CushionInteract');
+        break;
+    }
+  }
+}
+
 /** 1:1 décomp `gJumpInPlaceMovementActions[]` (event_object_movement.c:982). */
 const gJumpInPlaceMovementActions: readonly number[] = [
   MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN,   // DIR_NONE  → DOWN (default)

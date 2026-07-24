@@ -206,6 +206,7 @@ import { SE_SELECT } from '../include/constants/songs';
 import {
   ObjectEventTurn, gObjectEvents,
   TryMoveObjectEventToMapCoords, RemoveObjectEventByLocalIdAndMap,
+  OverrideSecretBaseDecorationSpriteScript, TryOverrideObjectEventTemplateCoords,
 } from './event_object_movement';
 import type { Pokemon } from './pokemon';
 import { WarpIntoMap, SetWarpDestination } from './overworld';
@@ -354,14 +355,9 @@ function FieldCB_DefaultWarpExit(): void {
 function Free(_ptr: unknown): void {
   _sbGuard('Free', 'malloc.c Free non porté (AllocZeroed no-op) — no-op');
 }
-/** event_object_movement.c `OverrideSecretBaseDecorationSpriteScript` — non porté. */
-function OverrideSecretBaseDecorationSpriteScript(_localId: number, _mapNum: number, _mapGroup: number, _category: number): void {
-  _sbGuard('OverrideSecretBaseDecorationSpriteScript', 'event_object_movement.c non porté — script déco INERTE');
-}
-/** event_object_movement.c `TryOverrideObjectEventTemplateCoords` — non porté. */
-function TryOverrideObjectEventTemplateCoords(_localId: number, _mapNum: number, _mapGroup: number): void {
-  _sbGuard('TryOverrideObjectEventTemplateCoords', 'event_object_movement.c non porté — override coords INERTE');
-}
+// OverrideSecretBaseDecorationSpriteScript + TryOverrideObjectEventTemplateCoords :
+// désormais PORTÉS 1:1 dans event_object_movement.ts (leur vrai home décomp) et importés
+// ci-dessus (VIS-27 : décorations poupées/coussins rendues cliquables).
 /** event_object_movement.c `TrySpawnObjectEvent` — signature port divergente
  *  `(localIdRaw:string, rt)` vs le .c `(localId, mapNum, mapGroup)`. Garde-fou. */
 function TrySpawnObjectEvent(_localId: number, _mapNum: number, _mapGroup: number): void {
