@@ -67,7 +67,7 @@ import { getString } from '../harness/runtime/decomp-strings';
 import { gActiveBattler, gEffectBattler, gBattleTypeFlags, gTrainerBattleOpponent_A } from './engine/battle/state';
 // Fin de combat dresseur : lose_text expand (1:1 GetTrainerALoseText). Usage RUNTIME (en fonction)
 // -> live-binding ESM safe meme si cycle transitif. Fallback marqueur si non pose (voie V).
-import { GetTrainerALoseText } from './battle_setup';
+import { GetTrainerALoseText, GetTrainerBLoseText } from './battle_setup';
 import { gSaveBlock2Ptr } from './engine/save/save-block-state';
 import type { BattleMsgData } from './engine/battle/battle-event-queue';
 import { getMoveName as _getMoveNameFr } from './engine/data/game-data';
@@ -407,11 +407,14 @@ function _resolveToCpy(code: number, msgData: BattleMsgData): Uint8Array {
     // 1:1 décomp battle_message.c:2740-2771 : trainer B (2-opponent doubles) = gTrainers[opponent_B].
     case B_TXT_TRAINER2_CLASS: { const t = gTrainers[_getTrainerOpponentB()]; return GetTrainerClassNameGenderSpecific(t.trainerClass, t.encounterMusic_gender & 0x7F, t.trainerName); }
     case B_TXT_TRAINER2_NAME:  return gTrainers[_getTrainerOpponentB()].trainerName;
-    // Win-text (frontier/hill only en décomp → toCpy non posé en combat normal) + trainer B
-    // lose-text (sTrainerBDefeatSpeech non porté) : différés → chaîne VIDE (pas de marqueur cru
-    // → aucun warning charmap si jamais émis).
+    // 1:1 décomp battle_message.c:2782-2787 : trainer B (2-opponent doubles) lose-text (hors
+    // FRONTIER/TRAINER_HILL, différés hors scope) = GetTrainerBLoseText() (= StringExpandPlaceholders
+    // (gStringVar4, sTrainerBDefeatSpeech)). NULL → chaîne vide (EOS), aucun marqueur cru.
+    case B_TXT_TRAINER2_LOSE_TEXT:
+      return GetTrainerBLoseText();
+    // Win-text (frontier/hill only en décomp → toCpy non posé en combat normal) : différé → VIDE.
     case B_TXT_TRAINER1_WIN_TEXT:
-    case B_TXT_TRAINER2_LOSE_TEXT: case B_TXT_TRAINER2_WIN_TEXT:
+    case B_TXT_TRAINER2_WIN_TEXT:
       return encodeChars('');
     default:
       return encodeChars('{B_?' + code + '}');

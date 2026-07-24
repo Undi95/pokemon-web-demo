@@ -1604,6 +1604,22 @@ export function GetTrainerALoseText(): Uint8Array {
   return out;
 }
 
+// 1:1 décomp battle_setup.c:103 (EWRAM `sTrainerBDefeatSpeech`) — lose_text du 2e dresseur d'un
+// combat 2-adversaires (gTrainerBattleOpponent_B). Même adaptation que A : le LABEL vit dans
+// sTrainerBDefeatSpeech (:125, TrainerBattleLoadArgs), ICI = les BYTES charmap résolus au start.
+let sTrainerBDefeatSpeechBytes: Uint8Array | null = null;
+export function setTrainerBDefeatSpeech(s: Uint8Array | null): void { sTrainerBDefeatSpeechBytes = s; }
+export function getTrainerBDefeatSpeech(): Uint8Array | null { return sTrainerBDefeatSpeechBytes; }
+
+/** 1:1 décomp `GetTrainerBLoseText` (battle_setup.c:1530-1534) :
+ *  `StringExpandPlaceholders(gStringVar4, ReturnEmptyStringIfNull(sTrainerBDefeatSpeech)); return gStringVar4;`
+ *  (pas de branche SECRET_BASE, contrairement à A). */
+export function GetTrainerBLoseText(): Uint8Array {
+  const out = new Uint8Array(256);
+  _StringExpandPlaceholders_BSH(out, sTrainerBDefeatSpeechBytes ?? new Uint8Array([0xFF]));
+  return out;
+}
+
 export function BattleSetup_StartTrainerBattle(defeatTextLabel?: string): void {
   // 1:1 battle_setup.c:1274-1277 : deux dresseurs qui aperçoivent le joueur ensemble
   // (gNoOfApproachingTrainers == 2) → combat double 2v2 (DOUBLE | TWO_OPPONENTS | TRAINER),
@@ -1621,6 +1637,10 @@ export function BattleSetup_StartTrainerBattle(defeatTextLabel?: string): void {
   // 1:1 battle_setup.c:168 (TrainerBattleLoadArgs charge sTrainerADefeatSpeech depuis le lose_text
   // du macro). getText(label) = bytes charmap, undefined si absent -> null.
   setTrainerADefeatSpeech(defeatTextLabel ? (_getText_BSH(defeatTextLabel) ?? null) : null);
+  // 1:1 battle_setup.c:181/233 : TrainerBattleLoadArgs charge AUSSI sTrainerBDefeatSpeech (lose_text
+  // du 2e dresseur) pour un combat 2-adversaires. Résolu ici LABEL→bytes (même voie que A), consommé
+  // par GetTrainerBLoseText (B_TXT_TRAINER2_LOSE_TEXT). Absent/single → null → chaîne vide.
+  setTrainerBDefeatSpeech(sTrainerBDefeatSpeech ? (_getText_BSH(sTrainerBDefeatSpeech) ?? null) : null);
   _bootDecompBattleLoop_BSH(true);
 }
 
