@@ -56,6 +56,7 @@ import { EnableInterrupts, ClearGpuRegBits } from '../harness/runtime/decomp-hel
 import { ENUM_B_1, ENUM_MUGSHOT_0 } from '../include/battle_transition';
 import { GetCameraOffsetWithPan } from './field_camera';
 import { SetWeatherScreenFadeOut } from './field_weather';
+import { MALE } from '../include/constants/global';
 
 // ════════════════════════════════════════════════════════════════════════════
 // Helpers/adaptations consommés par la charpente 1:1 — ex-bloc bespoke, reste 1:1
@@ -2656,21 +2657,20 @@ function Task_Rayquaza(taskId: number): void { while (sRayquaza_Funcs[gTasks[tas
 // MUGSHOTS — B_TRANSITION_SIDNEY/PHOEBE/GLACIA/DRAKE/CHAMPION
 // (battle_transition.c:2243-2713) — Élite 4 + Champion, 1 par combat du Panthéon
 //----------------------------------------------------------------
-// ⚠️ INERTE (non câblé dans sTasks_Main) — bloqué sur un SOUS-SYSTÈME non porté :
-//   • CreateTrainerSprite (trainer_pokemon_sprites.c : DecompressTrainerFrontPic +
-//     LoadCompressedSpriteSheet + palette OBJ) — PAS porté en fonction décomp
-//     réutilisable (seul un CreateTrainerSprite bespoke à signature différente
-//     existe dans main_menu.ts).
-//   • PlayerGenderToFrontTrainerPicId (pokemon.c) — idem non porté (seul un
-//     variant _Debug dans hall_of_fame.ts).
-//   • Les 2 sprites dresseur doivent être TICKÉS pendant le CB2 custom de la
-//     transition (comme _tickTrailSprites) — hook à ajouter.
-// La MACHINERIE 1:1 ci-dessous (bannière HBlank, fondu blanc→noir, VBlank/HBlank
-// CBs, tables, sprite CBs) est transcrite EN ENTIER ; le pilote doit (1) porter/
-// brancher CreateTrainerSprite + PlayerGenderToFrontTrainerPicId, (2) ticker les
-// mugshot sprites, (3) ajouter sTasks_Main[B_TRANSITION_SIDNEY..CHAMPION].
-// Sans les vrais sprites, Mugshot_WaitStartPlayerSlide gèlerait (attend
-// IsTrainerPicSlideDone) → NE PAS câbler tant que ci-dessus non fait.
+// ✅ CÂBLÉ (sTasks_Main[B_TRANSITION_SIDNEY..CHAMPION], fin de fichier). Utilisé à CHAQUE
+// combat du Panthéon (solo-critique). Les deps sont désormais branchées 1:1 :
+//   • CreateTrainerSprite (battle_transition.c appelle field_effect.c:888) est RÉUTILISÉ via
+//     l'équivalent DÉJÀ PORTÉ `CreateTrainerPicSprite` (trainer_pokemon_sprites.ts, consommé
+//     par le Hall of Fame) : même résultat (sprite front-pic dresseur 64×64, palette OBJ),
+//     le mugshot re-pose ensuite shape/size 64×32 + affine (1:1 Mugshots_CreateTrainerPics).
+//   • PlayerGenderToFrontTrainerPicId (pokemon.c:6921) transcrit 1:1 ci-dessous.
+//   • Les 2 sprites dresseur sont animés par runSpriteCallbacks (AnimateSprites) du CB2 de
+//     transition — CB2_BattleStartTransition_1to1 appelle rt.animateSprites() qui exécute
+//     runSpriteCallbacks (précédent WhiteBarsFade :1746 qui en dépend, PAS de tick manuel).
+// Voie asset : `_ensureMugshotAssets` pré-remplit le substrat trainer-pic sync (front pics
+// E4/Champion + joueur) AVANT que CreateTrainerPicSprite (sync) ne soit appelé (Mugshot_Init
+// gate sur _mugshotReady). Import dynamique capturé = voie lazy TDZ-safe (précédent png-loader
+// de CE fichier), pas d'arête statique vers trainer_pokemon_sprites/sound.
 //
 // #define tSinIndex data[1] · tTopBannerX data[2] · tBottomBannerX data[3] ·
 //   tTimer data[3] (réutilisé) · tFadeSpread data[4] · tOpponentSpriteId data[13] ·
@@ -2685,29 +2685,38 @@ const MUGSHOT_SIZE_64x32 = 3;    // SPRITE_SIZE(64x32) = ST_OAM_SIZE_3 (types.h:
 const WINOUT_WIN01_BG1 = 1 << 1, WINOUT_WIN01_BG2 = 1 << 2, WINOUT_WIN01_BG3 = 1 << 3;
 const WINOUT_WIN01_OBJ = 1 << 4, WINOUT_WIN01_CLR = 1 << 5;   // io_reg.h:568-573
 
-/** Sprite mugshot (données lâches — cf. TrailSprite). */
+/** Sprite mugshot — modèle sprite PLAT du moteur (DecompSprite, decomp-runtime.ts:419) :
+ *  le décomp écrit `sprite->oam.{affineMode,matrixNum,shape,size}` ; notre split porte
+ *  affineMode/matrixNum/shape/size AU NIVEAU SPRITE (syncSpritesToOam recopie vers l'OAM hw
+ *  chaque frame : oam.affineMode←sprite.affineMode, oam.affineParamIndex←sprite.matrixNum),
+ *  et shape/size doivent AUSSI être posés sur l'OAM hw (non re-syncés). Cf. précédent
+ *  CreateMonPicSprite_Affine (trainer_pokemon_sprites.ts:205). */
 interface MugshotSprite {
-  x: number; data: number[];
-  oam: { affineMode: number; matrixNum: number; shape: number; size: number };
+  x: number; data: number[]; oamIndex: number;
+  affineMode: number; matrixNum: number; shape: number; size: number;
   centerToCornerVecX?: number; centerToCornerVecY?: number;
   callback: ((s: MugshotSprite) => void) | null;
 }
 
-/** Deps mugshot NON portées, routées par bridge (inert : jamais appelées tant que
- *  non câblé). Le pilote branche __battleTransitionMugshotDeps une fois
- *  CreateTrainerSprite / PlayerGenderToFrontTrainerPicId portés. */
-function _mugshotDeps(): {
-  CreateTrainerSprite?: (picId: number, x: number, y: number, sub: number) => number;
-  PlayerGenderToFrontTrainerPicId?: (gender: number) => number;
-  playerGender?: number;
-  playSE?: (se: number) => void;
-} {
-  const g = (globalThis as Record<string, unknown>).__battleTransitionMugshotDeps;
-  return (g as ReturnType<typeof _mugshotDeps>) ?? {};
+// Deps mugshot PORTÉES, capturées par import dynamique dans _ensureMugshotAssets (voie lazy
+// TDZ-safe, précédent png-loader de CE fichier). `_createTrainerPicSprite` = équivalent DÉJÀ
+// PORTÉ de field_effect.c:888 CreateTrainerSprite (trainer_pokemon_sprites.ts). `_playSE` =
+// sound.ts PlaySE (optionnel : la transition ne DOIT pas geler si le son n'est pas prêt).
+let _createTrainerPicSprite: ((species: string, isFrontPic: boolean, x: number, y: number, paletteSlot: number, paletteTag: number) => number) | null = null;
+let _playSE: ((se: number) => void) | null = null;
+
+/** 1:1 `PlayerGenderToFrontTrainerPicId(playerGender)` (pokemon.c:6921) :
+ *    playerGender != MALE → FacilityClassToPicIndex(FACILITY_CLASS_MAY)      → front pic MAY
+ *    sinon                → FacilityClassToPicIndex(FACILITY_CLASS_BRENDAN)  → front pic BRENDAN
+ *  La chaîne facilityClass→picIndex se résout au front pic du joueur → clé enumName
+ *  'TRAINER_PIC_MAY'/'TRAINER_PIC_BRENDAN' (= l'index gTrainerFrontPicTable, cf. précédent
+ *  PlayerGenderToFrontTrainerPicId_Debug hall_of_fame.ts:1026). */
+function PlayerGenderToFrontTrainerPicId(playerGender: number): string {
+  return playerGender !== MALE ? 'TRAINER_PIC_MAY' : 'TRAINER_PIC_BRENDAN';
 }
 function _mugshotPlayerGender(): number {
   const rt = getRuntime() as unknown as { gSaveBlock2Ptr?: { playerGender?: number } };
-  return rt?.gSaveBlock2Ptr?.playerGender ?? _mugshotDeps().playerGender ?? 0;
+  return rt?.gSaveBlock2Ptr?.playerGender ?? 0;
 }
 function _mugshotGSprites(): Array<MugshotSprite | undefined> | undefined {
   return (getRuntime() as unknown as { gSprites?: Array<MugshotSprite | undefined> }).gSprites;
@@ -2715,11 +2724,25 @@ function _mugshotGSprites(): Array<MugshotSprite | undefined> | undefined {
 
 // ─── Data mugshot 1:1 (battle_transition.c:544-916) ─────────────────────────
 /** 1:1 `sMugshotsTrainerPicIDsTable` (:544) — TRAINER_PIC_ELITE_FOUR_* / CHAMPION_WALLACE.
- *  Résolus par le pilote (enum trainer pic) — placeholders index Mugshot par défaut. */
-const sMugshotsTrainerPicIDsTable: readonly number[] = [
-  // [SIDNEY, PHOEBE, GLACIA, DRAKE, CHAMPION] → TRAINER_PIC_* (à mapper par le pilote)
-  0, 0, 0, 0, 0,
+ *  Clé enumName = index gTrainerFrontPicTable (= la clé du substrat trainer-pic, cf.
+ *  CreateTrainerPicSprite trainer_pokemon_sprites.ts). */
+const sMugshotsTrainerPicIDsTable: readonly string[] = [
+  'TRAINER_PIC_ELITE_FOUR_SIDNEY',   // MUGSHOT_SIDNEY
+  'TRAINER_PIC_ELITE_FOUR_PHOEBE',   // MUGSHOT_PHOEBE
+  'TRAINER_PIC_ELITE_FOUR_GLACIA',   // MUGSHOT_GLACIA
+  'TRAINER_PIC_ELITE_FOUR_DRAKE',    // MUGSHOT_DRAKE
+  'TRAINER_PIC_CHAMPION_WALLACE',    // MUGSHOT_CHAMPION
 ];
+/** Front pics dresseur E4/Champion (public/decomp/em/trainers/front_pics/*.png, indexés PLTE).
+ *  Parallèle strict à sMugshotsTrainerPicIDsTable. */
+const _mugshotOppPicPngs: readonly string[] = [
+  'elite_four_sidney', 'elite_four_phoebe', 'elite_four_glacia', 'elite_four_drake', 'champion_wallace',
+];
+/** Tags OBJ libres pour les palettes des 2 sprites dresseur (opponent/player) — le tag system
+ *  (LoadSpritePalette) alloue alors 2 slots OBJ distincts (1:1 field_effect.c qui prend le tag
+ *  de gTrainerFrontPicPaletteTable). Précédent OBJ_PAL_TAG_TRAIL (0x4503) de CE fichier. */
+const OBJ_PAL_TAG_MUGSHOT_OPPONENT = 0x4504;
+const OBJ_PAL_TAG_MUGSHOT_PLAYER = 0x4505;
 /** 1:1 `sMugshotsOpponentRotationScales[MUGSHOTS_COUNT][2]` (:552). */
 const sMugshotsOpponentRotationScales: ReadonlyArray<readonly [number, number]> = [
   [0x200, 0x200], [0x200, 0x200], [0x1B0, 0x1B0], [0x1A0, 0x1A0], [0x188, 0x188],
@@ -2752,6 +2775,32 @@ async function _ensureMugshotAssets(): Promise<void> {
       ['sidney_bg.pal', 'phoebe_bg.pal', 'glacia_bg.pal', 'drake_bg.pal', 'wallace_bg.pal'].map((n) => loadGbaPal(base + n)),
     );
     _mugshotPlayerPals = await Promise.all(['brendan_bg.pal', 'may_bg.pal'].map((n) => loadGbaPal(base + n)));
+    // ── Substrat trainer-pic sync (= ROM gTrainerFrontPicTable) + capture des deps portées ──
+    // CreateTrainerPicSprite (sync) consomme ce substrat ; il DOIT être prêt avant Mugshot_Init
+    // (gate _mugshotReady). Import dynamique = voie lazy TDZ-safe (précédent png-loader).
+    const { loadIndexedPngStrict } = await import('../harness/gba/png-loader');
+    const tps = await import('./trainer_pokemon_sprites');
+    _createTrainerPicSprite = tps.CreateTrainerPicSprite;
+    const { PlaySE } = await import('./sound');
+    _playSE = PlaySE;
+    const trainersBase = '/decomp/em/trainers/';
+    // Front pics E4/Champion : PNG indexés (PLTE embarqué = la palette dresseur) → charData + palette.
+    await Promise.all(sMugshotsTrainerPicIDsTable.map(async (picKey, i) => {
+      try {
+        const png = await loadIndexedPngStrict(`${trainersBase}front_pics/${_mugshotOppPicPngs[i]}.png`, 4);
+        tps._registerTrainerPicSubstrate(picKey, png.charData, png.palette.subarray(0, 16));
+      } catch (e) { console.error('[battle_transition] front pic E4 préload KO', picKey, e); }
+    }));
+    // Front pic du joueur (Brendan/May) : charData PNG + palette .pal séparée (précédent HOF:1189).
+    try {
+      const pKey = PlayerGenderToFrontTrainerPicId(_mugshotPlayerGender());
+      const pName = pKey === 'TRAINER_PIC_MAY' ? 'may' : 'brendan';
+      const [pFront, pPal] = await Promise.all([
+        loadIndexedPngStrict(`${trainersBase}front_pics/${pName}.png`, 4),
+        loadGbaPal(`${trainersBase}palettes/${pName}.pal`),
+      ]);
+      tps._registerTrainerPicSubstrate(pKey, pFront.charData, pPal.subarray(0, 16));
+    } catch (e) { console.error('[battle_transition] front pic joueur préload KO', e); }
   } catch (e) {
     console.error('[battle_transition] _ensureMugshotAssets KO — mugshot dégradé SANS gel', e);
   } finally {
@@ -2871,8 +2920,7 @@ function Mugshot_StartOpponentSlide(taskId: number): boolean {
   SetTrainerPicSlideDirection(d[13], 0);   // tOpponentSpriteId
   SetTrainerPicSlideDirection(d[14], 1);   // tPlayerSpriteId
   IncrementTrainerPicState(d[13]);
-  const deps = _mugshotDeps();
-  (deps.playSE ?? ((se: number) => { void se; }))(SE_MUGSHOT);   // PlaySE(SE_MUGSHOT)
+  _playSE?.(SE_MUGSHOT);   // PlaySE(SE_MUGSHOT) — optionnel (pas de gel si son absent)
   sTransitionData!.VBlank_DMA++;
   return false;
 }
@@ -3013,27 +3061,33 @@ function HBlankCB_MugshotsFadeOut(y: number): void {
   rt.gba.blend.brightness = gScanlineEffectRegBuffers[1][y] & 0xFF;
 }
 
-/** 1:1 `Mugshots_CreateTrainerPics` (:2581). Crée les 2 sprites dresseur. INERTE :
- *  CreateTrainerSprite/PlayerGenderToFrontTrainerPicId routés par bridge. */
+/** 1:1 `Mugshots_CreateTrainerPics` (:2581). Crée les 2 sprites dresseur via l'équivalent
+ *  DÉJÀ PORTÉ CreateTrainerPicSprite (field_effect.c:888 CreateTrainerSprite → même sprite
+ *  front-pic dresseur 64×64). gDecompressionBuffer (arg buffer décomp) = détail d'alloc VRAM
+ *  ROM : notre CreateTrainerPicSprite alloue les tiles inline (substrat sync). Tag OBJ distinct
+ *  par sprite → 2 slots de palette OBJ (1:1 field_effect qui prend le tag de la table). */
 function Mugshots_CreateTrainerPics(taskId: number): void {
   const d = gTasks[taskId].data;
-  const deps = _mugshotDeps();
-  if (!deps.CreateTrainerSprite || !deps.PlayerGenderToFrontTrainerPicId) {
-    console.error('[battle_transition] Mugshots_CreateTrainerPics : CreateTrainerSprite/PlayerGenderToFrontTrainerPicId non branchés (mugshot INERTE)');
+  if (!_createTrainerPicSprite) {
+    console.error('[battle_transition] Mugshots_CreateTrainerPics : CreateTrainerPicSprite non capturé (assets pas prêts ?)');
     return;
   }
   const mugshotId = d[15];   // tMugshotId
-  d[13] = deps.CreateTrainerSprite(
+  d[13] = _createTrainerPicSprite(
     sMugshotsTrainerPicIDsTable[mugshotId],
+    true,
     sMugshotsOpponentCoords[mugshotId][0] - 32,
     sMugshotsOpponentCoords[mugshotId][1] + 42,
     0,
+    OBJ_PAL_TAG_MUGSHOT_OPPONENT,
   );   // tOpponentSpriteId
-  d[14] = deps.CreateTrainerSprite(
-    deps.PlayerGenderToFrontTrainerPicId(_mugshotPlayerGender()),
+  d[14] = _createTrainerPicSprite(
+    PlayerGenderToFrontTrainerPicId(_mugshotPlayerGender()),
+    true,
     DISPLAY_WIDTH + 32,
     106,
     0,
+    OBJ_PAL_TAG_MUGSHOT_PLAYER,
   );   // tPlayerSpriteId
   const g = _mugshotGSprites();
   const opponentSprite = g?.[d[13]];
@@ -3041,22 +3095,36 @@ function Mugshots_CreateTrainerPics(taskId: number): void {
   if (!opponentSprite || !playerSprite) return;
   opponentSprite.callback = SpriteCB_MugshotTrainerPic;
   playerSprite.callback = SpriteCB_MugshotTrainerPic;
-  opponentSprite.oam.affineMode = ST_OAM_AFFINE_DOUBLE;
-  playerSprite.oam.affineMode = ST_OAM_AFFINE_DOUBLE;
-  opponentSprite.oam.matrixNum = AllocOamMatrix();
-  playerSprite.oam.matrixNum = AllocOamMatrix();
-  opponentSprite.oam.shape = MUGSHOT_SHAPE_64x32;
-  playerSprite.oam.shape = MUGSHOT_SHAPE_64x32;
-  opponentSprite.oam.size = MUGSHOT_SIZE_64x32;
-  playerSprite.oam.size = MUGSHOT_SIZE_64x32;
-  // CalcCenterToCornerVec(sprite, shape, size, affineMode) : notre port renvoie le
-  // vec, on l'assigne au sprite (1:1 la mutation décomp de sprite->centerToCornerVec*).
-  const ocv = CalcCenterToCornerVec(MUGSHOT_SHAPE_64x32, MUGSHOT_SIZE_64x32, ST_OAM_AFFINE_DOUBLE);
-  opponentSprite.centerToCornerVecX = ocv.centerToCornerVecX; opponentSprite.centerToCornerVecY = ocv.centerToCornerVecY;
-  const pcv = CalcCenterToCornerVec(MUGSHOT_SHAPE_64x32, MUGSHOT_SIZE_64x32, ST_OAM_AFFINE_DOUBLE);
-  playerSprite.centerToCornerVecX = pcv.centerToCornerVecX; playerSprite.centerToCornerVecY = pcv.centerToCornerVecY;
-  SetOamMatrixRotationScaling(opponentSprite.oam.matrixNum, sMugshotsOpponentRotationScales[mugshotId][0], sMugshotsOpponentRotationScales[mugshotId][1], 0);
-  SetOamMatrixRotationScaling(playerSprite.oam.matrixNum, -512, 512, 0);
+  // 1:1 :2600-2618 adapté au modèle sprite PLAT : le décomp écrit sprite->oam.{affineMode,
+  // matrixNum,shape,size} ; notre split porte affineMode/matrixNum AU NIVEAU SPRITE (recopiés
+  // vers l'OAM hw par syncSpritesToOam :2006/2021) + shape/size directement sur l'OAM hw (non
+  // re-syncés). Précédent CreateMonPicSprite_Affine (trainer_pokemon_sprites.ts:205-215).
+  _mugshotSetupTrainerSprite(opponentSprite, sMugshotsOpponentRotationScales[mugshotId][0], sMugshotsOpponentRotationScales[mugshotId][1]);
+  _mugshotSetupTrainerSprite(playerSprite, -512, 512);
+}
+
+/** Passe un sprite front-pic dresseur (créé 64×64 par CreateTrainerPicSprite) en 64×32 affine
+ *  double + matrice rot/scale, 1:1 Mugshots_CreateTrainerPics (:2600-2618) sur le modèle sprite
+ *  plat du moteur (cf. MugshotSprite / syncSpritesToOam). */
+function _mugshotSetupTrainerSprite(sprite: MugshotSprite, scaleX: number, scaleY: number): void {
+  const matrixNum = AllocOamMatrix();
+  sprite.affineMode = ST_OAM_AFFINE_DOUBLE;   // sprite->oam.affineMode (→ oam.affineMode au sync)
+  sprite.matrixNum = matrixNum;               // sprite->oam.matrixNum   (→ oam.affineParamIndex au sync)
+  sprite.shape = MUGSHOT_SHAPE_64x32;
+  sprite.size = MUGSHOT_SIZE_64x32;
+  // shape/size ne sont PAS re-syncés → poser directement sur l'OAM hw (rt.gba.oam[oamIndex]).
+  const hwOam = (getRuntime() as unknown as { gba?: { oam: Array<{ affineMode: number; affineParamIndex: number; shape: number; size: number }> } }).gba?.oam?.[sprite.oamIndex];
+  if (hwOam) {
+    hwOam.affineMode = ST_OAM_AFFINE_DOUBLE;
+    hwOam.affineParamIndex = matrixNum;
+    hwOam.shape = MUGSHOT_SHAPE_64x32;
+    hwOam.size = MUGSHOT_SIZE_64x32;
+  }
+  // 1:1 CalcCenterToCornerVec(sprite, shape, size, affineMode) : mutation de sprite->centerToCornerVec*.
+  const cv = CalcCenterToCornerVec(MUGSHOT_SHAPE_64x32, MUGSHOT_SIZE_64x32, ST_OAM_AFFINE_DOUBLE);
+  sprite.centerToCornerVecX = cv.centerToCornerVecX;
+  sprite.centerToCornerVecY = cv.centerToCornerVecY;
+  SetOamMatrixRotationScaling(matrixNum, scaleX, scaleY, 0);
 }
 
 /** 1:1 `SpriteCB_MugshotTrainerPic` (:2620). */
@@ -3131,10 +3199,13 @@ const sMugshotTrainerPicFuncs: ReadonlyArray<(s: MugshotSprite) => boolean> = [
   MugshotTrainerPic_SlideSlow, MugshotTrainerPic_Pause, MugshotTrainerPic_SlideOffscreen,
   MugshotTrainerPic_Pause,
 ];
-// Task_Sidney..Task_Champion : NON câblés (INERTE — voir en-tête). Le pilote ajoute :
-//   sTasks_Main[ENUM_B_1.B_TRANSITION_SIDNEY] = Task_Sidney;  (…PHOEBE/GLACIA/DRAKE/CHAMPION)
-
 // ─── Câblage sTasks_Main (lancés par Transition_StartMain via __battleTransitionCore) ─
+// Mugshots Elite Four / Champion (1:1 :347-351) — deps branchées (voir en-tête section mugshot).
+sTasks_Main[ENUM_B_1.B_TRANSITION_SIDNEY] = Task_Sidney;
+sTasks_Main[ENUM_B_1.B_TRANSITION_PHOEBE] = Task_Phoebe;
+sTasks_Main[ENUM_B_1.B_TRANSITION_GLACIA] = Task_Glacia;
+sTasks_Main[ENUM_B_1.B_TRANSITION_DRAKE] = Task_Drake;
+sTasks_Main[ENUM_B_1.B_TRANSITION_CHAMPION] = Task_Champion;
 sTasks_Main[ENUM_B_1.B_TRANSITION_AQUA] = Task_Aqua;
 sTasks_Main[ENUM_B_1.B_TRANSITION_MAGMA] = Task_Magma;
 sTasks_Main[ENUM_B_1.B_TRANSITION_REGICE] = Task_Regice;
