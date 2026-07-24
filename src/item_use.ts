@@ -76,6 +76,8 @@ import {
   CB2_ChooseMonToGiveItem,
   ItemUseCB_TMHM,
   ItemUseCB_EvolutionStone,
+  ItemUseCB_PPRecovery,
+  ItemUseCB_PPUp,
 } from './party_menu';
 // Re-export pour item_menu.ts (ItemMenu_Give pose gBagMenu.newScreenCallback =
 // CB2_ChooseMonToGiveItem). Routé via item_use pour réutiliser l'edge existant
@@ -577,46 +579,12 @@ export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTa
   }
 }
 
-// ─── ItemUseCB_PPRecovery (party_menu.c:4610) — 1:1-sémantique ──────────────
-// Heal PP — soit toutes les moves (HEAL_PP), soit une (HEAL_PP_ONE = via
-// ShowMoveSelectWindow). Notre 1ère itération : utilise moveIndex=0 par
-// défaut (= polish "select move" reporté).
-export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
-  void _returnTask; void taskId;
-  const slotId = GetPartyScreenSlotId();
-  const mon = gPlayerParty[slotId];
-  if (!mon || !mon.species) return;
-  const itemId = gSpecialVar.ItemId;
-  const result = PokemonUseItemEffects(mon, itemId, slotId, 0 /* moveIndex */, false);
-  if (result.cannotUse) {
-    ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
-    return;
-  }
-  PlaySE(SE_USE_ITEM);  // 1:1 :4669
-  _removeOneFromBag(itemId);
-  // 1:1 décomp :4671-4675 — gMoveNames[move] + GetMedicineItemEffectMessage
-  // → "PP de {move} restaurés.".
-  const moveName = gMoveNames[mon.moves[0]] ?? '';
-  ShowPartyMenuItemMessage(_getMedicineItemEffectMessage(itemId, mon.nickname, moveName));
-}
-
-// ─── ItemUseCB_PPUp (party_menu.c:4680) — 1:1-sémantique ────────────────────
-export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
-  void _returnTask; void taskId;
-  const slotId = GetPartyScreenSlotId();
-  const mon = gPlayerParty[slotId];
-  if (!mon || !mon.species) return;
-  const itemId = gSpecialVar.ItemId;
-  const result = PokemonUseItemEffects(mon, itemId, slotId, 0, false);
-  if (result.cannotUse) {
-    ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
-    return;
-  }
-  PlaySE(SE_USE_ITEM);
-  _removeOneFromBag(itemId);
-  const moveName = gMoveNames[mon.moves[0]] ?? '';
-  ShowPartyMenuItemMessage(_getMedicineItemEffectMessage(itemId, mon.nickname, moveName));
-}
+// ─── ItemUseCB_PPRecovery / ItemUseCB_PPUp (party_menu.c:4610/4680) ─────────
+// Portés 1:1 DANS party_menu.ts (foyer décomp : accès à ShowMoveSelectWindow +
+// Task_HandleWhichMoveInput + _actionWindowId/_msgWid/_phase — flux « quelle
+// capacité? » VIS-12). Re-exportés ici pour l'edge item_menu → item_use
+// (setItemUseCB(ItemUseCB_PPRecovery) + ItemUseInBattle_PPRecovery ci-dessous).
+export { ItemUseCB_PPRecovery, ItemUseCB_PPUp };
 
 // ─── ItemUseCB_RareCandy (party_menu.c:4955) — 1:1-sémantique ───────────────
 export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {

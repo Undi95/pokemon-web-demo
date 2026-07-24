@@ -43,7 +43,16 @@ import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './text_window'
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
   AddTextPrinterParameterized2, GetPlayerTextSpeedDelay,
+  Menu_ProcessInput, Menu_GetCursorPos, InitMenuInUpperLeftCornerNormal,
 } from './menu';
+import { MENU_NOTHING_CHOSEN, MENU_B_PRESSED } from '../include/menu';
+import { AddTextPrinterParameterized } from './text';
+import { getItemEffectBytes } from './data/pokemon/item_effects';
+import { ITEM4_HEAL_PP_ONE } from '../include/constants/item_effects';
+import { ITEM_POTION, ITEM_ENIGMA_BERRY } from '../include/constants/items';
+import {
+  GetItemEffectType, ITEM_EFFECT_HEAL_PP, ITEM_EFFECT_PP_UP, ITEM_EFFECT_PP_MAX,
+} from './engine/bag/bag-item-effects';
 import { gTextFlags, IsTextPrinterActive } from './text';
 import { encodeOwText } from './text';
 import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from './menu_specialized';
@@ -91,7 +100,7 @@ import {
   PlayFanfareByFanfareNum, WaitFanfare, FillPalBufferBlack,
 } from '../harness/runtime/decomp-globals';
 import { FlagGet, gSpecialVar } from './engine/script/script-vars';
-import { MUS_LEVEL_UP, SE_FAILURE } from '../include/constants/songs';
+import { MUS_LEVEL_UP, SE_FAILURE, SE_USE_ITEM } from '../include/constants/songs';
 import { FANFARE_LEVEL_UP } from '../include/constants/sound';
 import { GetMapNameGeneric } from './region_map';
 import { STR_CONV_MODE_RIGHT_ALIGN, ConvertIntToDecimalStringN, gStringVar1, gStringVar2, StringCopy } from '../include/string_util';
@@ -253,6 +262,14 @@ const DO_WHAT_WITH_MON_WINDOW_TEMPLATE: WindowTemplate = {
   bg: 2, tilemapLeft: 1, tilemapTop: 17, width: 16, height: 2, paletteNum: 15, baseBlock: 0x279,
 };
 
+/** 1:1 décomp `sWhichMoveMsgWindowTemplate` (party_menu.h:463) :
+ *  bg=2, (1, 17), 16×2, paletteNum=15, baseBlock=0x299. — PARTY_MSG_RESTORE_WHICH_MOVE /
+ *  PARTY_MSG_BOOST_PP_WHICH_MOVE (message « Laquelle restaurer? » / « Augmenter quels PP? »
+ *  affiché SOUS la liste des moves pendant le choix de capacité). */
+const WHICH_MOVE_MSG_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 2, tilemapLeft: 1, tilemapTop: 17, width: 16, height: 2, paletteNum: 15, baseBlock: 0x299,
+};
+
 /** 1:1 décomp `sSinglePartyMenuWindowTemplate[WIN_MSG]` (party_menu.h:180-187) :
  *  bg=2, (1, 15), 28×4, paletteNum=14, baseBlock=0x1DF. — WIN_MSG = celui que
  *  PrintMessage utilise pour gText_PkmnHPRestoredByVar2/Cured/etc. Hauteur 4
@@ -361,7 +378,15 @@ let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item
   | 'fieldmove_yesno' | 'helditem_msg' | 'switch_items_yesno'
   | 'levelup_learn_next' | 'levelup_learned_fanfare' | 'levelup_learned_msg'
   | 'levelup_replace_msg' | 'replace_yesno' | 'which_move_msg' | 'learnmove_return'
+  | 'which_move_input'
   | 'forgot_move_msg' | 'stop_learning_msg' | 'stop_learning_yesno' | 'move_not_learned_msg' = 'idle';
+
+/** 1:1 `ItemUseCB_PPRecovery`/`ItemUseCB_PPUp` (party_menu.c:4610/4680) : sélecteur
+ *  PARTY_MSG_RESTORE_WHICH_MOVE (Éther/Élixir single-move) vs PARTY_MSG_BOOST_PP_WHICH_MOVE
+ *  (PP Plus / PP Max). Le port dérive le message via `_phase==='which_move_input'` dans
+ *  `_drawMsg` (windowId[1]) → ce flag distingue les deux textes (l'équivalent du stringId
+ *  décomp passé à DisplayPartyMenuStdMessage). */
+let _whichMoveMsgBoost = false;
 
 /** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
  *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
@@ -1349,6 +1374,159 @@ export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: De
   }
 }
 
+// ─── PP items (Éther/Élixir/PP Plus/PP Max) — 1:1 party_menu.c:4572-4685 ─────
+// VIS-12 : le flux single-move (HEAL_PP_ONE / PP_UP / PP_MAX) doit demander QUELLE
+// capacité via ShowMoveSelectWindow + Task_HandleWhichMoveInput, PAS toucher le move 0.
+// windowId[0] = _actionWindowId (liste des moves) ; windowId[1] = _msgWid (message
+// « Laquelle restaurer? », géré par _drawMsg via _phase==='which_move_input').
+
+/** 1:1 `ShowMoveSelectWindow(u8 slot)` (party_menu.c:4572-4588) : crée la fenêtre
+ *  SELECTWINDOW_MOVES (= _actionWindowId), imprime les 4 noms de capacités, puis
+ *  InitMenuInUpperLeftCornerNormal(windowId, moveCount, 0) = curseur ▶ en haut. */
+function ShowMoveSelectWindow(slot: number): void {
+  const fontId = FONT_NORMAL;
+  let moveCount = 0;
+  const windowId = DisplaySelectionWindow(SELECTWINDOW_MOVES);  // 1:1 :4577 → windowId[0]
+  const mon = _party()[slot];
+  for (let i = 0; i < MAX_MON_MOVES; i++) {
+    // 1:1 :4581-4584 move = GetMonData(MON_DATA_MOVE1 + i) ; AddTextPrinterParameterized(.., 8, i*16+1, TEXT_SKIP_DRAW).
+    const move = mon ? (GetMonData(mon, MON_DATA_MOVE1 + i) as number) : 0;
+    AddTextPrinterParameterized(windowId, fontId, gMoveNames[move] ?? '', 8, i * 16 + 1, TEXT_SKIP_DRAW, null);
+    if (move !== 0 /* MOVE_NONE */) moveCount++;
+  }
+  InitMenuInUpperLeftCornerNormal(windowId, moveCount, 0);  // 1:1 :4586
+  ScheduleBgCopyTilemapToVram(2);                           // 1:1 :4587
+}
+
+/** 1:1 `Task_HandleWhichMoveInput(u8 taskId)` (party_menu.c:4591-4608) : Menu_ProcessInput
+ *  sur la liste des moves. B → ReturnToUseOnWhichMon ; sélection → retire le message
+ *  windowId[1] puis SetSelectedMoveForPPItem. */
+function Task_HandleWhichMoveInput(taskId: number): void {
+  const input = Menu_ProcessInput();                       // 1:1 :4593
+  if (input !== MENU_NOTHING_CHOSEN) {
+    if (input === MENU_B_PRESSED) {
+      PlaySE(5);  // 1:1 :4600 PlaySE(SE_SELECT)
+      ReturnToUseOnWhichMon(taskId);
+    } else {
+      // 1:1 :4605 PartyMenuRemoveWindow(&windowId[1]) : retire le message « Laquelle restaurer? ».
+      if (_msgWid >= 0) {
+        ClearStdWindowAndFrame(_msgWid, false);
+        CopyWindowToVram(_msgWid, 3);
+        RemoveWindow(_msgWid);
+        _msgWid = -1;
+      }
+      SetSelectedMoveForPPItem(taskId);
+    }
+  }
+}
+
+/** 1:1 `SetSelectedMoveForPPItem(u8 taskId)` (party_menu.c:4636-4641) :
+ *  PartyMenuRemoveWindow(&windowId[0]) ; gPartyMenu.data1 = Menu_GetCursorPos() ; TryUsePPItem. */
+function SetSelectedMoveForPPItem(taskId: number): void {
+  _removeActionWindow();                 // 1:1 :4638 PartyMenuRemoveWindow(&windowId[0])
+  _learnMoveData1 = Menu_GetCursorPos(); // 1:1 :4639 gPartyMenu.data1 = Menu_GetCursorPos()
+  TryUsePPItem(taskId);                  // 1:1 :4640
+}
+
+/** 1:1 `ReturnToUseOnWhichMon(u8 taskId)` (party_menu.c:4643-4649) : retour au choix-mon
+ *  (func = Task_HandleChooseMonInput → _phase='open'), exitCallback = NULL, retire
+ *  windowId[0], réaffiche PARTY_MSG_USE_ON_WHICH_MON. */
+function ReturnToUseOnWhichMon(taskId: number): void {
+  _phase = 'open';                       // 1:1 :4645 func = Task_HandleChooseMonInput
+  _partyTransientExitCb = null;          // 1:1 :4646 sPartyMenuInternal->exitCallback = NULL
+  _removeActionWindow();                 // 1:1 :4647 PartyMenuRemoveWindow(&windowId[0])
+  _drawMsg();                            // 1:1 :4648 DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON)
+  void taskId;
+}
+
+/** 1:1 `TryUsePPItem(u8 taskId)` (party_menu.c:4649-4678) : applique l'effet PP sur la
+ *  capacité data1 (= slot choisi). Aucun effet → « Ça n'aura aucun effet. » ; sinon
+ *  consomme l'objet + message « PP de {move} restaurés » / « PP de {move} +! ». */
+function TryUsePPItem(taskId: number): void {
+  const moveSlot = _learnMoveData1;                        // 1:1 s16 *moveSlot = &gPartyMenu.data1
+  const item = (gSpecialVar.ItemId as number) | 0;         // gSpecialVar_ItemId
+  const mon = _party()[_slotId];
+  if (!mon) { ClosePartyScreen(); return; }
+  // 1:1 :4657 ExecuteTableBasedItemEffect_(slotId, item, moveSlot) = PokemonUseItemEffects(mon, item, slotId, moveSlot, FALSE).
+  const result = PokemonUseItemEffects(mon, item, _slotId, moveSlot, false);
+  if (result.cannotUse) {
+    // 1:1 :4659-4664 aucun effet.
+    gPartyMenuUseExitCallback = false;
+    PlaySE(5);  // SE_SELECT
+    _itemUsedMsgText = _preparePartyMsg(getString('gText_WontHaveEffect') || '');
+    _phase = 'item_used_msg';                              // = func = Task_ClosePartyMenuAfterText
+    _drawMsg();
+  } else {
+    // 1:1 :4667-4677 effet appliqué.
+    gPartyMenuUseExitCallback = true;
+    PlaySE(SE_USE_ITEM);
+    RemoveBagItem(GetBagItemKey(item), 1);                 // 1:1 :4671 RemoveBagItem(item, 1)
+    const move = GetMonData(mon, MON_DATA_MOVE1 + moveSlot) as number;
+    // 1:1 :4673-4674 StringCopy(gStringVar1, gMoveNames[move]) ; GetMedicineItemEffectMessage(item).
+    _itemUsedMsgText = _getPPItemEffectMessage(item, gMoveNames[move] ?? '');
+    _phase = 'item_used_msg';                              // = func = Task_ClosePartyMenuAfterText
+    _drawMsg();
+  }
+  void taskId;
+}
+
+/** 1:1 `GetMedicineItemEffectMessage(item)` (party_menu.c:4485-4570) — branches PP.
+ *  gStringVar1 = nom de la capacité (StringCopy dans TryUsePPItem :4673). gText_PPWasRestored
+ *  « PP de {STR_VAR_1} restaurés. » (HEAL_PP) / gText_MovesPPIncreased « PP de {STR_VAR_1}
+ *  +! » (PP_UP/PP_MAX). Le reste des branches (statuts/EV/HP) ne survient jamais sur ce
+ *  chemin PP → gText_WontHaveEffect par défaut. */
+function _getPPItemEffectMessage(item: number, moveName: string): string {
+  switch (GetItemEffectType(item)) {
+    case ITEM_EFFECT_PP_UP:
+    case ITEM_EFFECT_PP_MAX:
+      return _preparePartyMsg(getString('gText_MovesPPIncreased') || '', moveName);
+    case ITEM_EFFECT_HEAL_PP:
+      return _preparePartyMsg(getString('gText_PPWasRestored') || '', moveName);
+    default:
+      return _preparePartyMsg(getString('gText_WontHaveEffect') || '', moveName);
+  }
+}
+
+/** 1:1 `void ItemUseCB_PPRecovery(u8 taskId, TaskFunc task)` (party_menu.c:4610-4632) :
+ *  Éther/Élixir. Si l'objet soigne UNE capacité (ITEM4_HEAL_PP_ONE) → demander laquelle
+ *  (message + ShowMoveSelectWindow + Task_HandleWhichMoveInput) ; sinon (toutes les
+ *  capacités, ex. Élixir Max) → data1=0 + TryUsePPItem direct. */
+export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void _returnTask;
+  const item = (gSpecialVar.ItemId as number) | 0;         // 1:1 :4613 gSpecialVar_ItemId
+  // 1:1 :4615-4618 effect = (item==ENIGMA_BERRY) ? enigmaBerry.itemEffect : gItemEffectTable[item-ITEM_POTION].
+  const effect = item === ITEM_ENIGMA_BERRY
+    ? (gSaveBlock1Ptr.enigmaBerry?.itemEffect ?? [])
+    : (getItemEffectBytes(item) ?? []);
+  void ITEM_POTION;  // 1:1 : l'offset ITEM_POTION est intégré dans getItemEffectBytes.
+  if (!((effect[4] ?? 0) & ITEM4_HEAL_PP_ONE)) {
+    // 1:1 :4621-4622 toutes les capacités → data1=0 + TryUsePPItem.
+    _learnMoveData1 = 0;                                   // gPartyMenu.data1 = 0
+    TryUsePPItem(taskId);
+  } else {
+    // 1:1 :4625-4630 une seule capacité → sélecteur.
+    PlaySE(5);  // SE_SELECT
+    _whichMoveMsgBoost = false;                            // PARTY_MSG_RESTORE_WHICH_MOVE
+    _phase = 'which_move_input';
+    _drawMsg();                                            // 1:1 :4628 DisplayPartyMenuStdMessage(PARTY_MSG_RESTORE_WHICH_MOVE)
+    ShowMoveSelectWindow(_slotId);                         // 1:1 :4629 (gPartyMenu.slotId)
+    // 1:1 :4630 func = Task_HandleWhichMoveInput (piloté par _phase='which_move_input').
+  }
+}
+
+/** 1:1 `void ItemUseCB_PPUp(u8 taskId, TaskFunc task)` (party_menu.c:4680-4686) :
+ *  PP Plus / PP Max — toujours choisir la capacité (message BOOST_PP_WHICH_MOVE +
+ *  ShowMoveSelectWindow + Task_HandleWhichMoveInput). */
+export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void _returnTask; void taskId;
+  PlaySE(5);  // 1:1 :4682 PlaySE(SE_SELECT)
+  _whichMoveMsgBoost = true;                               // PARTY_MSG_BOOST_PP_WHICH_MOVE
+  _phase = 'which_move_input';
+  _drawMsg();                                              // 1:1 :4683 DisplayPartyMenuStdMessage(PARTY_MSG_BOOST_PP_WHICH_MOVE)
+  ShowMoveSelectWindow(_slotId);                           // 1:1 :4684 (gPartyMenu.slotId)
+  // 1:1 :4685 func = Task_HandleWhichMoveInput (piloté par _phase='which_move_input').
+}
+
 /** 1:1 `StopLearningMovePrompt` (:4897-4904) : « Arrêter d'enseigner {move}? »
  *  puis `Task_StopLearningMoveYesNo` (:4906-4913) attend la fin du printer
  *  avant de poser le YesNo (phase 'stop_learning_msg' → 'stop_learning_yesno'). */
@@ -1418,6 +1596,13 @@ function _drawMsg(): void {
     // d'action mon affiche PARTY_MSG_DO_WHAT_WITH_MON ("Que faire avec ce PKMN?").
     msg = getString(_actionSubMenu === 'item' ? 'gText_DoWhatWithItem' : 'gText_DoWhatWithPokemon');
     template = DO_WHAT_WITH_MON_WINDOW_TEMPLATE;
+  } else if (_phase === 'which_move_input') {
+    // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_RESTORE_WHICH_MOVE :4628 /
+    //   PARTY_MSG_BOOST_PP_WHICH_MOVE :4683) — message SOUS la liste des moves
+    //   (windowId[1]) pendant le choix de capacité pour Éther/Élixir/PP Plus/Max.
+    //   gText_RestoreWhichMove = « Laquelle restaurer? » ; gText_BoostPp = « Augmenter quels PP? ».
+    msg = getString(_whichMoveMsgBoost ? 'gText_BoostPp' : 'gText_RestoreWhichMove');
+    template = WHICH_MOVE_MSG_WINDOW_TEMPLATE;
   } else if (_partyAction === PARTY_ACTION_SWITCH) {
     // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_MOVE_TO_WHERE)
     // (party_menu.c:2803 ; party_menu.h:603 → gText_MoveToWhere ;
@@ -4612,6 +4797,9 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   // Sub-state action menu : 1:1 décomp la task func serait Task_HandleSelectionMenuInput
   // (party_menu.c:2740) ; ici le _phase reste (lots 4-6 tueront la state-machine).
   if (_phase === 'action_menu') { Task_HandleSelectionMenuInput(_task.taskId); return; }
+  // Sub-state choix de capacité (Éther/Élixir/PP Plus/Max single-move) : 1:1 décomp
+  // Task_HandleWhichMoveInput (party_menu.c:4591) — Menu_ProcessInput sur la liste des moves.
+  if (_phase === 'which_move_input') { Task_HandleWhichMoveInput(_task.taskId); return; }
   // Sub-state hp_anim : 1:1 décomp Task_PartyMenuModifyHP (party_menu.c:1839).
   if (_phase === 'hp_anim') { Task_PartyMenuModifyHP(_task.taskId); return; }
   // Sub-state item used message : 1:1 décomp Task_ClosePartyMenuAfterText (party_menu.c:4472).
