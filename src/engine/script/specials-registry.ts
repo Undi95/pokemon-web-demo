@@ -51,6 +51,7 @@ import {
   ScriptCheckFreePokemonStorageSpace, ShouldShowBoxWasFullMessage,
   OffsetCameraForBattle, ShakeCamera, SpawnCameraObject, RemoveCameraObject,
   MauvilleGymPressSwitch, MauvilleGymSetDefaultBarriers, MauvilleGymDeactivatePuzzle,
+  ShowScrollableMultichoice, ScrollableMultichoice_TryReturnToList,
 } from '../../field_specials';
 // Puzzle portes tournantes (arène Fortree, badge 6) — impl 1:1 src/rotating_gate.ts (hooks
 // collision déjà câblés field_player_avatar). Ces specials étaient CLOBBERÉS en ()=>0 par la
@@ -1054,8 +1055,14 @@ registerSpecial('CloseBattlePointsWindow', () => { /* no-op */ });
 registerSpecial('ShowBattlePointsWindow', () => { /* no-op */ });
 // TakeFrontierBattlePoints — porté 1:1 décomp field_specials.c:2946 (batch B39).
 
-/** Scrollable multichoice (= shop with many items). */
-registerSpecial('ShowScrollableMultichoice', () => { /* no-op */ });
+/** Scrollable multichoice (= shop with many items). Porté 1:1 field_specials.c:2264
+ *  (VIS-8) dans src/field_specials.ts : stands solo Atelier Verre / Fan Club rater /
+ *  vendeur poudre de baies. def_special waitstate=1 (specials.inc) → la task
+ *  CloseScrollableMultichoice émet ScriptContext_Enable + SignalWaitState (bridges).
+ *  No-op RETIRÉ. ScrollableMultichoice_TryReturnToList = persistent-menu path (never
+ *  called en Emerald solo) mais câblé pour complétude ; RETIRÉ du stub-loop (2123). */
+registerSpecial('ShowScrollableMultichoice', ShowScrollableMultichoice);
+registerSpecial('ScrollableMultichoice_TryReturnToList', ScrollableMultichoice_TryReturnToList);
 
 /** Battle Frontier party. */
 registerSpecial('ChoosePartyForBattleFrontier', () => 0);
@@ -2120,7 +2127,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'Script_StorytellerInitializeRandomStat',
   'ScrollRankingHallRecordsWindow', 'ScrollableMultichoice_ClosePersistentMenu',
   'ScrollableMultichoice_RedrawPersistentMenu',
-  'ScrollableMultichoice_TryReturnToList',
+  // 'ScrollableMultichoice_TryReturnToList' — porté 1:1 field_specials.c:2714 (VIS-8),
+  //   registré explicitement ci-haut → RETIRÉ du stub-loop (sinon clobber () => 0).
+  //   NB : ClosePersistentMenu/RedrawPersistentMenu N'EXISTENT PAS en décomp Emerald
+  //   (specials factices) → restent stubs () => 0 inoffensifs.
   // 'SetCB2WhiteOut' — porté 1:1 décomp post_battle_event_funcs.c:92 ci-haut (2026-07-02).
   // 'SetChampionSaveWarp' — porté 1:1 décomp save_location.c:136 ci-bas.
   // 'SetContestCategoryStringVarForInterview' — porté 1:1 tv.ts (transpilé), handler ci-haut.

@@ -25,12 +25,30 @@ import type { WindowTemplate } from './window';
 import { VarSet, FlagGet } from './event_data';
 import { VAR_RESULT } from '../include/constants/vars';
 import { GetStringWidth, GetPlayerNameString } from './text';
+import { StringExpandPlaceholders } from './string_util';
 import { FONT_NORMAL } from '../include/text';
 import { MAX_MULTICHOICE_WIDTH } from '../include/constants/script_menu';
 
 /** 1:1 décomp `int ConvertPixelWidthToTileWidth(int width)` (script_menu.c:743). */
 export function ConvertPixelWidthToTileWidth(width: number): number {
   return (Math.trunc((width + 9) / 8) + 1) > MAX_MULTICHOICE_WIDTH ? MAX_MULTICHOICE_WIDTH : (Math.trunc((width + 9) / 8) + 1);
+}
+
+/** 1:1 décomp `static int DisplayTextAndGetWidthInternal(const u8 *str)` (script_menu.c:726-731).
+ *  `u8 temp[64]` → buffer 64 octets ; StringExpandPlaceholders(temp, str) puis
+ *  GetStringWidth(FONT_NORMAL, temp, 0) (ordre args ts = (str, fontId, spacing)). */
+function DisplayTextAndGetWidthInternal(str: string | Uint8Array): number {
+  const temp = new Uint8Array(64);
+  StringExpandPlaceholders(temp, str);
+  return GetStringWidth(temp, FONT_NORMAL, 0);
+}
+
+/** 1:1 décomp `int DisplayTextAndGetWidth(const u8 *str, int prevWidth)` (script_menu.c:733-740). */
+export function DisplayTextAndGetWidth(str: string | Uint8Array, prevWidth: number): number {
+  let width = DisplayTextAndGetWidthInternal(str);
+  if (width < prevWidth)
+    width = prevWidth;
+  return width;
 }
 
 interface RawMultichoiceData {

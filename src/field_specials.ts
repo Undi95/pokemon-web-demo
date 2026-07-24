@@ -48,7 +48,38 @@ import {
 } from './event_object_movement';
 import { GetPlayerAvatarSpriteId } from './field_player_avatar';
 import { CreateTask, DestroyTask, gTasks } from './task';
-import { SE_M_STRENGTH } from '../include/constants/songs';
+import { SE_M_STRENGTH, SE_SELECT } from '../include/constants/songs';
+// ── ShowScrollableMultichoice (field_specials.c:2264+) : UI liste via list_menu
+//    (précédent DÉJÀ PORTÉ : decoration.ts / item_menu.ts / move_relearner.ts). ─────
+import {
+  ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
+  ListMenuGetScrollAndRow, ListMenuGetCurrentItemArrayId,
+  AddScrollIndicatorArrowPair, RemoveScrollIndicatorArrowPair,
+  LIST_NOTHING_CHOSEN, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL, CURSOR_BLACK_ARROW,
+  SCROLL_ARROW_UP, SCROLL_ARROW_DOWN,
+} from './list_menu';
+import type { ListMenuItem, ListMenuTemplate, ScrollArrowsTemplate } from './list_menu';
+import { SetStandardWindowBorderStyle, ClearStdWindowAndFrameToTransparent } from './menu';
+import {
+  AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram,
+  ScheduleBgCopyTilemapToVram, CreateWindowTemplate, COPYWIN_GFX, PIXEL_FILL,
+} from './window';
+import { ConvertPixelWidthToTileWidth, DisplayTextAndGetWidth } from './script_menu';
+import { getString } from '../harness/runtime/decomp-strings';
+import { FONT_NORMAL } from '../include/text';
+import { FindTaskIdByFunc } from '../harness/runtime/decomp-globals';
+import { TASK_NONE } from '../include/task';
+import { MAX_SPRITES } from './sprite';
+import { MULTI_B_PRESSED, MAX_MULTICHOICE_WIDTH } from '../include/constants/script_menu';
+import {
+  SCROLL_MULTI_NONE, SCROLL_MULTI_GLASS_WORKSHOP_VENDOR, SCROLL_MULTI_POKEMON_FAN_CLUB_RATER,
+  SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1, SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2,
+  SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR, SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR,
+  SCROLL_MULTI_BERRY_POWDER_VENDOR, SCROLL_MULTI_BF_RECEPTIONIST,
+  SCROLL_MULTI_BF_MOVE_TUTOR_1, SCROLL_MULTI_BF_MOVE_TUTOR_2,
+  SCROLL_MULTI_SS_TIDAL_DESTINATION, SCROLL_MULTI_BATTLE_TENT_RULES,
+  MAX_SCROLL_MULTI_ON_SCREEN,
+} from '../include/constants/field_specials';
 
 // 1:1 décomp include/constants/global.h:113-114 (évite le fourre-tout decomp-globals).
 const MALE = 0;
@@ -1100,4 +1131,509 @@ export function SetPCBoxToSendMon(boxId: number): void {
 /** 1:1 décomp `u16 GetPCBoxToSendMon(void)` (field_specials.c:3410-3413). */
 export function GetPCBoxToSendMon(): number {
   return sPCBoxToSendMon;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ShowScrollableMultichoice 1:1 (field_specials.c:2264-2769) — VIS-8.
+// Stands SOLO débloqués : Atelier Verre (SCROLL_MULTI_GLASS_WORKSHOP_VENDOR),
+// évaluateur du Fan Club (POKEMON_FAN_CLUB_RATER), vendeur de poudre de baies
+// (BERRY_POWDER_VENDOR). Les menus Battle Frontier (BF_*) partagent ce code mais
+// dépendent de helpers frontier (icônes objet, fenêtre tuteur, exchange corner
+// data) hors périmètre VIS-8 → leurs guards internes sont INERTES (TODO-FRONTIER)
+// et ne s'exécutent QUE pour les menus BF_* (les menus solo n'y entrent jamais).
+//
+// UI liste : list_menu.ts, précédent DÉJÀ PORTÉ (decoration.ts AddDecorationItems*
+// / move_relearner.ts : ListMenuInit + AddScrollIndicatorArrowPair + fenêtre std).
+//
+// Task data macros (field_specials.c:2248-2261) :
+//   data[0]  tMaxItemsOnScreen   data[1]  tNumItems     data[2]  tLeft
+//   data[3]  tTop                data[4]  tWidth        data[5]  tHeight
+//   data[6]  tKeepOpenAfterSelect data[7] tScrollOffset data[8]  tSelectedRow
+//   data[11] tScrollMultiId      data[12] tScrollArrowId
+//   data[13] tWindowId           data[14] tListTaskId   data[15] tTaskId
+const T_MAX_ON_SCREEN = 0, T_NUM_ITEMS = 1, T_LEFT = 2, T_TOP = 3, T_WIDTH = 4, T_HEIGHT = 5;
+const T_KEEP_OPEN = 6, T_SCROLL_OFFSET = 7, T_SELECTED_ROW = 8;
+const T_SCROLL_MULTI_ID = 11, T_SCROLL_ARROW_ID = 12, T_WINDOW_ID = 13, T_LIST_TASK_ID = 14, T_TASK_ID = 15;
+
+// 1:1 globals (field_specials.c:86-95).
+let sScrollableMultichoice_ListMenuItem: ListMenuItem[] | null = null;
+let sScrollableMultichoice_ScrollOffset = 0;
+let sScrollableMultichoice_ItemSpriteId = MAX_SPRITES;
+let sFrontierExchangeCorner_NeverRead = 0;
+const gScrollableMultichoice_ListMenuTemplate: ListMenuTemplate = {
+  items: [], moveCursorFunc: null, itemPrintFunc: null, totalItems: 0, maxShowed: 0,
+  windowId: 0, header_X: 0, item_X: 0, cursor_X: 0, upText_Y: 0, cursorPal: 0, fillValue: 0,
+  cursorShadowPal: 0, lettersSpacing: 0, itemVerticalPadding: 0, scrollMultiple: 0, fontId: 0, cursorKind: 0,
+};
+
+// 1:1 #define GFXTAG_MULTICHOICE_SCROLL_ARROWS 2000 / PALTAG… 100 (field_specials.c:71-72).
+const GFXTAG_MULTICHOICE_SCROLL_ARROWS = 2000;
+const PALTAG_MULTICHOICE_SCROLL_ARROWS = 100;
+
+/** Pont anti-cycle (comme __ScriptContext_Enable) : LockPlayerFieldControls
+ *  (1:1 script.ts:240 = `_GLK.__sLockFieldControls = true`) sans arête ESM
+ *  field_specials→script (module évalué tôt par bike.ts). */
+function _lockPlayerFieldControls(): void {
+  (globalThis as Record<string, unknown>).__sLockFieldControls = true;
+}
+function _scriptContextEnable(): void {
+  // 1:1 CloseScrollableMultichoice/ProcessInput ScriptContext_Enable() : réactive le
+  // contexte + relâche l'opcode `waitstate` (pattern StopCameraShake field_specials.c:1505).
+  (globalThis as { __ScriptContext_Enable?: () => void }).__ScriptContext_Enable?.();
+  (globalThis as { __SignalWaitState?: () => void }).__SignalWaitState?.();
+}
+function _playSE(seId: number): void {
+  (globalThis as { __PlaySE?: (n: number) => void }).__PlaySE?.(seId);
+}
+
+/** Wrapper task (t)=>fn(t.taskId) + tag funcRef pour FindTaskIdByFunc
+ *  (pattern battle_transition.ts:391 _coreCreateTask). */
+function _scrollMultiSetTaskFunc(taskId: number, fn: (taskId: number) => void): void {
+  gTasks[taskId].func = (t: { taskId: number }) => fn(t.taskId);
+  (gTasks[taskId] as unknown as { funcRef?: unknown }).funcRef = fn;
+}
+
+/** 1:1 décomp `void ShowScrollableMultichoice(void)` (field_specials.c:2264-2398). */
+export function ShowScrollableMultichoice(): void {
+  const gSpecialVar_0x8004 = VarGet('VAR_0x8004');
+  const taskId = CreateTask((t: { taskId: number }) => Task_ShowScrollableMultichoice(t.taskId), 8);
+  (gTasks[taskId] as unknown as { funcRef?: unknown }).funcRef = Task_ShowScrollableMultichoice;
+  const task = gTasks[taskId];
+  task.data[T_SCROLL_MULTI_ID] = gSpecialVar_0x8004;
+
+  switch (gSpecialVar_0x8004) {
+    case SCROLL_MULTI_NONE:
+      task.data[T_MAX_ON_SCREEN] = 1;
+      task.data[T_NUM_ITEMS] = 1;
+      task.data[T_LEFT] = 1;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 1;
+      task.data[T_HEIGHT] = 1;
+      task.data[T_KEEP_OPEN] = 0; // FALSE
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_GLASS_WORKSHOP_VENDOR:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN - 1;
+      task.data[T_NUM_ITEMS] = 8;
+      task.data[T_LEFT] = 1;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 9;
+      task.data[T_HEIGHT] = 10;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_POKEMON_FAN_CLUB_RATER:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN;
+      task.data[T_NUM_ITEMS] = 12;
+      task.data[T_LEFT] = 1;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 7;
+      task.data[T_HEIGHT] = 12;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN;
+      task.data[T_NUM_ITEMS] = 11;
+      task.data[T_LEFT] = 14;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 15;
+      task.data[T_HEIGHT] = 12;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN;
+      task.data[T_NUM_ITEMS] = 6;
+      task.data[T_LEFT] = 14;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 15;
+      task.data[T_HEIGHT] = 12;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN;
+      task.data[T_NUM_ITEMS] = 7;
+      task.data[T_LEFT] = 14;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 15;
+      task.data[T_HEIGHT] = 12;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN;
+      task.data[T_NUM_ITEMS] = 10;
+      task.data[T_LEFT] = 14;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 15;
+      task.data[T_HEIGHT] = 12;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_BERRY_POWDER_VENDOR:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN;
+      task.data[T_NUM_ITEMS] = 12;
+      task.data[T_LEFT] = 15;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 14;
+      task.data[T_HEIGHT] = 12;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_BF_RECEPTIONIST:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN;
+      task.data[T_NUM_ITEMS] = 10;
+      task.data[T_LEFT] = 17;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 11;
+      task.data[T_HEIGHT] = 12;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_BF_MOVE_TUTOR_1:
+    case SCROLL_MULTI_BF_MOVE_TUTOR_2:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN;
+      task.data[T_NUM_ITEMS] = 11;
+      task.data[T_LEFT] = 15;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 14;
+      task.data[T_HEIGHT] = 12;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_SS_TIDAL_DESTINATION:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN;
+      task.data[T_NUM_ITEMS] = 7;
+      task.data[T_LEFT] = 19;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 10;
+      task.data[T_HEIGHT] = 12;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    case SCROLL_MULTI_BATTLE_TENT_RULES:
+      task.data[T_MAX_ON_SCREEN] = MAX_SCROLL_MULTI_ON_SCREEN;
+      task.data[T_NUM_ITEMS] = 7;
+      task.data[T_LEFT] = 17;
+      task.data[T_TOP] = 1;
+      task.data[T_WIDTH] = 12;
+      task.data[T_HEIGHT] = 12;
+      task.data[T_KEEP_OPEN] = 0;
+      task.data[T_TASK_ID] = taskId;
+      break;
+    default:
+      VarSet('VAR_RESULT', MULTI_B_PRESSED);
+      DestroyTask(taskId);
+      break;
+  }
+}
+
+// 1:1 décomp `sScrollableMultichoiceOptions[][MAX_SCROLL_MULTI_LENGTH]`
+// (field_specials.c:2400-2554). Labels `gText_*` résolus LAZY via getString au
+// déréférencement (piège Proxy _gbaText : jamais getString au top-level module).
+const sScrollableMultichoiceOptions: string[][] = [];
+sScrollableMultichoiceOptions[SCROLL_MULTI_NONE] = ['gText_Exit'];
+sScrollableMultichoiceOptions[SCROLL_MULTI_GLASS_WORKSHOP_VENDOR] = [
+  'gText_BlueFlute', 'gText_YellowFlute', 'gText_RedFlute', 'gText_WhiteFlute',
+  'gText_BlackFlute', 'gText_PrettyChair', 'gText_PrettyDesk', 'gText_Exit',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_POKEMON_FAN_CLUB_RATER] = [
+  'gText_0Pts', 'gText_10Pts', 'gText_20Pts', 'gText_30Pts', 'gText_40Pts', 'gText_50Pts',
+  'gText_60Pts', 'gText_70Pts', 'gText_80Pts', 'gText_90Pts', 'gText_100Pts', 'gText_QuestionMark',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1] = [
+  'gText_KissPoster16BP', 'gText_KissCushion32BP', 'gText_SmoochumDoll32BP', 'gText_TogepiDoll48BP',
+  'gText_MeowthDoll48BP', 'gText_ClefairyDoll48BP', 'gText_DittoDoll48BP', 'gText_CyndaquilDoll80BP',
+  'gText_ChikoritaDoll80BP', 'gText_TotodileDoll80BP', 'gText_Exit',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2] = [
+  'gText_LaprasDoll128BP', 'gText_SnorlaxDoll128BP', 'gText_VenusaurDoll256BP',
+  'gText_CharizardDoll256BP', 'gText_BlastoiseDoll256BP', 'gText_Exit',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR] = [
+  'gText_Protein1BP', 'gText_Calcium1BP', 'gText_Iron1BP', 'gText_Zinc1BP',
+  'gText_Carbos1BP', 'gText_HpUp1BP', 'gText_Exit',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR] = [
+  'gText_Leftovers48BP', 'gText_WhiteHerb48BP', 'gText_QuickClaw48BP', 'gText_MentalHerb48BP',
+  'gText_BrightPowder64BP', 'gText_ChoiceBand64BP', 'gText_KingsRock64BP', 'gText_FocusBand64BP',
+  'gText_ScopeLens64BP', 'gText_Exit',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_BERRY_POWDER_VENDOR] = [
+  'gText_EnergyPowder50', 'gText_EnergyRoot80', 'gText_HealPowder50', 'gText_RevivalHerb300',
+  'gText_Protein1000', 'gText_Iron1000', 'gText_Carbos1000', 'gText_Calcium1000',
+  'gText_Zinc1000', 'gText_HPUp1000', 'gText_PPUp3000', 'gText_Exit',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_BF_RECEPTIONIST] = [
+  'gText_BattleTower2', 'gText_BattleDome', 'gText_BattlePalace', 'gText_BattleArena',
+  'gText_BattleFactory', 'gText_BattlePike', 'gText_BattlePyramid', 'gText_RankingHall',
+  'gText_ExchangeService', 'gText_Exit',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_BF_MOVE_TUTOR_1] = [
+  'gText_Softboiled16BP', 'gText_SeismicToss24BP', 'gText_DreamEater24BP', 'gText_MegaPunch24BP',
+  'gText_MegaKick48BP', 'gText_BodySlam48BP', 'gText_RockSlide48BP', 'gText_Counter48BP',
+  'gText_ThunderWave48BP', 'gText_SwordsDance48BP', 'gText_Exit',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_BF_MOVE_TUTOR_2] = [
+  'gText_DefenseCurl16BP', 'gText_Snore24BP', 'gText_MudSlap24BP', 'gText_Swift24BP',
+  'gText_IcyWind24BP', 'gText_Endure48BP', 'gText_PsychUp48BP', 'gText_IcePunch48BP',
+  'gText_ThunderPunch48BP', 'gText_FirePunch48BP', 'gText_Exit',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_SS_TIDAL_DESTINATION] = [
+  'gText_SlateportCity', 'gText_BattleFrontier', 'gText_SouthernIsland', 'gText_NavelRock',
+  'gText_BirthIsland', 'gText_FarawayIsland', 'gText_Exit',
+];
+sScrollableMultichoiceOptions[SCROLL_MULTI_BATTLE_TENT_RULES] = [
+  'gText_BattleTrainers', 'gText_BattleBasics', 'gText_PokemonNature', 'gText_PokemonMoves',
+  'gText_Underpowered', 'gText_WhenInDanger', 'gText_Exit',
+];
+
+/** 1:1 décomp `static void Task_ShowScrollableMultichoice(u8 taskId)` (field_specials.c:2556-2604). */
+function Task_ShowScrollableMultichoice(taskId: number): void {
+  const gSpecialVar_0x8004 = VarGet('VAR_0x8004');
+  let width = 0;
+  const task = gTasks[taskId];
+
+  _lockPlayerFieldControls();
+  sScrollableMultichoice_ScrollOffset = 0;
+  sScrollableMultichoice_ItemSpriteId = MAX_SPRITES;
+  FillFrontierExchangeCornerWindowAndItemIcon(task.data[T_SCROLL_MULTI_ID], 0);
+  ShowBattleFrontierTutorWindow(task.data[T_SCROLL_MULTI_ID], 0);
+  sScrollableMultichoice_ListMenuItem = new Array(task.data[T_NUM_ITEMS]);
+  sFrontierExchangeCorner_NeverRead = 0;
+  InitScrollableMultichoice();
+
+  for (let i = 0; i < task.data[T_NUM_ITEMS]; i++) {
+    const text = getString(sScrollableMultichoiceOptions[gSpecialVar_0x8004][i]);
+    sScrollableMultichoice_ListMenuItem[i] = { name: text, id: i };
+    width = DisplayTextAndGetWidth(text, width);
+  }
+
+  task.data[T_WIDTH] = ConvertPixelWidthToTileWidth(width);
+
+  if (task.data[T_LEFT] + task.data[T_WIDTH] > MAX_MULTICHOICE_WIDTH + 1) {
+    const adjustedLeft = MAX_MULTICHOICE_WIDTH + 1 - task.data[T_WIDTH];
+    if (adjustedLeft < 0)
+      task.data[T_LEFT] = 0;
+    else
+      task.data[T_LEFT] = adjustedLeft;
+  }
+
+  const template = CreateWindowTemplate(0, task.data[T_LEFT], task.data[T_TOP], task.data[T_WIDTH], task.data[T_HEIGHT], 0xF, 0x64);
+  const windowId = AddWindow(template);
+  task.data[T_WINDOW_ID] = windowId;
+  SetStandardWindowBorderStyle(windowId, false);
+
+  gScrollableMultichoice_ListMenuTemplate.totalItems = task.data[T_NUM_ITEMS];
+  gScrollableMultichoice_ListMenuTemplate.maxShowed = task.data[T_MAX_ON_SCREEN];
+  gScrollableMultichoice_ListMenuTemplate.windowId = task.data[T_WINDOW_ID];
+
+  ScrollableMultichoice_UpdateScrollArrows(taskId);
+  task.data[T_LIST_TASK_ID] = ListMenuInit(gScrollableMultichoice_ListMenuTemplate, task.data[T_SCROLL_OFFSET], task.data[T_SELECTED_ROW]);
+  ScheduleBgCopyTilemapToVram(0);
+  _scrollMultiSetTaskFunc(taskId, ScrollableMultichoice_ProcessInput);
+}
+
+/** 1:1 décomp `static void InitScrollableMultichoice(void)` (field_specials.c:2606-2626). */
+function InitScrollableMultichoice(): void {
+  gScrollableMultichoice_ListMenuTemplate.items = sScrollableMultichoice_ListMenuItem!;
+  gScrollableMultichoice_ListMenuTemplate.moveCursorFunc = ScrollableMultichoice_MoveCursor;
+  gScrollableMultichoice_ListMenuTemplate.itemPrintFunc = null;
+  gScrollableMultichoice_ListMenuTemplate.totalItems = 1;
+  gScrollableMultichoice_ListMenuTemplate.maxShowed = 1;
+  gScrollableMultichoice_ListMenuTemplate.windowId = 0;
+  gScrollableMultichoice_ListMenuTemplate.header_X = 0;
+  gScrollableMultichoice_ListMenuTemplate.item_X = 8;
+  gScrollableMultichoice_ListMenuTemplate.cursor_X = 0;
+  gScrollableMultichoice_ListMenuTemplate.upText_Y = 1;
+  gScrollableMultichoice_ListMenuTemplate.cursorPal = 2;
+  gScrollableMultichoice_ListMenuTemplate.fillValue = 1;
+  gScrollableMultichoice_ListMenuTemplate.cursorShadowPal = 3;
+  gScrollableMultichoice_ListMenuTemplate.lettersSpacing = 0;
+  gScrollableMultichoice_ListMenuTemplate.itemVerticalPadding = 0;
+  gScrollableMultichoice_ListMenuTemplate.scrollMultiple = LIST_NO_MULTIPLE_SCROLL;
+  gScrollableMultichoice_ListMenuTemplate.fontId = FONT_NORMAL;
+  gScrollableMultichoice_ListMenuTemplate.cursorKind = CURSOR_BLACK_ARROW;
+}
+
+/** 1:1 décomp `static void ScrollableMultichoice_MoveCursor(s32 itemIndex, bool8 onInit,
+ *  struct ListMenu *list)` (field_specials.c:2628-2645). Signatures ts list_menu :
+ *  ListMenuGetScrollAndRow → {scrollOffset,…} ; ListMenuGetCurrentItemArrayId → number. */
+function ScrollableMultichoice_MoveCursor(_itemIndex: number, _onInit: boolean, _list: unknown): void {
+  _playSE(SE_SELECT);
+  const taskId = FindTaskIdByFunc(ScrollableMultichoice_ProcessInput);
+  if (taskId !== TASK_NONE) {
+    const task = gTasks[taskId];
+    sScrollableMultichoice_ScrollOffset = ListMenuGetScrollAndRow(task.data[T_LIST_TASK_ID]).scrollOffset;
+    const selection = ListMenuGetCurrentItemArrayId(task.data[T_LIST_TASK_ID]);
+    HideFrontierExchangeCornerItemIcon(task.data[T_SCROLL_MULTI_ID], sFrontierExchangeCorner_NeverRead);
+    FillFrontierExchangeCornerWindowAndItemIcon(task.data[T_SCROLL_MULTI_ID], selection);
+    ShowBattleFrontierTutorMoveDescription(task.data[T_SCROLL_MULTI_ID], selection);
+    sFrontierExchangeCorner_NeverRead = selection;
+  }
+}
+
+/** 1:1 décomp `static void ScrollableMultichoice_ProcessInput(u8 taskId)` (field_specials.c:2647-2682). */
+function ScrollableMultichoice_ProcessInput(taskId: number): void {
+  const task = gTasks[taskId];
+  const input = ListMenu_ProcessInput(task.data[T_LIST_TASK_ID]);
+
+  switch (input) {
+    case LIST_NOTHING_CHOSEN:
+      break;
+    case LIST_CANCEL:
+      VarSet('VAR_RESULT', MULTI_B_PRESSED);
+      _playSE(SE_SELECT);
+      CloseScrollableMultichoice(taskId);
+      break;
+    default:
+      VarSet('VAR_RESULT', input);
+      _playSE(SE_SELECT);
+      if (!task.data[T_KEEP_OPEN]) {
+        CloseScrollableMultichoice(taskId);
+      } else if (input === task.data[T_NUM_ITEMS] - 1) {
+        // Selected option was the last one (Exit)
+        CloseScrollableMultichoice(taskId);
+      } else {
+        // Handle selection while keeping the menu open (jamais atteint : tKeepOpenAfterSelect
+        // FALSE pour tous les scrollable multichoices Emerald).
+        ScrollableMultichoice_RemoveScrollArrows(taskId);
+        _scrollMultiSetTaskFunc(taskId, Task_ScrollableMultichoice_WaitReturnToList);
+        _scriptContextEnable();
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `static void CloseScrollableMultichoice(u8 taskId)` (field_specials.c:2684-2701). */
+function CloseScrollableMultichoice(taskId: number): void {
+  const task = gTasks[taskId];
+  const selection = ListMenuGetCurrentItemArrayId(task.data[T_LIST_TASK_ID]);
+  HideFrontierExchangeCornerItemIcon(task.data[T_SCROLL_MULTI_ID], selection);
+  ScrollableMultichoice_RemoveScrollArrows(taskId);
+  DestroyListMenuTask(task.data[T_LIST_TASK_ID]);
+  sScrollableMultichoice_ListMenuItem = null; // 1:1 Free(sScrollableMultichoice_ListMenuItem)
+  ClearStdWindowAndFrameToTransparent(task.data[T_WINDOW_ID], true);
+  FillWindowPixelBuffer(task.data[T_WINDOW_ID], PIXEL_FILL(0));
+  CopyWindowToVram(task.data[T_WINDOW_ID], COPYWIN_GFX);
+  RemoveWindow(task.data[T_WINDOW_ID]);
+  DestroyTask(taskId);
+  _scriptContextEnable();
+}
+
+// 1:1 décomp field_specials.c:2703-2712 — never run, tKeepOpenAfterSelect FALSE partout.
+/** 1:1 décomp `static void Task_ScrollableMultichoice_WaitReturnToList(u8 taskId)`. */
+function Task_ScrollableMultichoice_WaitReturnToList(taskId: number): void {
+  switch (gTasks[taskId].data[T_KEEP_OPEN]) {
+    case 1:
+    default:
+      break;
+    case 2:
+      gTasks[taskId].data[T_KEEP_OPEN] = 1;
+      _scrollMultiSetTaskFunc(taskId, Task_ScrollableMultichoice_ReturnToList);
+      break;
+  }
+}
+
+/** 1:1 décomp `void ScrollableMultichoice_TryReturnToList(void)` (field_specials.c:2714-2721).
+ *  Never called (persistent-menu path inutilisé en Emerald solo). */
+export function ScrollableMultichoice_TryReturnToList(): void {
+  const taskId = FindTaskIdByFunc(Task_ScrollableMultichoice_WaitReturnToList);
+  if (taskId === TASK_NONE)
+    _scriptContextEnable();
+  else
+    gTasks[taskId].data[T_KEEP_OPEN]++; // Return to list
+}
+
+/** 1:1 décomp `static void Task_ScrollableMultichoice_ReturnToList(u8 taskId)` (field_specials.c:2723-2728). */
+function Task_ScrollableMultichoice_ReturnToList(taskId: number): void {
+  _lockPlayerFieldControls();
+  ScrollableMultichoice_UpdateScrollArrows(taskId);
+  _scrollMultiSetTaskFunc(taskId, ScrollableMultichoice_ProcessInput);
+}
+
+/** 1:1 décomp `static void ScrollableMultichoice_UpdateScrollArrows(u8 taskId)` (field_specials.c:2730-2762). */
+function ScrollableMultichoice_UpdateScrollArrows(taskId: number): void {
+  // 1:1 static const struct ScrollArrowsTemplate sScrollableMultichoice_ScrollArrowsTemplate.
+  const task = gTasks[taskId];
+  const template: ScrollArrowsTemplate = {
+    firstArrowType: SCROLL_ARROW_UP,
+    firstX: 0,
+    firstY: 0,
+    secondArrowType: SCROLL_ARROW_DOWN,
+    secondX: 0,
+    secondY: 0,
+    fullyUpThreshold: 0,
+    fullyDownThreshold: 0,
+    tileTag: GFXTAG_MULTICHOICE_SCROLL_ARROWS,
+    palTag: PALTAG_MULTICHOICE_SCROLL_ARROWS,
+    palNum: 0,
+  };
+  if (task.data[T_MAX_ON_SCREEN] !== task.data[T_NUM_ITEMS]) {
+    template.firstX = Math.trunc(task.data[T_WIDTH] / 2) * 8 + 12 + (task.data[T_LEFT] - 1) * 8;
+    template.firstY = 8;
+    template.secondX = Math.trunc(task.data[T_WIDTH] / 2) * 8 + 12 + (task.data[T_LEFT] - 1) * 8;
+    template.secondY = task.data[T_HEIGHT] * 8 + 10;
+    template.fullyUpThreshold = 0;
+    template.fullyDownThreshold = task.data[T_NUM_ITEMS] - task.data[T_MAX_ON_SCREEN];
+    task.data[T_SCROLL_ARROW_ID] = AddScrollIndicatorArrowPair(template, () => sScrollableMultichoice_ScrollOffset);
+  }
+}
+
+/** 1:1 décomp `static void ScrollableMultichoice_RemoveScrollArrows(u8 taskId)` (field_specials.c:2764-2769). */
+function ScrollableMultichoice_RemoveScrollArrows(taskId: number): void {
+  const task = gTasks[taskId];
+  if (task.data[T_MAX_ON_SCREEN] !== task.data[T_NUM_ITEMS])
+    RemoveScrollIndicatorArrowPair(task.data[T_SCROLL_ARROW_ID]);
+}
+
+// ── Helpers frontier (field_specials.c:2991-3200) — INERTES pour VIS-8 ──────────
+// Les menus solo (GLASS/FAN_CLUB/BERRY_POWDER) n'entrent JAMAIS dans ces guards
+// (bornes BF_*). Le corps frontier (descriptions exchange-corner, icônes objet,
+// fenêtre tuteur + move descriptions) dépend de battle_frontier_exchange_corner.h,
+// AddItemIconSprite/AddDecorationIconObject et des tables tutor — hors périmètre
+// VIS-8. À porter dans une vague FRONTIER dédiée. TODO-FRONTIER.
+
+/** 1:1 décomp `static void FillFrontierExchangeCornerWindowAndItemIcon(u16 menu, u16 selection)`
+ *  (field_specials.c:2991-3036) — guard BF exchange corner ; corps INERTE (TODO-FRONTIER). */
+function FillFrontierExchangeCornerWindowAndItemIcon(menu: number, _selection: number): void {
+  if (menu >= SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1 && menu <= SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR) {
+    // TODO-FRONTIER : FillWindowPixelRect + AddTextPrinterParameterized2(descriptions) +
+    // ShowFrontierExchangeCornerItemIcon / AddDecorationIconObject. Hors périmètre solo VIS-8.
+  }
+}
+
+/** 1:1 décomp `static void HideFrontierExchangeCornerItemIcon(u16 menu, u16 unused)`
+ *  (field_specials.c:3052-3068) — guard sprite + BF exchange corner ; corps INERTE. */
+function HideFrontierExchangeCornerItemIcon(menu: number, _unused: number): void {
+  if (sScrollableMultichoice_ItemSpriteId !== MAX_SPRITES) {
+    switch (menu) {
+      case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1:
+      case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2:
+      case SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR:
+      case SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR:
+        // TODO-FRONTIER : DestroySpriteAndFreeResources(&gSprites[sScrollableMultichoice_ItemSpriteId]).
+        break;
+    }
+    sScrollableMultichoice_ItemSpriteId = MAX_SPRITES;
+  }
+}
+
+/** 1:1 décomp `static void ShowBattleFrontierTutorWindow(u8 menu, u16 selection)`
+ *  (field_specials.c:3105-3127) — guard BF move tutor ; corps INERTE (TODO-FRONTIER). */
+function ShowBattleFrontierTutorWindow(menu: number, _selection: number): void {
+  if (menu === SCROLL_MULTI_BF_MOVE_TUTOR_1 || menu === SCROLL_MULTI_BF_MOVE_TUTOR_2) {
+    // TODO-FRONTIER : AddWindow(sBattleFrontierTutor_WindowTemplate) + SetStandardWindowBorderStyle
+    // + ShowBattleFrontierTutorMoveDescription. Hors périmètre solo VIS-8.
+  }
+}
+
+/** 1:1 décomp `static void ShowBattleFrontierTutorMoveDescription(u8 menu, u16 selection)`
+ *  (field_specials.c:3129+) — guard BF move tutor ; corps INERTE (TODO-FRONTIER). */
+function ShowBattleFrontierTutorMoveDescription(menu: number, _selection: number): void {
+  if (menu === SCROLL_MULTI_BF_MOVE_TUTOR_1 || menu === SCROLL_MULTI_BF_MOVE_TUTOR_2) {
+    // TODO-FRONTIER : FillWindowPixelRect + AddTextPrinterParameterized2(gBattleFrontier_TutorMoveDescriptions).
+  }
 }
