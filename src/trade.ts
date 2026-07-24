@@ -428,7 +428,9 @@ function TradeMons(playerPartyIdx: number, partnerPartyIdx: number): void {
 // exécute l'extrait DONNÉES du case STATE_TRY_EVOLUTION (trade.c:3873-3879) :
 // l'échange effectif + le check d'évolution par trade. À appeler après l'anim
 // (ou après un fondu simple précédenté, cf. DoInGameTradeScene ci-dessous).
-export function PerformInGameTradeDataExchange(afterEvolutionCb: (() => void) | null): void {
+/** Retour : true si une évolution-par-échange a été lancée (le cb sera appelé
+ *  par l'évo scene) ; false sinon (l'appelant doit conclure lui-même). */
+export function PerformInGameTradeDataExchange(afterEvolutionCb: (() => void) | null): boolean {
   // 1:1 CB2_InitInGameTrade case 0 : positions du mon échangé.
   gSelectedTradeMonPositions[TRADE_PLAYER] = g0x8005();
   gSelectedTradeMonPositions[TRADE_PARTNER] = PARTY_SIZE;
@@ -442,7 +444,9 @@ export function PerformInGameTradeDataExchange(afterEvolutionCb: (() => void) | 
     // l'anim → -1 sentinelle. TradeEvolutionScene gère l'affichage 1:1 côté
     // evolution_scene.ts (déjà porté).
     TradeEvolutionScene(gPlayerParty[gSelectedTradeMonPositions[TRADE_PLAYER]], evoTarget, -1, gSelectedTradeMonPositions[TRADE_PLAYER]);
+    return true;
   }
+  return false;
 }
 
 // ─── RESTE À PORTER (anim visuelle du trade in-game) ─────────────────────────

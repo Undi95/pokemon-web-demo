@@ -774,9 +774,12 @@ registerSpecial('LoadWallyZigzagoon', () => {
 /** 1:1 décomp `StartWallyTutorialBattle` (wally_tutorial.c) — starts Wally's
  *  catch tutorial. Dette R3 doc : cascade BattleSetup_StartWallyTutorialBattle
  *  + setup gPartnerTrainerId + BattleTransition U-tier. */
+// Corps 1:1 porté dans battle_setup.ts:1568 (74314c61b) — câblage pilote vague 4.
+// ⚠️ RESTE 1:1 : contrôleur battle_controller_wally.c non porté (fallback player).
 registerSpecial('StartWallyTutorialBattle', () => {
-  console.log('[special StartWallyTutorialBattle] dette R3 (cascade Wally tutorial U-tier)');
-  return 0;
+  import('../../battle_setup')
+    .then((m) => m.StartWallyTutorialBattle())
+    .catch((e) => console.error('[special StartWallyTutorialBattle]', e));
 });
 
 // `IsTrainerReadyForRematch` : porté 1:1 (T-B) dans src/game/battle_setup.ts.
@@ -968,12 +971,56 @@ registerSpecial('GetPlayerFacingDirection', () => {
 
 // `ShouldTryGetTrainerScript` : porté 1:1 (T-B) dans src/game/battle_setup.ts.
 
-/** 1:1 décomp in-game trade specials. Stubs (= no trade UI yet). */
-registerSpecial('GetInGameTradeSpeciesInfo', () => 0);
-registerSpecial('GetTradeSpecies', () => 0);
-registerSpecial('CreateInGameTradePokemon', () => 0);
-registerSpecial('DoInGameTradeScene', () => 0);
-registerSpecial('ChoosePartyMon', () => 0);
+// Handler SYNC qui lance l'async avec .catch (Règle 3) — pattern :690. Le
+// waitstate du script est libéré par l'UI/l'effet ouvert, pas par la promesse.
+const _lazySpecial = (name: string, run: () => Promise<void>): void => {
+  registerSpecial(name, () => {
+    run().catch((e) => console.error(`[special ${name}]`, e));
+  });
+};
+
+// ─── In-game trades (VIS-25, corps 1:1 dans trade.ts 7e13a7246) ─────────────
+// Specials à VALEUR (specialvar) = handlers SYNC → préchargement du module à
+// l'éval (import() après le graphe → pas de bombe TDZ ; le module est prêt bien
+// avant qu'un script de trade ne tourne).
+let _tradeMod: typeof import('../../trade') | null = null;
+import('../../trade').then((m) => { _tradeMod = m; })
+  .catch((e) => console.error('[specials] préchargement trade.ts:', e));
+registerSpecial('GetInGameTradeSpeciesInfo', () => {
+  if (!_tradeMod) { console.error('[GetInGameTradeSpeciesInfo] trade.ts pas encore chargé'); return 0; }
+  return _tradeMod.GetInGameTradeSpeciesInfo();
+});
+registerSpecial('GetTradeSpecies', () => {
+  if (!_tradeMod) { console.error('[GetTradeSpecies] trade.ts pas encore chargé'); return 0; }
+  return _tradeMod.GetTradeSpecies();
+});
+_lazySpecial('BufferInGameTradeMonName', async () => {
+  const { BufferInGameTradeMonName } = await import('../../trade');
+  BufferInGameTradeMonName();
+});
+_lazySpecial('CreateInGameTradePokemon', async () => {
+  const { CreateInGameTradePokemon } = await import('../../trade');
+  CreateInGameTradePokemon();
+});
+_lazySpecial('DoInGameTradeScene', async () => {
+  // DETTE-ANIM (trade.ts fin de fichier) : l'anim complète (~1500 l. OAM/DMA)
+  // n'est pas portée — fondu noir simple (précédent evolution_scene.ts:347) +
+  // échange de données 1:1 (STATE_TRY_EVOLUTION) + reprise du script.
+  const { PerformInGameTradeDataExchange } = await import('../../trade');
+  const { BeginNormalPaletteFade } = await import('../../palette');
+  BeginNormalPaletteFade(0xFFFFFFFF /* PALETTES_ALL */, 0, 0, 0x10, 0x0000 /* RGB_BLACK */);
+  const finish = (): void => {
+    BeginNormalPaletteFade(0xFFFFFFFF, 0, 0x10, 0, 0x0000);
+    ScriptContext_Enable();
+    (globalThis as { __SignalWaitState?: () => void }).__SignalWaitState?.();
+  };
+  const evoStarted = PerformInGameTradeDataExchange(finish);
+  if (!evoStarted) finish();
+});
+_lazySpecial('ChoosePartyMon', async () => {
+  const { ChoosePartyMon } = await import('../../party_menu');
+  ChoosePartyMon();
+});
 
 /** 1:1 décomp `LookThroughPorthole` (cinematic). Stub. */
 /** 1:1 décomp `LookThroughPorthole` (field_special_scene.c:377) :
@@ -3114,13 +3161,7 @@ registerSpecial('GetNumMovesSelectedMonHas', () => {
 // Corps 1:1 dans party_menu.ts (f1a410476), move_relearner.ts (077e80a23),
 // field_weather_effect.ts (8380f57c0). Import différé (précédent :690/:1354 —
 // pas de nouvelle arête d'éval sur ces mégafichiers → pas de bombe TDZ).
-// Handlers SYNC qui lancent l'async avec .catch (Règle 3) — pattern :690, le
-// waitstate du script est libéré par l'UI/l'effet ouvert, pas par la promesse.
-const _lazySpecial = (name: string, run: () => Promise<void>): void => {
-  registerSpecial(name, () => {
-    run().catch((e) => console.error(`[special ${name}]`, e));
-  });
-};
+// (_lazySpecial défini plus haut, bloc in-game trades.)
 _lazySpecial('ChooseMonForMoveRelearner', async () => {
   const { ChooseMonForMoveRelearner } = await import('../../party_menu');
   ChooseMonForMoveRelearner();
