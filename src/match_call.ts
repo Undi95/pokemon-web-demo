@@ -1942,7 +1942,7 @@ function MatchCall_LoadGfx(taskId: number): boolean {
     DestroyTask(taskId);
     return false;
   }
-  if (LoadBgTiles(0, sMatchCallWindow_Gfx, sMatchCallWindow_Gfx.length /* TRANSPILER-TODO sizeof */, TILE_MC_WINDOW) == 0xFFFF)
+  if (LoadBgTiles(0, sMatchCallWindow_Gfx, sMatchCallWindow_Gfx.byteLength, TILE_MC_WINDOW) == 0xFFFF) // sizeof(sMatchCallWindow_Gfx) = OCTETS (buffer décompressé Uint8Array → byteLength ; précédent credits.ts:1366)
   {
     RemoveWindow(data[2] /* tWindowId */);
     DestroyTask(taskId);
@@ -1955,8 +1955,8 @@ function MatchCall_LoadGfx(taskId: number): boolean {
     return false;
   }
   FillWindowPixelBuffer(data[2] /* tWindowId */, PIXEL_FILL(8));
-  LoadPalette(sMatchCallWindow_Pal, BG_PLTT_ID(14), sMatchCallWindow_Pal.length /* TRANSPILER-TODO sizeof */);
-  LoadPalette(sPokenavIcon_Pal, BG_PLTT_ID(15), sPokenavIcon_Pal.length /* TRANSPILER-TODO sizeof */);
+  LoadPalette(sMatchCallWindow_Pal, BG_PLTT_ID(14), sMatchCallWindow_Pal.byteLength); // sizeof = OCTETS (Uint16Array → byteLength ; .length chargeait la moitié, cf. credits.ts:1366)
+  LoadPalette(sPokenavIcon_Pal, BG_PLTT_ID(15), sPokenavIcon_Pal.byteLength); // sizeof = OCTETS (Uint16Array → byteLength ; credits.ts:1366)
   ChangeBgY(0, -0x2000, BG_COORD_SET);
   return true;
 }
@@ -2791,7 +2791,7 @@ export function BufferPokedexRatingForMatchCall(destStr: Uint8Array): void {
 export function LoadMatchCallWindowGfx(windowId: number, destOffset: number, paletteId: number): void {
   let bg = GetWindowAttribute(windowId, WINDOW_BG);
   LoadBgTiles(bg, sMatchCallWindow_Gfx, 0x100, destOffset);
-  LoadPalette(sMatchCallWindow_Pal, BG_PLTT_ID(paletteId), sMatchCallWindow_Pal.length /* TRANSPILER-TODO sizeof */);
+  LoadPalette(sMatchCallWindow_Pal, BG_PLTT_ID(paletteId), sMatchCallWindow_Pal.byteLength); // sizeof = OCTETS (Uint16Array → byteLength ; credits.ts:1366)
 }
 
 /** 1:1 `void DrawMatchCallTextBoxBorder(u32 windowId, u32 tileOffset, u32 paletteId)` (match_call.c:2109-2112). */
