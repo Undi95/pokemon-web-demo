@@ -36,7 +36,8 @@ import {
   FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles,
   FldEff_Splash, FldEff_FeetInFlowingWater,
   FldEff_JumpTallGrass, FldEff_JumpLongGrass, FldEff_JumpSmallSplash, FldEff_JumpBigSplash,
-  FldEff_Ash, FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle,
+  FldEff_Ash, FldEff_AshLaunch, FldEff_AshPuff, LoadAshLaunchPuffFieldEffectPalette,
+  FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle,
   ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect,
   FldEff_TallGrass, FldEff_LongGrass, FldEff_Dust,
   FldEff_SandFootprints, FldEff_DeepSandFootprints, FldEff_BikeTireTracks,
@@ -128,6 +129,8 @@ export const FLDEFF_FIELD_MOVE_SHOW_MON_INIT   = 59;
 export const FLDEFF_NPCFLY_OUT                 = 30;
 export const FLDEFF_USE_FLY                    = 31;
 export const FLDEFF_FLY_IN                     = 32;
+export const FLDEFF_ASH_PUFF                   = 49;
+export const FLDEFF_ASH_LAUNCH                 = 50;
 
 /** Runtime captured pour passer aux handlers qui need rt. Set par scene au boot. */
 let _activeRuntime: DecompRuntime | null = null;
@@ -224,6 +227,10 @@ const gFieldEffectScriptPointers: Partial<Record<number, FieldEffectScriptCmd[]>
   [FLDEFF_SHORT_GRASS]:          [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_ShortGrass }, { op: 'end' }],
   [FLDEFF_RIPPLE]:               [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_Ripple }, { op: 'end' }],
   [FLDEFF_ASH]:                  [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_Ash }, { op: 'end' }],
+  // 1:1 data/field_effect_scripts.s:274/278 `field_eff_loadfadedpal_callnative gSpritePalette_Ash, FldEff_Ash{Puff,Launch}`.
+  //   (geyser/bouffée de cendre du Gymnase de Lavaridge ; palette PROPRE FLDEFF_PAL_TAG_ASH).
+  [FLDEFF_ASH_PUFF]:             [{ op: 'loadfadedpal', loadPal: LoadAshLaunchPuffFieldEffectPalette }, { op: 'callnative', native: FldEff_AshPuff }, { op: 'end' }],
+  [FLDEFF_ASH_LAUNCH]:           [{ op: 'loadfadedpal', loadPal: LoadAshLaunchPuffFieldEffectPalette }, { op: 'callnative', native: FldEff_AshLaunch }, { op: 'end' }],
   [FLDEFF_HOT_SPRINGS_WATER]:    [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(1) }, { op: 'callnative', native: FldEff_HotSpringsWater }, { op: 'end' }],
   [FLDEFF_DUST]:                 [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_Dust }, { op: 'end' }],
   [FLDEFF_SAND_FOOTPRINTS]:      [{ op: 'loadfadedpal', loadPal: () => LoadGeneralFieldEffectPalette(0) }, { op: 'callnative', native: FldEff_SandFootprints }, { op: 'end' }],

@@ -158,6 +158,8 @@ const FLDEFF_FIELD_MOVE_SHOW_MON = 6;
 const FLDEFF_FIELD_MOVE_SHOW_MON_INIT = 59;
 const FLDEFF_USE_WATERFALL = 43;
 const FLDEFF_USE_DIVE = 44;
+const FLDEFF_ASH_PUFF = 49;
+const FLDEFF_ASH_LAUNCH = 50;
 // 1:1 enum field_effect_helpers.h : états de bobbing de la monture de surf.
 const BOB_NONE = 0, BOB_PLAYER_AND_MON = 1, BOB_JUST_MON = 2;
 const LOCALID_PLAYER = 0xFF;
@@ -3308,6 +3310,124 @@ const gAshFieldEffectFuncs: ReadonlyArray<(sprite: DecompSprite, rt: DecompRunti
 /** 1:1 décomp `UpdateAshFieldEffect` (field_effect_helpers.c:953) : dispatch par sState. */
 export function UpdateAshFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
   gAshFieldEffectFuncs[sprite.data[0]](sprite, rt);  // sState
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FLDEFF_ASH_PUFF / FLDEFF_ASH_LAUNCH (field_effect.c:2127-2234)
+//  Bouffée / geyser de cendre du Gymnase de Lavaridge (les tuiles de warp du sol).
+//   - AshPuff  : petite bouffée quand un dresseur surgit de la cendre, ou quand le
+//                joueur entre/sort d'un warp du 1F/B1F (FldEff_AshPuff, SpriteCB_AshPuff).
+//   - AshLaunch: geyser projeté quand le joueur saute d'une tuile de warp du B1F
+//                (FldEff_AshLaunch, SpriteCB_AshLaunch).
+//  Les deux : sprite 16×16 tuile-fixe (SetSpritePosToOffsetMapCoords + coordOffsetEnabled),
+//  anim 5 frames @6 non-bouclée, despawn sur animEnded. Palette PROPRE gSpritePalette_Ash
+//  (FLDEFF_PAL_TAG_ASH, ash.pal — ≠ GENERAL_1 du FLDEFF_ASH d'herbe). Scripts décomp :
+//  `field_eff_loadfadedpal_callnative gSpritePalette_Ash, FldEff_Ash{Puff,Launch}`
+//  (data/field_effect_scripts.s:274-279).
+//  Assets : ash_puff.png / ash_launch.png (80×16 = 5 frames 16×16, layout ripple),
+//  ash.pal (FLDEFF_PAL_TAG_ASH).
+// ════════════════════════════════════════════════════════════════════════════
+
+const ASH_PUFF_PNG = '/decomp/em/field_effects/ash_puff.png';
+const ASH_LAUNCH_PNG = '/decomp/em/field_effects/ash_launch.png';
+const ASH_LP_PAL = '/decomp/em/field_effects/ash.pal';
+const TAG_ASH_PUFF_GFX = 'FIELD_EFFECT_ASH_PUFF_GFX';
+const TAG_ASH_LAUNCH_GFX = 'FIELD_EFFECT_ASH_LAUNCH_GFX';
+const TAG_ASH_LP_PAL = 'FLDEFF_PAL_TAG_ASH';
+
+/** 1:1 décomp `sAnim_AshPuff` / `sAnim_AshLaunch` (field_effect_objects.h:1135/1171) :
+ *  5 frames @6, END. imageValue = frameIdx × 4 (ASH_TILES_PER_FRAME, mode usingSheet). */
+const sAnims_AshLaunchPuff: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0, 6), ANIMCMD_FRAME(4, 6), ANIMCMD_FRAME(8, 6), ANIMCMD_FRAME(12, 6), ANIMCMD_FRAME(16, 6), ANIMCMD_END],
+];
+
+let _ashPuffTileStart = -1;
+let _ashLaunchTileStart = -1;
+/** Palette gSpritePalette_Ash cachée au préchargement → chargée on-demand par le script
+ *  (1:1 `loadfadedpal gSpritePalette_Ash`). */
+let _ashLpPalData: Uint16Array | null = null;
+let _ashLpInit = false;
+let _ashLpInitPromise: Promise<void> | null = null;
+
+/** Préchargement assets (concern plateforme) : ash_puff + ash_launch (gfx + palette partagée).
+ *  ash_{puff,launch}.png = 80×16 = 5 frames 16×16 → même reorder que ripple/ash. */
+export function preloadAshLaunchPuffEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _ashLpInit && IndexOfSpriteTileTag(TAG_ASH_PUFF_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_ashLpInitPromise && !_ashLpInit) return _ashLpInitPromise;
+  _ashLpInit = false; _ashLpInitPromise = null;
+  _ashLpInitPromise = (async () => {
+    const puffPng = await loadIndexedPngStrict(ASH_PUFF_PNG, 4);
+    const puffReordered = pngTo1dObjLayoutRipple(puffPng.charData);
+    _ashPuffTileStart = LoadSpriteSheet({ data: puffReordered, size: puffReordered.length, tag: TAG_ASH_PUFF_GFX });
+    const launchPng = await loadIndexedPngStrict(ASH_LAUNCH_PNG, 4);
+    const launchReordered = pngTo1dObjLayoutRipple(launchPng.charData);
+    _ashLaunchTileStart = LoadSpriteSheet({ data: launchReordered, size: launchReordered.length, tag: TAG_ASH_LAUNCH_GFX });
+    let pal: Uint16Array;
+    try { pal = await loadGbaPal(ASH_LP_PAL); }
+    catch { pal = puffPng.palette as Uint16Array; }
+    _ashLpPalData = pal;
+    _ashLpInit = true;
+  })();
+  return _ashLpInitPromise;
+}
+
+/** loadfadedpal de la palette gSpritePalette_Ash (1:1 `field_eff_loadfadedpal gSpritePalette_Ash`,
+ *  utilisé par les scripts FLDEFF_ASH_PUFF / FLDEFF_ASH_LAUNCH). */
+export function LoadAshLaunchPuffFieldEffectPalette(): number {
+  return FieldEffectScript_LoadFadedPalette(_ashLpPalData, TAG_ASH_LP_PAL);
+}
+
+/** Helper commun 1:1 `FldEff_AshLaunch` (field_effect.c:2127) / `FldEff_AshPuff` (2220) :
+ *  SetSpritePosToOffsetMapCoords(&args[0],&args[1],8,8) ; CreateSpriteAtEnd(template, x, y, args[2]) ;
+ *  sprite->oam.priority = args[3] ; sprite->coordOffsetEnabled = TRUE. */
+function spawnAshLaunchPuff(rt: DecompRuntime, tileStart: number,
+                            callback: (sprite: DecompSprite, rt: DecompRuntime) => void): number {
+  if (!_ashLpInit) return 64;
+  // 1:1 : SetSpritePosToOffsetMapCoords(&args[0], &args[1], 8, 8) → coords MONDE.
+  const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
+  const result = rt.CreateSpriteAtOam({
+    tileId: tileStart,
+    fromEnd: true,  // 1:1 décomp CreateSpriteAtEnd(FLDEFFOBJ_ASH_*, x, y, args[2])
+    // 1:1 : résout le slot chargé par la commande loadfadedpal du script (= template.paletteTag).
+    paletteBank: IndexOfSpritePaletteTag(TAG_ASH_LP_PAL),
+    x: world.x, y: world.y,
+    shape: 0, size: 1,  // 16×16
+    // 1:1 : gSprites[spriteId].oam.priority = gFieldEffectArguments[3] (posé après CreateSpriteAtEnd).
+    priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+    subpriority: gFieldEffectArguments[2] & 0xFF,
+  });
+  const sprite = rt.gSprites[result.spriteId];
+  if (!sprite) return 64;
+  sprite.callback = callback;
+  setFieldEffectAnims(sprite, sAnims_AshLaunchPuff, tileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  // 1:1 : sprite->coordOffsetEnabled = TRUE (sprite MONDE → suit la caméra via gSpriteCoordOffset).
+  sprite.coordOffsetEnabled = true;
+  sprite.subpriority = gFieldEffectArguments[2] & 0xFF;
+  return result.spriteId;
+}
+
+/** 1:1 décomp `u8 FldEff_AshLaunch(void)` (field_effect.c:2127). Retourne le spriteId
+ *  (les tasks Lavaridge le stockent dans task->data[1] pour lire animCmdIndex/animEnded). */
+export function FldEff_AshLaunch(rt: DecompRuntime): number {
+  return spawnAshLaunchPuff(rt, _ashLaunchTileStart, SpriteCB_AshLaunch);
+}
+
+/** 1:1 décomp `void SpriteCB_AshLaunch(struct Sprite *sprite)` (field_effect.c:2137). */
+export function SpriteCB_AshLaunch(sprite: DecompSprite, rt: DecompRuntime): void {
+  if (sprite.animEnded) FieldEffectStop(rt, sprite, FLDEFF_ASH_LAUNCH);
+}
+
+/** 1:1 décomp `u8 FldEff_AshPuff(void)` (field_effect.c:2220). */
+export function FldEff_AshPuff(rt: DecompRuntime): number {
+  return spawnAshLaunchPuff(rt, _ashPuffTileStart, SpriteCB_AshPuff);
+}
+
+/** 1:1 décomp `void SpriteCB_AshPuff(struct Sprite *sprite)` (field_effect.c:2230). */
+export function SpriteCB_AshPuff(sprite: DecompSprite, rt: DecompRuntime): void {
+  if (sprite.animEnded) FieldEffectStop(rt, sprite, FLDEFF_ASH_PUFF);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

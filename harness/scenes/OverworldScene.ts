@@ -215,7 +215,7 @@ import { preloadSandPileEffect, preloadHotSpringsEffect } from '../../src/field_
 // Bubbles : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot sprite.callback).
 import { preloadBubblesEffect } from '../../src/field_effect_helpers';
 // Ash : migré dans le miroir 1:1 game/field_effect_helpers.ts (machine 3 états, sprite.callback).
-import { preloadAshEffect } from '../../src/field_effect_helpers';
+import { preloadAshEffect, preloadAshLaunchPuffEffect } from '../../src/field_effect_helpers';
 // Surf blob (monture de surf) : migré dans le miroir 1:1 game/field_effect_helpers.ts
 // (sprite.callback UpdateSurfBlobFieldEffect + SpriteCB_UnderwaterSurfBlob, tickés par le callback global).
 import { preloadSurfBlobEffect } from '../../src/field_effect_helpers';
@@ -1467,6 +1467,9 @@ export class OverworldScene extends Phaser.Scene {
     await preloadBubblesEffect(this.rt);
     // Ash (nuage de cendre + révèle la tuile ashgrass, Route 113) : assets seulement (sprite.callback).
     await preloadAshEffect(this.rt);
+    // Ash puff/launch (geyser + bouffée de cendre du Gymnase de Lavaridge) : assets seuls (sprite.callback
+    // s'auto-détruit). Débloque FLDEFF_ASH_PUFF/LAUNCH (warps Lavaridge B1F/1F).
+    await preloadAshLaunchPuffEffect(this.rt);
     // Surf blob (monture de surf qui suit le joueur + bobbing) : assets seuls (migré au miroir).
     await preloadSurfBlobEffect(this.rt);
     // Disguises (tree/mountain/sand recouvrant le joueur déguisé) : assets seuls (migrés
