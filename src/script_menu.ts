@@ -200,16 +200,23 @@ function _cleanupMultichoiceMenu(): void {
   }
 }
 
-/** Poll commun multichoice : A → VAR_RESULT = index ; B → MULTI_B_PRESSED(0x7F)
- *  ou (items-1) si ignoreBPress ; cleanup à la sélection. */
+/** Poll commun multichoice — 1:1 `Task_HandleMultichoiceInput` (script_menu.c:154-195) :
+ *  A → VAR_RESULT = selection ; B (MENU_B_PRESSED) → si tIgnoreBPress on `return` (B IGNORÉ, le
+ *  menu reste ouvert, aucune sélection), sinon VAR_RESULT = MULTI_B_PRESSED(0x7F). Cleanup à la
+ *  sélection uniquement. */
 function makeMultichoiceTick(items: (string | Uint8Array)[], ignoreBPress: boolean): () => boolean {
+  void items;
   let menuActive = true;
   return (): boolean => {
     if (!menuActive) return true;
     const result = Menu_ProcessInputNoWrapClearOnChoose();
     if (result === -2) return false;                       // MENU_NOTHING_CHOSEN
-    if (result === -1) VarSet(VAR_RESULT, ignoreBPress ? items.length - 1 : 0x7F);  // B pressed
-    else VarSet(VAR_RESULT, result);
+    if (result === -1) {                                   // MENU_B_PRESSED (c:179)
+      if (ignoreBPress) return false;                      // c:181-182 : tIgnoreBPress → return (menu reste ouvert)
+      VarSet(VAR_RESULT, 0x7F);                            // c:184 MULTI_B_PRESSED
+    } else {
+      VarSet(VAR_RESULT, result);                          // c:188 gSpecialVar_Result = selection
+    }
     _cleanupMultichoiceMenu();
     menuActive = false;
     return true;
