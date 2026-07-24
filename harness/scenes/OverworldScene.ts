@@ -175,7 +175,7 @@ import { preloadGeneralFieldEffectPalettes } from '../../src/field_effect_helper
 import { DoTimeBasedEvents } from '../../src/clock';
 import { SetUpFieldTasks } from '../../src/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr, FadeScreen, FADE_FROM_BLACK } from '../../src/field_weather';
-import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites } from '../../src/field_weather_effect';
+import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites, preloadWeatherCloudSprites, preloadWeatherSandstormSprites, preloadWeatherFogDiagonalSprites, preloadWeatherSnowSprites, preloadWeatherBubbleSprites, preloadWeatherRainSprites } from '../../src/field_weather_effect';
 import { setReservedSpritePaletteCount } from '../../src/sprite';
 import {
   SetDefaultFlashLevel, ResetScreenForMapLoad, InitOverworldGraphicsRegisters,
@@ -1132,10 +1132,17 @@ export class OverworldScene extends Phaser.Scene {
 
     // Préchargement assets météo (plateforme, async, idempotent) : démarré TÔT pour laisser
     // le temps au fetch (fog.pal / *.png) de finir avant StartWeather (déplacé APRÈS le spawn).
-    void preloadWeatherFogPalette();
-    void preloadWeatherAshSprites();
-    void preloadWeatherFogHorizontalSprites();
-    void preloadWeatherCloudSprites();  // WEATHER_SUNNY_CLOUDS (Route 119/120) — sinon CreateCloudSprites tile 0 garbage.
+    const _pw = (p: Promise<void>, tag: string): void => { p.catch((e) => console.error(`[weather-preload] ${tag}:`, e)); };
+    _pw(preloadWeatherFogPalette(), 'fogPal');
+    _pw(preloadWeatherAshSprites(), 'ash');
+    _pw(preloadWeatherFogHorizontalSprites(), 'fogH');
+    _pw(preloadWeatherCloudSprites(), 'clouds');  // WEATHER_SUNNY_CLOUDS (Route 119/120) — sinon CreateCloudSprites tile 0 garbage.
+    // Familles vague 3 (8380f57c0) — préload OBLIGATOIRE avant StartWeather (Snow_InitAll boucle sinon).
+    _pw(preloadWeatherSandstormSprites(), 'sandstorm');
+    _pw(preloadWeatherFogDiagonalSprites(), 'fogDiag');
+    _pw(preloadWeatherSnowSprites(), 'snow');
+    _pw(preloadWeatherBubbleSprites(), 'bubbles');
+    _pw(preloadWeatherRainSprites(), 'rain');
     // ADAPTATION port (async assets) : précharge OBJ_EVENT_GFX_BOY_1 dans le cache PNG pour
     // que `SpawnCameraObject` (special SYNC, field_specials.ts) puisse spawner l'object event
     // CAMERA (BOY_1 invisible) sans await — la décomp charge le gfx depuis la ROM en SYNC. Le

@@ -1477,7 +1477,7 @@ const _STUB_RETURN_0_SPECIALS = [
   'UpdateBattlePointsWindow',
   // 'CountPlayerMuseumPaintings' — porté 1:1 décomp contest_util.c:2380 ci-bas (batch B33).
   'CloseDeptStoreElevatorWindow',
-  'BufferMoveDeleterNicknameAndMove',
+  // 'BufferMoveDeleterNicknameAndMove' — porté 1:1 party_menu.ts (f1a410476) ; RETIRÉ du stub-loop, handler ci-bas.
   // 'DoSealedChamberShakingEffect_Short' — porté 1:1 braille_puzzles.ts (transpilé), handler ci-bas.
   'RemoveBerryPowderVendorMenu',
   // 'OffsetCameraForBattle' — porté 1:1 décomp field_specials.c:1672 ci-bas (batch B17).
@@ -1935,7 +1935,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'CheckLeadMon{Cool,Beauty,Cute,Smart,Tough}' — portés 1:1 field_specials.c:1190 ci-haut.
   // 'CheckPlayerHasSecretBase' — porté 1:1 décomp secret_base.c:258 ci-bas.
   // 'CheckRelicanthWailord' — porté 1:1 décomp braille_puzzles.c:92 ci-bas.
-  'ChooseItemsToTossFromPyramidBag', 'ChooseMonForMoveRelearner',
+  'ChooseItemsToTossFromPyramidBag',
+  // 'ChooseMonForMoveRelearner' — porté 1:1 party_menu.ts (f1a410476) ; RETIRÉ du stub-loop, handler ci-bas.
   'ChooseMonForMoveTutor', 'ChooseMonForWirelessMinigame',
   // 'ChooseSendDaycareMon' — porté 1:1 décomp daycare.c:1294 (bloc PENSION ci-bas).
   'CleanupLinkRoomState',
@@ -2073,7 +2074,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'LinkContestWaitForConnection', 'LoadPlayerBag',
   // 'MauvilleGymSetDefaultBarriers' — porté 1:1 field_specials.ts, registerSpecial ci-bas (anti-clobber).
   // 'MonOTNameNotPlayer' — porté 1:1 décomp field_specials.c:1572 ci-bas.
-  'MoveDeleterChooseMoveToForget', 'MoveDeleterForgetMove',
+  // 'MoveDeleterChooseMoveToForget'/'MoveDeleterForgetMove' — portés 1:1 party_menu.ts (f1a410476) ; RETIRÉS du stub-loop, handlers ci-bas.
   // 'MoveOutOfSecretBase'/'MoveOutOfSecretBaseFromOutside' — portés 1:1 secret_base.ts ; RETIRÉS du stub-loop.
   // ObjectEventInteractionGetBerryTreeData/GetBerryCountString/GetBerryName/
   // PickBerryTree/RemoveBerryTree/WaterBerryTree/PlantBerryTree : handlers concrets
@@ -2170,7 +2171,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ShowTrainerHillRecords',
   // 'ShowTrainerIntroSpeech' — porté 1:1 décomp battle_setup.c:1378 (game/battle_setup.ts).
   'ShowWirelessCommunicationScreen',
-  'SpawnLinkPartnerObjectEvent', 'StartDroughtWeatherBlend',
+  'SpawnLinkPartnerObjectEvent',
+  // 'StartDroughtWeatherBlend' — porté 1:1 field_weather_effect.ts (8380f57c0) ; RETIRÉ du stub-loop, handler ci-bas.
   // 'StartGroudonKyogreBattle' — porté 1:1 (battle_setup.c:552) dans battle_setup.ts (VIS-22),
   //   registerSpecial ci-dessus (retiré du stub-loop = anti-clobber).
   'StartMirageTowerDisintegration',
@@ -2183,7 +2185,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'SubtractMoneyFromVar0x8005' — porté 1:1 décomp money.c:128 ci-bas.
   // 'TakeBerryPowder' — porté 1:1 décomp berry_powder.c:188 ci-bas (batch B38).
   // 'TakePokemonFromDaycare' — porté 1:1 décomp daycare.c:281 (bloc PENSION ci-bas).
-  'TeachMoveRelearnerMove',
+  // 'TeachMoveRelearnerMove' — porté 1:1 move_relearner.ts (077e80a23) ; RETIRÉ du stub-loop, handler ci-bas.
   // 'ToggleCurSecretBaseRegistry' — porté 1:1 décomp secret_base.c:891 ci-bas.
   // 'TraderDoDecorationTrade' — porté 1:1 décomp trader.c:199 ci-bas (batch D5).
   'TraderMenuGetDecoration', 'TraderShowDecorationMenu', 'TryBattleLinkup',
@@ -3096,6 +3098,35 @@ registerSpecial('GetNumMovesSelectedMonHas', () => {
     }
   }
   VarSet('VAR_RESULT', count);
+});
+
+// ─── Maître des Capacités / Effaceur / Drought (câblage pilote post-vague 3) ───
+// Corps 1:1 dans party_menu.ts (f1a410476), move_relearner.ts (077e80a23),
+// field_weather_effect.ts (8380f57c0). Import différé (précédent :690/:1354 —
+// pas de nouvelle arête d'éval sur ces mégafichiers → pas de bombe TDZ).
+registerSpecial('ChooseMonForMoveRelearner', async () => {
+  const { ChooseMonForMoveRelearner } = await import('../../party_menu');
+  ChooseMonForMoveRelearner();
+});
+registerSpecial('MoveDeleterChooseMoveToForget', async () => {
+  const { MoveDeleterChooseMoveToForget } = await import('../../party_menu');
+  MoveDeleterChooseMoveToForget();
+});
+registerSpecial('BufferMoveDeleterNicknameAndMove', async () => {
+  const { BufferMoveDeleterNicknameAndMove } = await import('../../party_menu');
+  BufferMoveDeleterNicknameAndMove();
+});
+registerSpecial('MoveDeleterForgetMove', async () => {
+  const { MoveDeleterForgetMove } = await import('../../party_menu');
+  MoveDeleterForgetMove();
+});
+registerSpecial('TeachMoveRelearnerMove', async () => {
+  const { TeachMoveRelearnerMove } = await import('../../move_relearner');
+  TeachMoveRelearnerMove();
+});
+registerSpecial('StartDroughtWeatherBlend', async () => {
+  const { StartDroughtWeatherBlend } = await import('../../field_weather_effect');
+  StartDroughtWeatherBlend();
 });
 
 /** 1:1 décomp `GetPCBoxToSendMon` (field_specials.c:3410-3413) :

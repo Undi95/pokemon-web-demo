@@ -50,7 +50,10 @@ import { MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT } from '../include/menu
 import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../include/gba/io_reg';
 import type { DecompTask } from '../harness/runtime/decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual, CB2_ReturnToField_Manual, Overworld_ResetStateAfterDigEscRope } from './overworld';
-import { CanUseDigOrEscapeRopeOnCurMap, StartEscapeRopeFieldEffect } from './fldeff_dig';
+import { CanUseDigOrEscapeRopeOnCurMap } from './fldeff_dig';
+// Corde Sortie 1:1 COMPLÈTE (spin sortie+arrivée, field_effect.c:2242) — remplace
+// l'ancienne version simplifiée via fldeff_dig (câblage pilote post-vague 3).
+import { StartEscapeRopeFieldEffect_1to1 } from './field_effect_helpers';
 import { gSpecialVar } from './engine/script/script-vars';
 import { RemoveBagItem, CheckBagHasItem } from './engine/bag/bag';
 import { AddBagItemIconSprite, RemoveBagItemIconSprite, RemoveBagSprite, AddBagVisualSprite, SetBagVisualPocketId, ShakeBagSprite, AddSwitchPocketRotatingBallSprite, TAG_BAG_GFX } from './item_menu_icons';
@@ -2721,7 +2724,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
           _CtxRemoveUsedItem(escItemId);
           // DETTE : DisplayItemMessageOnField ("{PLAYER} a utilisé {ITEM}.") +
           // ResetInitialPlayerAvatarState (dismount bike/surf avant warp) non portés.
-          StartEscapeRopeFieldEffect();
+          StartEscapeRopeFieldEffect_1to1();
         });
         SetUpItemUseOnFieldCallback(task);
         return;
