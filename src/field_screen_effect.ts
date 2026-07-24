@@ -1472,6 +1472,41 @@ function _setOamPriority(sprite: Record<string, unknown>, value: number): void {
   else sprite.priority = value;
 }
 
+// ─── Câblage pilote (executeWarp) : avortement des tasks de SORTIE ──────────
+// executeWarp POSSÈDE fade+load (précédent door/fly/fall) : on laisse la task 1:1
+// jouer son anim de sortie (ride escalator / rise+geyser lavaridge) ET son fondu
+// (via le shim __WarpFadeOutScreen réel), qui GÈLE `WarpAtEndOf*`/`_Warp` (ils gatent
+// sur !paletteFadeActive). Une fois le fondu lancé (= anim finie), executeWarp détruit
+// la task AVANT son `WarpIntoMap`/`CB2_LoadMap` décomp (qu'il remplace par son load
+// async), puis joue l'arrivée 1:1 en Phase 5. Ces Abort* nettoient l'état résiduel
+// (sprite x2/y2, camera panning) que la fin de task décomp aurait remis à zéro.
+
+/** Avorte `Task_EscalatorWarpOut` (fondu lancé) : détruit la task + stoppe l'escalator
+ *  + reset l'offset de ride du sprite joueur. */
+export function AbortEscalatorWarpOut(): void {
+  const id = FindTaskIdByFunc(Task_EscalatorWarpOut);
+  if (id !== 0xFF) DestroyTask(id);
+  _StopEscalator?.();
+  const sprite = _playerSprite();
+  if (sprite) { sprite.x2 = 0; sprite.y2 = 0; }
+}
+
+/** Avorte `Task_LavaridgeGymB1FWarp` (fondu lancé) : détruit la task + reset le camera
+ *  panning (secousse du geyser) + l'offset de rise du sprite. */
+export function AbortLavaridgeGymB1FWarp(): void {
+  const id = FindTaskIdByFunc(Task_LavaridgeGymB1FWarp);
+  if (id !== 0xFF) DestroyTask(id);
+  SetCameraPanning(0, 0);
+  const sprite = _playerSprite();
+  if (sprite) { sprite.y2 = 0; }
+}
+
+/** Avorte `Task_LavaridgeGym1FWarp` (fondu lancé) : détruit la task. */
+export function AbortLavaridgeGym1FWarp(): void {
+  const id = FindTaskIdByFunc(Task_LavaridgeGym1FWarp);
+  if (id !== 0xFF) DestroyTask(id);
+}
+
 // ─── Ponts globalThis (câblage pilote — anti-cycle, cf. __DoFallWarp) ────────
 (globalThis as Record<string, unknown>).__DoEscalatorWarp = DoEscalatorWarp;
 (globalThis as Record<string, unknown>).__DoLavaridgeGymB1FWarp = DoLavaridgeGymB1FWarp;

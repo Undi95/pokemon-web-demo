@@ -144,6 +144,10 @@ import {
   GetDynamicWarp,
 } from '../../src/overworld';
 import { getExitTaskKindFor, getMetatileBehaviorAtPlayerPos, FillPalBufferWhite, FieldCB_SpinEnterWarp } from '../../src/field_screen_effect';
+import { DoEscalatorWarp, DoLavaridgeGymB1FWarp, DoLavaridgeGym1FWarp,
+         FieldCallback_EscalatorWarpIn, FieldCB_LavaridgeGymB1FWarpExit,
+         AbortEscalatorWarpOut, AbortLavaridgeGymB1FWarp, AbortLavaridgeGym1FWarp } from '../../src/field_screen_effect';
+import { MB_UP_ESCALATOR, MB_DOWN_ESCALATOR } from '../../include/constants/metatile_behaviors';
 // Fondu grotte↔extérieur 1:1 (WarpFadeIn/OutScreen, field_screen_effect.c:74/100) :
 // GetMapPairFadeTo/FromType (fldeff_flash.ts) choisit WHITE vs BLACK. Import scène (sink) —
 // PAS depuis overworld (cycle statique overworld↔fldeff_flash via field_effect_helpers).
@@ -1590,6 +1594,56 @@ export class OverworldScene extends Phaser.Scene {
    *  phases 2-4 : `warpInProgress = true` (= scene logique skipped, juste fade
    *  + load).
    */
+  /** true pour les kinds dont l'anim de sortie ET l'arrivée sont des tasks 1:1
+   *  (field_effect.c) pilotées ici comme door/fly/fall (executeWarp possède fade+load). */
+  private isEscalatorOrLavaridgeKind(kind: WarpKind): boolean {
+    return kind === 'escalator_up' || kind === 'escalator_down'
+        || kind === 'lavaridge_b1f' || kind === 'lavaridge_1f';
+  }
+
+  /** Phase 1 escalator/lavaridge (modèle 'door') : joue l'anim de SORTIE 1:1
+   *  (`Task_EscalatorWarpOut` / `Task_LavaridgeGym{B1F,1F}Warp`, field_effect.c). La task
+   *  glisse/soulève le joueur PUIS lance son fondu (shim __WarpFadeOutScreen = fondu réel
+   *  noir), ce qui GÈLE son état `_Warp` (gate `!paletteFadeActive`). On attend le début du
+   *  fondu (= anim finie) puis on DÉTRUIT la task avant son `WarpIntoMap`/`CB2_LoadMap`
+   *  décomp (executeWarp possède le load async). Le fondu déjà lancé sert de Phase 2 (on
+   *  saute le `BeginNormalPaletteFade` normal). Cap de sécurité : jamais de gel permanent. */
+  private async driveWarpOutTaskAnim(kind: WarpKind): Promise<void> {
+    // Shims du chemin warp décomp (field_screen_effect.ts) : le fondu de sortie de la task
+    // = fondu réel NOIR d'executeWarp (escalator/lavaridge = intérieur, jamais cave-enter
+    // blanc). __WarpFadeInScreen/__SetMainCallback2LoadMap = no-op (Phase 4 possède le
+    // fade-in ; la task est détruite avant son CB2_LoadMap).
+    const g = globalThis as Record<string, unknown>;
+    g.__WarpFadeOutScreen = (): void => {
+      this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+    };
+    g.__WarpFadeInScreen = (): void => { /* Phase 4 possède le fade-in */ };
+    g.__SetMainCallback2LoadMap = (): void => { /* executeWarp possède le load async */ };
+    // Lance la task 1:1 de sortie (crée le Task_* via _createTask → tické par RunTasks).
+    if (kind === 'escalator_up') DoEscalatorWarp(MB_UP_ESCALATOR);
+    else if (kind === 'escalator_down') DoEscalatorWarp(MB_DOWN_ESCALATOR);
+    else if (kind === 'lavaridge_b1f') DoLavaridgeGymB1FWarp();
+    else if (kind === 'lavaridge_1f') DoLavaridgeGym1FWarp();
+    // Attend que la task ait lancé son fondu (= anim de sortie terminée). Cap ~4 s.
+    const start = performance.now();
+    await new Promise<void>((resolve) => {
+      const check = (): void => {
+        if (this.rt.gPaletteFade.active || performance.now() - start > 4000) resolve();
+        else setTimeout(check, 17);
+      };
+      check();
+    });
+    // Détruit la task de sortie AVANT son WarpIntoMap décomp + nettoie l'état résiduel.
+    if (kind === 'escalator_up' || kind === 'escalator_down') AbortEscalatorWarpOut();
+    else if (kind === 'lavaridge_b1f') AbortLavaridgeGymB1FWarp();
+    else if (kind === 'lavaridge_1f') AbortLavaridgeGym1FWarp();
+    // Filet de sécurité : si le cap a expiré AVANT que la task lance son fondu, on garantit
+    // l'écran noir (Phase 2 saute son BeginNormalPaletteFade pour ce kind → sinon load à nu).
+    if (!this.rt.gPaletteFade.active) {
+      this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+    }
+  }
+
   private async executeWarp(warp: WarpEvent, kind: WarpKind): Promise<void> {
     if (this.warpInProgress) return;
     setPendingWarp(null, null);  // claim le warp pending
@@ -1628,6 +1682,12 @@ export class OverworldScene extends Phaser.Scene {
         // Sans ça : player visible debout sur door tile pendant close = pas 1:1.
         SetPlayerVisibility(this.rt, false);
         await FieldAnimateDoorClose(doorX, doorY);
+      }
+      // ─── Phase 1 escalator/lavaridge (modèle 'door') : anim de sortie 1:1 ───
+      // Joue `Task_EscalatorWarpOut` / `Task_LavaridgeGym{B1F,1F}Warp` (ride/rise+geyser)
+      // qui lance ensuite son fondu (= Phase 2). Détruit la task avant son load décomp.
+      else if (this.isEscalatorOrLavaridgeKind(kind)) {
+        await this.driveWarpOutTaskAnim(kind);
       }
 
       // ─── Phase 2 : fade out (= WarpFadeOutScreen + SE_EXIT) ─────────────
@@ -1689,6 +1749,11 @@ export class OverworldScene extends Phaser.Scene {
         // le noir (idempotent).
         FillPalBufferBlack();
         this.rt.gPlttBufferFaded.flushTo();
+      } else if (this.isEscalatorOrLavaridgeKind(kind)) {
+        // Le fondu de sortie a DÉJÀ été lancé par la task 1:1 (driveWarpOutTaskAnim →
+        // shim __WarpFadeOutScreen = fondu noir) PENDANT le ride/rise. On ne re-fade pas ;
+        // waitForFadeComplete ci-dessous attend sa fin. Même logique que 'fly' (écran déjà
+        // pris en charge par l'anim de sortie).
       } else {
         // 1:1 `WarpFadeOutScreen` (field_screen_effect.c:100) : fondu vers BLANC si on
         // ENTRE dans une grotte (GetMapPairFadeToType(currentType, destType) = isEnter),
@@ -1892,6 +1957,16 @@ export class OverworldScene extends Phaser.Scene {
         if (_ps) _ps.invisible = true;
         FreezeObjectEvents();
       }
+      // Lavaridge b1f/1f : le joueur SURGIT (pop-out ash / chute) → invisible avant fade-in
+      // (LavaridgeGymB1FWarpExitEffect_Init / FallWarpEffect_Init le masquent sur leur 1er
+      // tick, mais on le cache dès avant pour qu'il n'apparaisse pas debout — même geste que
+      // fly/fall). Escalator : joueur VISIBLE (il glisse hors de l'escalator à l'arrivée).
+      if (kind === 'lavaridge_b1f' || kind === 'lavaridge_1f') {
+        SetPlayerVisibility(this.rt, false);
+        const _ps = this.rt.gSprites[gPlayerAvatar.spriteId];
+        if (_ps) _ps.invisible = true;
+        FreezeObjectEvents();
+      }
       if (exitKind === 'door') {
         // 1:1 case 0 : FieldSetDoorOpened (= instant draw open frame, no SE, no anim).
         // À call MAINTENANT avant fade in, pas en Phase 5.
@@ -1945,7 +2020,27 @@ export class OverworldScene extends Phaser.Scene {
       // l'ordre `ResetFieldCamera` avant `InitPlayerAvatar` (= maintenant fixé).
       // Audit chantier OW : retiré pour 1:1 strict + ne plus masquer divergences.
 
-      if (exitKind === 'door') {
+      // 1:1 arrivée ESCALATOR/LAVARIDGE (modèle fly/fall) : gFieldCallback posé par la task
+      // de sortie décomp (WarpAtEndOf* / _Warp) — ici joué DIRECTEMENT par la scène après le
+      // load (comme FieldCallback_FlyIntoMap / FieldCB_FallWarpExit). La task d'arrivée
+      // (Task_EscalatorWarpIn / Task_LavaridgeGymB1FWarpExit / Task_FallWarpFieldEffect)
+      // possède lock/unlock/visibilité → le finally n'y touche pas (cf. exclusion ci-dessous).
+      if (this.isEscalatorOrLavaridgeKind(kind)) {
+        if (kind === 'escalator_up' || kind === 'escalator_down') {
+          // 1:1 `FieldCallback_EscalatorWarpIn` (field_effect.c:1691) : le joueur glisse hors
+          // de l'escalator (Task_EscalatorWarpIn, ride-in Cos/Sin), puis unlock.
+          FieldCallback_EscalatorWarpIn();
+        } else if (kind === 'lavaridge_b1f') {
+          // 1:1 `FieldCB_LavaridgeGymB1FWarpExit` (field_effect.c:2062) : le joueur surgit de
+          // la cendre (FLDEFF_ASH_PUFF) + saut ; Task_LavaridgeGymB1FWarpExit possède unlock.
+          FieldCB_LavaridgeGymB1FWarpExit();
+        } else {
+          // 1:1 `LavaridgeGym1FWarpEffect_Warp` (field_effect.c:2208) : arrivée réutilise
+          // `FieldCB_FallWarpExit` (le joueur tombe du haut + secousse caméra).
+          FieldCB_FallWarpExit();
+        }
+      }
+      else if (exitKind === 'door') {
         // 1:1 décomp `Task_ExitDoor` (field_screen_effect.c:317-363) :
         // case 1 : ObjectEventSetHeldMovement(WALK_NORMAL_DOWN). Doors always
         // exit DOWN (= player came IN from below, exits OUT toward south).
@@ -2038,11 +2133,13 @@ export class OverworldScene extends Phaser.Scene {
       console.error('[executeWarp] failed:', e);
       this.statusText?.setText(`WARP ERROR : ${e}`);
     } finally {
-      // Toujours unlock + reset state — SAUF kind 'fly'/'fall' : le task d'arrivée
-      // (Task_FlyIntoMap / Task_FallWarpFieldEffect, gTasks, async) possède le lock ET
-      // la visibilité (1:1 : le joueur reste invisible jusqu'à la dépose par l'oiseau /
-      // l'atterrissage ; unlock/unfreeze à la fin du FLDEFF).
-      if (kind !== 'fly' && kind !== 'fall' && kind !== 'aqua_teleport') {
+      // Toujours unlock + reset state — SAUF kind 'fly'/'fall'/'aqua_teleport' ET
+      // escalator/lavaridge : leur task d'arrivée (Task_FlyIntoMap / Task_FallWarpFieldEffect /
+      // Task_EscalatorWarpIn / Task_LavaridgeGymB1FWarpExit, gTasks, async) possède le lock ET
+      // la visibilité (1:1 : le joueur reste géré par le FLDEFF jusqu'à la fin ; unlock/unfreeze
+      // à la fin de la task).
+      if (kind !== 'fly' && kind !== 'fall' && kind !== 'aqua_teleport'
+          && !this.isEscalatorOrLavaridgeKind(kind)) {
         UnlockPlayerFieldControls();
         SetPlayerVisibility(this.rt, true);
       }

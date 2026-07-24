@@ -6873,6 +6873,23 @@ export function GetWalkInPlaceFastMovementAction(dir: number): number {
   return gWalkInPlaceFastMovementActions[dir];
 }
 
+/** 1:1 décomp `gWalkInPlaceFasterMovementActions[]` (event_object_movement.c:1031). */
+const gWalkInPlaceFasterMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT,  // DIR_EAST
+];
+
+/** 1:1 décomp `GetWalkInPlaceFasterMovementAction` (event_object_movement.c:4973, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_* (= turn in
+ *  place très rapide, 4 frames). Utilisé par LavaridgeGym1FWarpEffect_AshPuff. */
+export function GetWalkInPlaceFasterMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gWalkInPlaceFasterMovementActions[dir];
+}
+
 /** 1:1 décomp `gWalkInPlaceSlowMovementActions[]` (event_object_movement.c). */
 const gWalkInPlaceSlowMovementActions: readonly number[] = [
   MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN,   // DIR_NONE  → DOWN (default)
