@@ -51,7 +51,7 @@ import { GetStringCenterAlignXOffset } from './text';
 import { AddTextPrinterParameterized3 } from './menu';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from './engine/battle/party-storage';
-import { ItemIsMail, GiveMailToMonByItemId, TakeMailFromMon, MAIL_NONE } from './mail_data';
+import { ItemIsMail, GiveMailToMonByItemId, TakeMailFromMon, MAIL_NONE, GiveMailToMon, ClearMail } from './mail_data';
 import { DoEasyChatScreen, easyChatGfxReady } from './easy_chat';
 // 1:1 décomp include/constants/easy_chat.h.
 const EASY_CHAT_TYPE_MAIL = 4;
@@ -118,6 +118,7 @@ const FONT_SMALL = 0;  // 1:1 décomp party_menu uses FONT_SMALL for nickname/le
 import { TEXT_SKIP_DRAW } from '../include/text';
 import {
   PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM, PARTY_ACTION_GIVE_ITEM,
+  PARTY_ACTION_GIVE_MAILBOX_MAIL,
   PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING, PARTY_ACTION_SEND_OUT,
   PARTY_ACTION_SOFTBOILED, PARTY_ACTION_CANT_SWITCH, PARTY_ACTION_ABILITY_PREVENTS,
   PARTY_MENU_TYPE_FIELD, PARTY_MENU_TYPE_IN_BATTLE, PARTY_MENU_TYPE_DAYCARE,
@@ -2126,6 +2127,20 @@ function HandleChooseMonSelection(taskId: number, slotPtr: PartySlotPtr): void {
       TryGiveItemOrMailToSelectedMon();          // 1:1 :1341
       break;
     }
+    case PARTY_ACTION_GIVE_MAILBOX_MAIL: {
+      // 1:1 :1349-1355 (Task_HandleChooseMonInput case GIVE_MAILBOX_MAIL) :
+      //   if (slot == CANCEL) close ; else PlaySE(SE_SELECT) + TryGiveMailToSelectedMon.
+      const slot = slotPtr.get();
+      if (slot === CANCEL) {
+        PlaySE(5);
+        ClosePartyScreen();          // → savedCallback = retour boîte aux lettres
+        return;
+      }
+      if (!IsSelectedMonNotEgg(slot)) return;
+      PlaySE(5);
+      TryGiveMailToSelectedMon();
+      break;
+    }
     // (LOT 7) PARTY_ACTION_SEND_OUT / CHOOSE_MON combat : PAS des cases du switch
     // décomp (:1300) → default = Task_TryCreateSelectionWindow → menu d'action
     // in-battle (ENVOI/VERS via GetPartyMenuActionsTypeInBattle) → CursorCb_SendMon.
@@ -2978,6 +2993,66 @@ function OpenPartyScreenForGiveItem(returnBagCb: CB2Callback): void {
     rt.gMain.savedCallback = returnBagCb;
     rt.SetMainCallback2(CB2_InitPartyMenu);
   }).catch((e) => { console.error('[party-screen] give-item preload failed', e); });
+}
+
+// ─── Don de LETTRE depuis la BOÎTE AUX LETTRES (player_pc.c Mailbox_Give) ─────
+// 1:1 décomp `ChooseMonToGiveMailFromMailbox` (party_menu.c:5540) + TryGiveMail
+// ToSelectedMon (:5545). Index de la lettre = slot gSaveBlock1Ptr.mail[PARTY_SIZE
+// + mailboxIndex] ; le décomp le dérive de gPlayerPCItemPageInfo (itemsAbove +
+// PARTY_SIZE + cursorPos). Adaptation : l'index mailbox est passé par player_pc.ts
+// (bridge) car notre BOÎTE aux lettres a sa propre sélection.
+let _mailboxGiveIndex = 0;
+
+/** 1:1 décomp `void ChooseMonToGiveMailFromMailbox(void)` (party_menu.c:5540) :
+ *    InitPartyMenu(FIELD, SINGLE, PARTY_ACTION_GIVE_MAILBOX_MAIL, FALSE,
+ *                  PARTY_MSG_GIVE_TO_WHICH_MON, Task_HandleChooseMonInput,
+ *                  Mailbox_ReturnToMailListAfterDeposit);
+ *  `mailboxIndex` = index de la lettre dans la boîte (0-based) ; `returnCb` =
+ *  Mailbox_ReturnToMailListAfterDeposit (player_pc.ts, rouvre la boîte). */
+export function ChooseMonToGiveMailFromMailbox(mailboxIndex: number, returnCb: CB2Callback): void {
+  _mailboxGiveIndex = mailboxIndex | 0;
+  OpenPartyScreenForGiveMailboxMail(returnCb);
+}
+
+/** Ouvre le party menu en mode GIVE_MAILBOX_MAIL (« Donner à quel POKéMON ? »),
+ *  savedCallback = returnCb (retour boîte). Même scaffolding que GIVE_ITEM mais
+ *  action GIVE_MAILBOX_MAIL (le dispatch de sélection route → TryGiveMailToSelectedMon). */
+function OpenPartyScreenForGiveMailboxMail(returnCb: CB2Callback): void {
+  if (_isOpen) return;
+  _partyAction = PARTY_ACTION_GIVE_MAILBOX_MAIL;
+  _giveFromBag = false;
+  void _loadAssets().then(() => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.gMain.state = 0;
+    rt.gMain.savedCallback = returnCb;
+    rt.SetMainCallback2(CB2_InitPartyMenu);
+  }).catch((e) => { console.error('[party-screen] give-mailbox-mail preload failed', e); });
+}
+
+/** 1:1 décomp `static void TryGiveMailToSelectedMon(u8 taskId)` (party_menu.c:5545) :
+ *    mail = &gSaveBlock1Ptr->mail[itemsAbove + PARTY_SIZE + cursorPos];
+ *    if (GetMonData(mon, MON_DATA_HELD_ITEM) != ITEM_NONE)
+ *        DisplayPartyMenuMessage(gText_PkmnHoldingItemCantHoldMail, TRUE);
+ *    else { GiveMailToMon(mon, mail); ClearMail(mail);
+ *           DisplayPartyMenuMessage(gText_MailTransferredFromMailbox, TRUE); }
+ *    → Task_UpdateHeldItemSpriteAndClosePartyMenu (= phase 'item_used_msg' :
+ *      A/B ferme le party menu → savedCallback = retour boîte). */
+function TryGiveMailToSelectedMon(): void {
+  const mon = gPlayerParty[_slotId];
+  if (!mon) return;
+  const mail = gSaveBlock1Ptr.mail[PARTY_SIZE + _mailboxGiveIndex]; // slot boîte (6 + idx)
+  if (mon.heldItem !== 0) {
+    // 1:1 :5551 gText_PkmnHoldingItemCantHoldMail — le mon tient déjà un objet.
+    _itemUsedMsgText = _preparePartyMsg(getString('gText_PkmnHoldingItemCantHoldMail') || '');
+  } else {
+    // 1:1 :5555-5557 GiveMailToMon + ClearMail + message transfert.
+    if (mail) { GiveMailToMon(mon, mail); ClearMail(mail); }
+    _updatePartyMonHeldItem(_slotId);  // 1:1 ScheduleBgCopyTilemapToVram + refresh sprite
+    _itemUsedMsgText = _preparePartyMsg(getString('gText_MailTransferredFromMailbox') || '');
+  }
+  _phase = 'item_used_msg';
+  _drawMsg();
 }
 
 /** 1:1 décomp `CB2_ReturnToBagMenu` (party_menu.c:4276) :

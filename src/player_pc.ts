@@ -54,6 +54,8 @@ import { ScriptContext_SetupScript } from './script';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './engine/save/save-block-state';
 import { MAIL_COUNT, PARTY_SIZE } from './engine/save/save-blocks';
 import { ReadMail } from './mail';
+import { ChooseMonToGiveMailFromMailbox } from './party_menu';
+import { CalculatePlayerPartyCount } from './engine/battle/party-storage';
 import { CB2_ReturnToField_Manual, CleanupOverworldWindowsAndTilemaps } from './overworld';
 import { FadeScreen, FADE_TO_BLACK, IsWeatherNotFadingIn } from './field_weather';
 import { FadeInFromBlack } from './field_screen_effect';
@@ -1899,8 +1901,38 @@ function _mailboxMoveToBag(): void {
  *      else FadeScreen + gTasks.func = Mailbox_DoGiveMailPokeMenu;
  *  → ChooseMonToGiveMailFromMailbox (= party_menu.c, port futur) */
 function _mailboxGive(): void {
-  console.warn('[bedroom-pc] _mailboxGive — STUB, port 1:1 complet différé (party_menu.c)');
-  _mailboxCancel();
+  // 1:1 :883 if (CalculatePlayerPartyCount() == 0) Mailbox_NoPokemonForMail.
+  if (CalculatePlayerPartyCount() === 0) {
+    // 1:1 Mailbox_NoPokemonForMail (:945) = DisplayItemMessageOnField(gText_NoPokemon,
+    // Mailbox_Cancel). Notre port : sticky msg + retour liste (le sticky reste
+    // affiché tant que _mailboxCancel n'a pas redraw — divergence UI mineure,
+    // le message décomp attend un A ; on revient directement à la liste).
+    _removeSubWindow();
+    _showSticky(getString('gText_NoPokemon') ?? "Il n'y a pas de POKéMON.");
+    _mailboxCancel();
+    return;
+  }
+  // 1:1 :887-889 FadeScreen(FADE_TO_BLACK, 0) + Mailbox_DoGiveMailPokeMenu :
+  //   après fade → MailboxMenu_Free + CleanupOverworldWindowsAndTilemaps +
+  //   ChooseMonToGiveMailFromMailbox. Notre boot party menu (OpenPartyScreenFor
+  //   GiveMailboxMail) gère son propre fade-in/asset-load puis SetMainCallback2.
+  _removeSubWindow();
+  _clearSticky();
+  _removePCWindows();
+  const mailIdx = sMailboxSelectedIdx;
+  sMailboxSelectedIdx = -1;
+  sIsOpen = false;  // close PC (= 1:1 MailboxMenu_Free)
+  FadeScreen(FADE_TO_BLACK, 0);
+  ChooseMonToGiveMailFromMailbox(mailIdx, () => {
+    // 1:1 décomp `Mailbox_ReturnToMailListAfterDeposit` (player_pc.c:905) :
+    //   gFieldCallback = Mailbox_UpdateMailListAfterDeposit; SetMainCallback2(CB2_ReturnToField).
+    // Divergence : on rouvre le BedroomPC (main menu) via le chemin retour-field
+    // PROUVÉ de la lecture de lettre (:1878) au lieu de rouvrir directement la
+    // liste boîte (Mailbox_UpdateMailListAfterDeposit non porté) — la boîte reste
+    // accessible depuis le menu. Le don de lettre lui-même est 1:1.
+    (globalThis as Record<string, unknown>).gFieldCallback = () => OpenBedroomPC(sIsBedroomMode);
+    CB2_ReturnToField_Manual();
+  });
 }
 
 /** 1:1 décomp `Mailbox_Cancel(taskId)` (player_pc.c:936-943) :
