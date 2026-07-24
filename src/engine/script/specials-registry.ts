@@ -3104,27 +3104,34 @@ registerSpecial('GetNumMovesSelectedMonHas', () => {
 // Corps 1:1 dans party_menu.ts (f1a410476), move_relearner.ts (077e80a23),
 // field_weather_effect.ts (8380f57c0). Import différé (précédent :690/:1354 —
 // pas de nouvelle arête d'éval sur ces mégafichiers → pas de bombe TDZ).
-registerSpecial('ChooseMonForMoveRelearner', async () => {
+// Handlers SYNC qui lancent l'async avec .catch (Règle 3) — pattern :690, le
+// waitstate du script est libéré par l'UI/l'effet ouvert, pas par la promesse.
+const _lazySpecial = (name: string, run: () => Promise<void>): void => {
+  registerSpecial(name, () => {
+    run().catch((e) => console.error(`[special ${name}]`, e));
+  });
+};
+_lazySpecial('ChooseMonForMoveRelearner', async () => {
   const { ChooseMonForMoveRelearner } = await import('../../party_menu');
   ChooseMonForMoveRelearner();
 });
-registerSpecial('MoveDeleterChooseMoveToForget', async () => {
+_lazySpecial('MoveDeleterChooseMoveToForget', async () => {
   const { MoveDeleterChooseMoveToForget } = await import('../../party_menu');
   MoveDeleterChooseMoveToForget();
 });
-registerSpecial('BufferMoveDeleterNicknameAndMove', async () => {
+_lazySpecial('BufferMoveDeleterNicknameAndMove', async () => {
   const { BufferMoveDeleterNicknameAndMove } = await import('../../party_menu');
   BufferMoveDeleterNicknameAndMove();
 });
-registerSpecial('MoveDeleterForgetMove', async () => {
+_lazySpecial('MoveDeleterForgetMove', async () => {
   const { MoveDeleterForgetMove } = await import('../../party_menu');
   MoveDeleterForgetMove();
 });
-registerSpecial('TeachMoveRelearnerMove', async () => {
+_lazySpecial('TeachMoveRelearnerMove', async () => {
   const { TeachMoveRelearnerMove } = await import('../../move_relearner');
   TeachMoveRelearnerMove();
 });
-registerSpecial('StartDroughtWeatherBlend', async () => {
+_lazySpecial('StartDroughtWeatherBlend', async () => {
   const { StartDroughtWeatherBlend } = await import('../../field_weather_effect');
   StartDroughtWeatherBlend();
 });
