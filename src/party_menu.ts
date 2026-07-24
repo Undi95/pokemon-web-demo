@@ -3625,6 +3625,29 @@ function SetUpFieldMove_Strength(): boolean {
   return false;
 }
 
+/** 1:1 décomp `SetUpFieldMove_RockSmash(void)` (fldeff_rocksmash.c:121-142) :
+ *      if (ShouldDoBrailleRegirockEffect()) { ... }               // dette braille (exemption archi)
+ *      else if (CheckObjectGraphicsInFrontOfPlayer(OBJ_EVENT_GFX_BREAKABLE_ROCK) == TRUE) {
+ *          gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+ *          gPostMenuFieldCallback = FieldCallback_RockSmash;
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *  La branche braille Regirock (tombe des golems, ouverture ÉCLATE-ROC en Émeraude) est
+ *  EXEMPTION ARCHITECTURALE (moteur-texte braille émulé central, cf. Flash qui saute pareil
+ *  ShouldDoBrailleRegisteelEffect). Helpers via globalThis (anti-cycle ESM, pattern Strength/Flash).
+ *  Contrairement à Strength, PAS de gSpecialVar_Result posé ici (1:1). */
+function SetUpFieldMove_RockSmash(): boolean {
+  const g = globalThis as Record<string, unknown>;
+  const check = g.__CheckObjectGraphicsInFrontOfPlayer as ((gfx: string) => boolean) | undefined;
+  if (check?.('OBJ_EVENT_GFX_BREAKABLE_ROCK') === true) {
+    g.gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
+    g.gPostMenuFieldCallback = g.__FieldCallback_RockSmash as (() => void) | undefined;
+    return true;
+  }
+  return false;
+}
+
 /** 1:1 décomp `SetUpFieldMove_Flash(void)` (fldeff_flash.c:73) :
  *      if (ShouldDoBrailleRegisteelEffect()) { ... }              // dette (tombe Registeel)
  *      else if (gMapHeader.cave == TRUE && !FlagGet(FLAG_SYS_USE_FLASH)) {
@@ -3993,6 +4016,7 @@ interface FieldMoveCursorCallback {
 }
 const sFieldMoveCursorCallbacks: Record<number, FieldMoveCursorCallback> = {
   [FIELD_MOVE_CUT]:         { fieldMoveFunc: SetUpFieldMove_Cut,        msgId: 'gText_CantUseHere' },
+  [FIELD_MOVE_ROCK_SMASH]:  { fieldMoveFunc: SetUpFieldMove_RockSmash,  msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_STRENGTH]:    { fieldMoveFunc: SetUpFieldMove_Strength,   msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_FLASH]:       { fieldMoveFunc: SetUpFieldMove_Flash,      msgId: 'gText_CantUseHere' },
   [FIELD_MOVE_SURF]:        { fieldMoveFunc: SetUpFieldMove_Surf,       msgId: 'gText_CantSurfHere' },

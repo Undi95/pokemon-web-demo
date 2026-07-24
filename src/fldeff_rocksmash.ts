@@ -16,7 +16,7 @@
 import type { DecompRuntime } from '../harness/runtime/decomp-runtime';
 import { CreateFieldMoveTask } from './field_effect_helpers';
 import { FieldEffectActiveListRemove } from './field_effect';
-import { ScriptContext_Enable } from './script';
+import { ScriptContext_Enable, ScriptContext_SetupScript } from './script';
 import { PlaySE } from '../harness/runtime/decomp-globals';
 import { SE_M_ROCK_THROW } from '../include/constants/songs';
 import { GetXYCoordsOneStepInFrontOfPlayer, PlayerGetElevation } from './field_player_avatar';
@@ -40,6 +40,21 @@ function FieldMove_RockSmash(): void {
   ScriptContext_Enable();
   void import('./scrcmd').then(m => m.SignalWaitState());
 }
+
+/** 1:1 STRICT décomp `static void FieldCallback_RockSmash(void)` (fldeff_rocksmash.c:144-148) :
+ *    gFieldEffectArguments[0] = GetCursorSelectionMonId();
+ *    ScriptContext_SetupScript(EventScript_UseRockSmash);
+ *  Posé comme `gPostMenuFieldCallback` par SetUpFieldMove_RockSmash (branche party-menu
+ *  ÉCLATE-ROC). Exposé `__FieldCallback_RockSmash` (pattern __FieldCallback_Strength,
+ *  anti-cycle ESM party_menu ⇄ fldeff). EventScript_UseRockSmash existe déjà dans le
+ *  byte-VM (data/scripts/field_move_scripts.inc → scripts/_all.json). */
+export function FieldCallback_RockSmash(): void {
+  const g = globalThis as Record<string, unknown>;
+  const args = (g.gFieldEffectArguments ?? (g.gFieldEffectArguments = [0, 0, 0, 0, 0, 0, 0, 0])) as number[];
+  args[0] = ((g.__GetCursorSelectionMonId as (() => number) | undefined)?.() ?? 0);
+  ScriptContext_SetupScript('EventScript_UseRockSmash');
+}
+(globalThis as Record<string, unknown>).__FieldCallback_RockSmash = FieldCallback_RockSmash;
 
 /** 1:1 STRICT décomp `FldEff_UseRockSmash` (fldeff_rocksmash.c:150) :
  *    u8 taskId = CreateFieldMoveTask();
