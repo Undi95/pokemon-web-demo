@@ -91,6 +91,7 @@ export const DEV_CATEGORIES: ReadonlyArray<{ id: string; label: string; icon: st
   { id: 'joueur',  label: 'Joueur',  icon: '🎮' },
   { id: 'combat',  label: 'Combat',  icon: '⚔' },
   { id: 'scene',   label: 'Scène',   icon: '🎬' },
+  { id: 'tests',   label: 'Tests',   icon: '🧪' },
   { id: 'scripts', label: 'Scripts', icon: '📜' },
   { id: 'gfx',     label: 'Gfx',     icon: '🎨' },
   { id: 'audio',   label: 'Audio',   icon: '🎵' },

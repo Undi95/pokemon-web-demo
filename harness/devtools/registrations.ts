@@ -575,6 +575,268 @@ function registerScene(): void {
   ]);
 }
 
+// ─── TESTS (presets « amène-moi devant le contenu ») ─────────────────────────
+// Harness pur (PAS de contrainte 1:1) : chaque preset TÉLÉPORTE le joueur devant
+// un sous-système à tester + pose les prérequis (items / flags / vars / équipe).
+// __devGotoMap vise TOUJOURS une case WALKABLE (piège connu) : on utilise des
+// tuiles de WARP (= points d'arrivée, garantis marchables) ou des coords relevées
+// dans data/maps/*/map.json du décomp. Les entrées 1:1 (AddBagItem, GiveMonToPlayer,
+// FlagSet…) sont chargées en import() DYNAMIQUE au clic → zéro arête de cycle
+// ajoutée au panel (même précaution que registerScene). Sections regroupées par
+// préfixe d'emoji (le registre rend à plat, dans l'ordre d'enregistrement) :
+//   ⚔️ COMBAT · 🌍 MONDE · 🎒 OBJETS · 🎲 DIVERS.
+
+function registerTests(): void {
+  const goto = (map: string, x: number, y: number): void =>
+    requireFn(g().__devGotoMap, '__devGotoMap')(map, x, y);
+
+  // IVs/EVs neutres pour les mons de test (createTestMon = helper harness party-storage).
+  const IVS = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 } as const;
+  const EVS = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } as const;
+
+  /** Charge (lazy, au clic) les fonctions 1:1 utilisées par les presets. */
+  const loadApi = async () => {
+    const [bag, party, spu, sv] = await Promise.all([
+      import('../../src/engine/bag/bag'),
+      import('../../src/engine/battle/party-storage'),
+      import('../../src/script_pokemon_util'),
+      import('../../src/engine/script/script-vars'),
+    ]);
+    return {
+      addItem: (key: string, n = 1): boolean => bag.AddBagItem(key, n),
+      giveMon: (species: string, lvl: number, moves?: string[], heldItem?: string): number =>
+        party.GiveMonToPlayer(party.createTestMon(species, lvl, { ivs: IVS, evs: EVS, moves, heldItem })),
+      partyCount: (): number => party.gPlayerParty.filter((m) => m.species !== 0).length,
+      heal: (): void => spu.HealPlayerParty(),
+      flagSet: (f: string): void => sv.FlagSet(f),
+      flagClear: (f: string): void => sv.FlagClear(f),
+      varSet: (v: string, n: number): void => sv.VarSet(v, n),
+      allBadges: (): void => { for (let i = 1; i <= 8; i++) sv.FlagSet(`FLAG_BADGE0${i}_GET`); },
+    };
+  };
+
+  registerCommands([
+    // ─── ⚔️ COMBAT ───────────────────────────────────────────────────────────
+    {
+      id: 'tests.combat.e4', category: 'tests', label: '⚔️ Panthéon (E4)',
+      description: 'Salle de Sidney (Ever Grande) + équipe soignée (team Lv58 si vide). Monte vers Sidney.',
+      run: async () => {
+        const a = await loadApi();
+        if (a.partyCount() === 0) {
+          a.giveMon('SPECIES_SWAMPERT', 58); a.giveMon('SPECIES_SALAMENCE', 58);
+          a.giveMon('SPECIES_MANECTRIC', 56); a.giveMon('SPECIES_ALTARIA', 56);
+          a.giveMon('SPECIES_AGGRON', 57); a.giveMon('SPECIES_WAILORD', 57);
+        }
+        a.heal();
+        a.flagClear('FLAG_DEFEATED_ELITE_4_SIDNEY');
+        goto('MAP_EVER_GRANDE_CITY_SIDNEYS_ROOM', 6, 13);
+        return 'E4 : salle de Sidney (équipe soignée) — monte vers Sidney';
+      },
+    },
+    {
+      id: 'tests.combat.rayquaza', category: 'tests', label: '⚔️ Rayquaza (Sky Pillar)',
+      description: 'Sommet de la Tour Céleste devant Rayquaza (14,7). Monte pour l\'affronter.',
+      run: async () => { await loadApi(); goto('MAP_SKY_PILLAR_TOP', 16, 14); return 'Sky Pillar sommet — Rayquaza'; },
+    },
+    {
+      id: 'tests.combat.regice', category: 'tests', label: '⚔️ Regice (Island Cave)',
+      description: 'Salle du fond de la Grotte Ancienne, devant Regice (8,7).',
+      run: async () => { await loadApi(); goto('MAP_ISLAND_CAVE', 8, 11); return 'Island Cave — Regice'; },
+    },
+    {
+      id: 'tests.combat.legend', category: 'tests', label: '⚔️ Kyogre / Groudon', ui: 'grid',
+      description: 'Salle climax : Kyogre (Grotte Marine) ou Groudon (Grotte Magma/Terra).',
+      args: [{
+        name: 'which', kind: 'select', options: [
+          { value: 'KYOGRE', label: 'Kyogre (Marine Cave)' },
+          { value: 'GROUDON', label: 'Groudon (Terra Cave)' },
+        ],
+      }],
+      run: async ({ which }) => {
+        await loadApi();
+        if (String(which) === 'GROUDON') { goto('MAP_TERRA_CAVE_END', 5, 4); return 'Terra Cave — Groudon (17,22)'; }
+        goto('MAP_MARINE_CAVE_END', 20, 4); return 'Marine Cave — Kyogre (9,22)';
+      },
+    },
+    {
+      id: 'tests.combat.duo', category: 'tests', label: '⚔️ Duo dresseurs 2v2',
+      description: 'Route 117, sous les Jumelles Anna & Meg (double approche → gApproachingTrainers). Équipe soignée. Monte.',
+      run: async () => {
+        const a = await loadApi();
+        a.heal();
+        a.flagClear('FLAG_DEFEATED_ROUTE_117_TWIN_ANNA'); a.flagClear('FLAG_DEFEATED_ROUTE_117_TWIN_MEG');
+        goto('MAP_ROUTE117', 42, 8);
+        return 'R117 — monte vers les Jumelles (double battle)';
+      },
+    },
+    {
+      id: 'tests.combat.underwater', category: 'tests', label: '⚔️ Sous l\'eau (Ball Plongée)',
+      description: 'Fond marin (R126) + Balls Plongée + CS08 + Wailord(Plongée) + badges. Remonte puis re-plonge.',
+      run: async () => {
+        const a = await loadApi();
+        a.addItem('ITEM_DIVE_BALL', 10); a.addItem('ITEM_HM08', 1); a.allBadges();
+        a.giveMon('SPECIES_WAILORD', 40, ['MOVE_DIVE', 'MOVE_SURF', 'MOVE_WATERFALL', 'MOVE_BODY_SLAM']);
+        goto('MAP_UNDERWATER_ROUTE126', 45, 65);
+        return 'Sous l\'eau (R126) — Balls Plongée + Wailord (Plongée)';
+      },
+    },
+    {
+      id: 'tests.combat.ash', category: 'tests', label: '⚔️ R113 cendre',
+      description: 'Route 113 (herbe de cendre) + Sac Suie (si porté). Marche dans la cendre.',
+      run: async () => { const a = await loadApi(); a.addItem('ITEM_SOOT_SACK', 1); goto('MAP_ROUTE113', 33, 5); return 'R113 — herbe de cendre'; },
+    },
+    {
+      id: 'tests.combat.desert', category: 'tests', label: '⚔️ Désert R111',
+      description: 'Route 111 désert (tempête de sable) + Lunettes Go-Go (requises pour entrer).',
+      run: async () => { const a = await loadApi(); a.addItem('ITEM_GO_GOGGLES', 1); goto('MAP_ROUTE111', 29, 87); return 'Désert R111 (Lunettes Go-Go posées)'; },
+    },
+
+    // ─── 🌍 MONDE ──────────────────────────────────────────────────────────────
+    {
+      id: 'tests.monde.fortree', category: 'tests', label: '🌍 Arène Fortree (grilles)',
+      description: 'Arène de Cimetronelle (puzzle des grilles rotatives). Monte vers Winona.',
+      run: async () => { await loadApi(); goto('MAP_FORTREE_CITY_GYM', 15, 24); return 'Arène Fortree (grilles rotatives)'; },
+    },
+    {
+      id: 'tests.monde.trickhouse', category: 'tests', label: '🌍 Trick House (grilles rotatives)',
+      description: 'Manoir des Casse-tête, salle 6 = grilles rotatives (rotating_gate.c PUZZLE6).',
+      run: async () => { await loadApi(); goto('MAP_ROUTE110_TRICK_HOUSE_PUZZLE6', 1, 21); return 'Trick House — salle grilles rotatives'; },
+    },
+    {
+      id: 'tests.monde.cracked', category: 'tests', label: '🌍 Sols fissurés (Sky Pillar)',
+      description: 'Sky Pillar 2F : sols fissurés (MB_CRACKED_FLOOR) qui s\'effondrent quand on court.',
+      run: async () => { await loadApi(); goto('MAP_SKY_PILLAR_2F', 10, 1); return 'Sky Pillar 2F — sols fissurés'; },
+    },
+    {
+      id: 'tests.monde.dept', category: 'tests', label: '🌍 Grand magasin (escalator)',
+      description: 'Grand Magasin de Nénucrique 1F : escalators aux coins hauts. Monte y goûter.',
+      run: async () => { await loadApi(); goto('MAP_LILYCOVE_CITY_DEPARTMENT_STORE_1F', 8, 7); return 'Grand magasin 1F — escalator'; },
+    },
+    {
+      id: 'tests.monde.lavaridge', category: 'tests', label: '🌍 Arène Lavaridge (geyser)',
+      description: 'Arène de Vermilava : geysers de vapeur qui propulsent le joueur.',
+      run: async () => { await loadApi(); goto('MAP_LAVARIDGE_TOWN_GYM_1F', 13, 18); return 'Arène Lavaridge — geysers'; },
+    },
+    {
+      id: 'tests.monde.aquapads', category: 'tests', label: '🌍 Panneau téléport (Repaire Aqua)',
+      description: 'Repaire de la Team Aqua B1F : dalles-téléport fléchées. Marche dessus.',
+      run: async () => { await loadApi(); goto('MAP_AQUA_HIDEOUT_B1F', 29, 1); return 'Repaire Aqua B1F — panneaux téléport'; },
+    },
+    {
+      id: 'tests.monde.copyplayer', category: 'tests', label: '🌍 Jumeaux copie-joueur',
+      description: 'Faraway Island : Mew en MOVEMENT_TYPE_COPY_PLAYER (mime tes déplacements).',
+      run: async () => { await loadApi(); goto('MAP_FARAWAY_ISLAND_INTERIOR', 12, 19); return 'Faraway Island — objet copie-joueur (Mew)'; },
+    },
+    {
+      id: 'tests.monde.rain', category: 'tests', label: '🌍 R119 pluie',
+      description: 'Route 119 (pluie permanente + hautes herbes).',
+      run: async () => { await loadApi(); goto('MAP_ROUTE119', 6, 32); return 'R119 — pluie'; },
+    },
+
+    // ─── 🎒 OBJETS ─────────────────────────────────────────────────────────────
+    {
+      id: 'tests.obj.berries', category: 'tests', label: '🎒 Kit baies',
+      description: '5× de 6 baies variées + Arrosoir + TP sous les arbres à baies de R102. Plante/arrose.',
+      run: async () => {
+        const a = await loadApi();
+        for (const b of ['ITEM_ORAN_BERRY', 'ITEM_PECHA_BERRY', 'ITEM_LEPPA_BERRY', 'ITEM_SITRUS_BERRY', 'ITEM_RAZZ_BERRY', 'ITEM_POMEG_BERRY']) a.addItem(b, 5);
+        a.addItem('ITEM_WAILMER_PAIL', 1);
+        goto('MAP_ROUTE102', 24, 3);
+        return 'Kit baies + Arrosoir — R102 (carré de terre)';
+      },
+    },
+    {
+      id: 'tests.obj.pp', category: 'tests', label: '🎒 Kit PP',
+      description: 'Éther / Max Éther / Elixir / Max Elixir / PP Plus / PP Max (×5). Utilise sur un mon aux PP entamés.',
+      run: async () => {
+        const a = await loadApi();
+        for (const it of ['ITEM_ETHER', 'ITEM_MAX_ETHER', 'ITEM_ELIXIR', 'ITEM_MAX_ELIXIR', 'ITEM_PP_UP', 'ITEM_PP_MAX']) a.addItem(it, 5);
+        return 'Kit PP posé (Éther/Elixir/PP Plus/PP Max ×5)';
+      },
+    },
+    {
+      id: 'tests.obj.escape', category: 'tests', label: '🎒 Corde Sortie',
+      description: 'Corde Sortie ×5 + TP Grotte Granite 1F (escapable). Utilise la corde pour ressortir.',
+      run: async () => { const a = await loadApi(); a.addItem('ITEM_ESCAPE_ROPE', 5); goto('MAP_GRANITE_CAVE_1F', 37, 12); return 'Corde Sortie ×5 — Grotte Granite'; },
+    },
+    {
+      id: 'tests.obj.mail', category: 'tests', label: '🎒 Kit mail',
+      description: 'Mail Orange ×5 + TP chambre (PC maison Brendan). Attache une lettre via le PC.',
+      run: async () => { const a = await loadApi(); a.addItem('ITEM_ORANGE_MAIL', 5); goto('MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F', 7, 1); return 'Mail Orange ×5 — chambre (PC maison)'; },
+    },
+    {
+      id: 'tests.obj.heartscale', category: 'tests', label: '🎒 Écaille Cœur + Fallarbor',
+      description: 'Écaille Cœur ×10 + TP maison du Maître des Capacités (Fallarbor).',
+      run: async () => { const a = await loadApi(); a.addItem('ITEM_HEART_SCALE', 10); goto('MAP_FALLARBOR_TOWN_MOVE_RELEARNERS_HOUSE', 3, 7); return 'Écaille Cœur ×10 — Maître des Capacités'; },
+    },
+    {
+      id: 'tests.obj.hm', category: 'tests', label: '🎒 Kit CS roc/cascade/plongée',
+      description: 'CS06/07/08 + Léviator(Éclate-Roc/Cascade/Plongée/Surf) + badges + TP Grotte Météore.',
+      run: async () => {
+        const a = await loadApi();
+        a.addItem('ITEM_HM06', 1); a.addItem('ITEM_HM07', 1); a.addItem('ITEM_HM08', 1);
+        a.allBadges();
+        a.giveMon('SPECIES_GYARADOS', 45, ['MOVE_ROCK_SMASH', 'MOVE_WATERFALL', 'MOVE_DIVE', 'MOVE_SURF']);
+        goto('MAP_METEOR_FALLS_1F_1R', 27, 18);
+        return 'Kit CS (roc/cascade/plongée) + Léviator — Grotte Météore';
+      },
+    },
+
+    // ─── 🎲 DIVERS ─────────────────────────────────────────────────────────────
+    {
+      id: 'tests.divers.trade', category: 'tests', label: '🎲 Trade PNJ (Seedot)',
+      description: 'Maison échange de Mérouville + un Tarsal (Ralts) à donner. Le campeur veut un Ralts contre un Grainipiot.',
+      run: async () => { const a = await loadApi(); a.giveMon('SPECIES_RALTS', 5); goto('MAP_RUSTBORO_CITY_HOUSE1', 5, 7); return 'Trade Seedot — donne ton Tarsal au campeur'; },
+    },
+    {
+      id: 'tests.divers.vendors', category: 'tests', label: '🎲 Vendeurs spéciaux', ui: 'grid',
+      description: 'Atelier de Verre (R113, échange de suie) ou Pokémon Fan Club (Poivressel).',
+      args: [{
+        name: 'which', kind: 'select', options: [
+          { value: 'GLASS', label: 'Atelier de Verre (R113)' },
+          { value: 'FANCLUB', label: 'Fan Club (Poivressel)' },
+        ],
+      }],
+      run: async ({ which }) => {
+        await loadApi();
+        if (String(which) === 'FANCLUB') { goto('MAP_SLATEPORT_CITY_POKEMON_FAN_CLUB', 6, 10); return 'Fan Club (Poivressel)'; }
+        goto('MAP_ROUTE113_GLASS_WORKSHOP', 3, 8); return 'Atelier de Verre (R113)';
+      },
+    },
+    {
+      id: 'tests.divers.fullparty', category: 'tests', label: '🎲 Capture équipe pleine',
+      description: 'Complète l\'équipe à 6 + Balls (Poké/Super/Hyper) + TP herbes R102. Toute capture part au PC.',
+      run: async () => {
+        const a = await loadApi();
+        const need = 6 - a.partyCount();
+        for (let i = 0; i < need; i++) a.giveMon('SPECIES_ZIGZAGOON', 3);
+        a.addItem('ITEM_POKE_BALL', 20); a.addItem('ITEM_GREAT_BALL', 10); a.addItem('ITEM_ULTRA_BALL', 5);
+        goto('MAP_ROUTE102', 18, 12);
+        return `Équipe pleine (6) + Balls — herbes R102 (${need} mons ajoutés)`;
+      },
+    },
+    {
+      id: 'tests.divers.ferry', category: 'tests', label: '🎲 Frontier : bateau',
+      description: 'Quai de Nénucrique + S.S. Ticket + flags post-game (Champion). Parle au marin du S.S. Tidal.',
+      run: async () => {
+        const a = await loadApi();
+        a.addItem('ITEM_SS_TICKET', 1);
+        a.flagSet('FLAG_SYS_GAME_CLEAR'); a.flagSet('FLAG_IS_CHAMPION');
+        a.flagClear('FLAG_HIDE_LILYCOVE_HARBOR_SSTIDAL');
+        a.flagClear('FLAG_HIDE_LILYCOVE_HARBOR_FERRY_SAILOR');
+        a.flagClear('FLAG_HIDE_LILYCOVE_HARBOR_FERRY_ATTENDANT');
+        goto('MAP_LILYCOVE_CITY_HARBOR', 11, 14);
+        return 'Frontier bateau — quai Nénucrique (S.S. Ticket + post-game)';
+      },
+    },
+    {
+      id: 'tests.divers.frontier', category: 'tests', label: '🎲 Frontier : île directe',
+      description: 'TP direct Battle Frontier (extérieur ouest), case walkable.',
+      run: async () => { await loadApi(); goto('MAP_BATTLE_FRONTIER_OUTSIDE_WEST', 42, 27); return 'Battle Frontier — extérieur ouest'; },
+    },
+  ]);
+}
+
 // ─── SCRIPTS (byte-VM) ────────────────────────────────────────────────────────
 
 function registerScripts(): void {
@@ -1326,6 +1588,7 @@ export function registerAllDevtools(): void {
   registerJoueur();
   registerCombat();
   registerScene();
+  registerTests();
   registerScripts();
   registerGfx();
   registerAudio();
