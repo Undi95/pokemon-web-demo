@@ -1089,7 +1089,20 @@ export class OverworldScene extends Phaser.Scene {
     // `gSaveBlock2Ptr->playerGender` pour piquer le sprite asset (= Brendan ou May).
     // 1:1 décomp field_player_avatar.c : lit `gSaveBlock2Ptr->playerGender`.
     const playerGender: 'MALE' | 'FEMALE' = gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE';
+    // FIX Birch (dette caméra≡joueur) — 1:1 décomp : au retour combat/menu,
+    // gSaveBlock1Ptr.pos (= la CAMÉRA) n'est jamais réécrite (overworld.c:1961
+    // ne rappelle pas InitPlayerAvatar). Notre InitPlayerAvatar (adaptation
+    // port, recrée le sprite) écrit pos=mapX/mapY (field_player_avatar.ts:695) :
+    // on la préserve à travers l'appel → le cadrage décalé légitime du tuto
+    // (setobjectxy sans mouvement caméra) survit au combat, comme sur GBA.
+    // Le sprite joueur est world-anchored (currentCoords) → indépendant de pos.
+    const savedCamPosX = gSaveBlock1Ptr.pos.x;
+    const savedCamPosY = gSaveBlock1Ptr.pos.y;
     await InitPlayerAvatar(spawnPX, spawnPY, spawnDir, playerGender, this.rt);
+    if (returnToField) {
+      gSaveBlock1Ptr.pos.x = savedCamPosX;
+      gSaveBlock1Ptr.pos.y = savedCamPosY;
+    }
 
     // FIX 2 (Bug 2b/3b) — 1:1 décomp `InitObjectEventsLocal` (overworld.c:2172-2174) :
     //   player = GetInitialPlayerAvatarState();
