@@ -20,30 +20,24 @@ import { findNpcByLocalId, resolveObjectLocalIdRaw } from './scrcmd';
 import { findTemplateByLocalId } from './event_object_movement';
 import { VarGet, FlagSet, FlagClear } from './engine/script/script-vars';
 import { MAP_OFFSET, gMapHeader } from './fieldmap';
-import { SetObjectEventSpritePosToMapCoords, TrySpawnObjectEvent, gObjectEvents } from './event_object_movement';
+import { SetObjectEventSpritePosToMapCoords, TrySpawnObjectEvent, gObjectEvents, MoveObjectEventToMapCoords } from './event_object_movement';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
 import { GetSaveBlock1 } from './save';
 import { GetCurrentMap, SetObjEventTemplateCoords } from './load_save';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { DestroySprite } from './sprite';
 
-/** 1:1 décomp `ScrCmd_setobjectxy` → MoveObjectEventToMapCoords (coords + sprite px). */
+/** 1:1 décomp `ScrCmd_setobjectxy` → TryMoveObjectEventToMapCoords
+ *  (event_object_movement.c:2151) : x/y logiques + MAP_OFFSET puis
+ *  MoveObjectEventToMapCoords — qui fait le CameraObjectReset si trackedByCamera
+ *  (fix tuto Birch, verdict wf_6b138a4f-02b). La décomp n'écrit JAMAIS
+ *  gSaveBlock1Ptr.pos ici (pos = caméra ; l'ex-write « pos = source unique »
+ *  était l'adaptation fautive : la caméra la ramenait à l'ancienne ancre). */
 export function doSetObjectXY(localIdArg: string, x: number, y: number): void {
   const npc = findNpcByLocalId(localIdArg);
-  // 🔬 SONDE tuto Birch (retirer après) : trace CHAQUE setobjectxy — arg brut, résolution, coords.
-  console.log(`[setobjectxy] arg='${localIdArg}' → ${npc ? (npc.isPlayer ? 'PLAYER' : String(npc.localId)) : 'INTROUVABLE'} x=${x} y=${y}`);
   if (!npc) return;
-  npc.currentCoordsX = x + MAP_OFFSET;
-  npc.currentCoordsY = y + MAP_OFFSET;
-  npc.previousCoordsX = x + MAP_OFFSET;
-  npc.previousCoordsY = y + MAP_OFFSET;
-  SetObjectEventSpritePosToMapCoords(npc, x, y);
-  // Architecture web : pos = source unique du joueur → un setobjectxy ciblant le
-  // PLAYER doit aussi mettre gSaveBlock1Ptr.pos à jour (sinon re-spawn stale).
-  if (npc.isPlayer) {
-    gSaveBlock1Ptr.pos.x = x; gSaveBlock1Ptr.pos.y = y;
-    _armPosProbe();
-  }
+  MoveObjectEventToMapCoords(npc, x + MAP_OFFSET, y + MAP_OFFSET);
+  if (npc.isPlayer) _armPosProbe();  // 🔬 sonde re-test tuto (diag, à retirer)
 }
 
 // 🔬 SONDE Birch (retirer après diag) : armée au 1er setobjectxy joueur (= tuto).
@@ -53,9 +47,14 @@ export function doSetObjectXY(localIdArg: string, x: number, y: number): void {
 let _posProbeArmed = false;
 let _posProbeLogs = 0;
 function _posProbeLog(msg: string): void {
-  if (_posProbeLogs++ < 40) console.error(`[POS-PROBE] ${msg}\n`, new Error().stack);
+  const stack = new Error().stack ?? '';
+  // Recalibrage : les writes de CameraMove (marche normale, 1-2/pas) = bruit
+  // connu qui brûlait les 40 logs avant Route 101 — on ne trace que le reste.
+  if (stack.includes('CameraMove')) return;
+  if (_posProbeLogs++ < 40) console.error(`[POS-PROBE] ${msg}\n`, stack);
 }
 function _armPosProbe(): void {
+  _posProbeLogs = 0;  // réarme le quota à chaque setobjectxy joueur (tuto = le dernier gagne)
   if (_posProbeArmed) return;
   _posProbeArmed = true;
   const blk = GetSaveBlock1() as unknown as { pos: { x: number; y: number } };

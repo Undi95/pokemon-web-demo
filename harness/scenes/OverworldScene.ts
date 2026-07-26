@@ -1069,6 +1069,17 @@ export class OverworldScene extends Phaser.Scene {
     const persistedPlayerGfxId = returnToField
       ? gObjectEvents[gPlayerAvatar.objectEventId]?.graphicsId
       : undefined;
+    // FIX Birch (verdict wf_6b138a4f-02b) — 1:1 décomp overworld.c:1961
+    // (ReturnToFieldLocal) : au retour combat/menu le joueur est restauré depuis
+    // ses currentCoords RAM préservées (SpawnObjectEventsOnReturnToField), JAMAIS
+    // depuis gSaveBlock1Ptr.pos (= la caméra, qui diverge légitimement du joueur
+    // après un setobjectxy — tuto Birch). On snapshotte les coords logiques du
+    // slot joueur AVANT le destroy et on les substitue à sx/sy (issus de pos).
+    const persistedPlayer = returnToField ? gObjectEvents[gPlayerAvatar.objectEventId] : undefined;
+    const psx = persistedPlayer?.active ? persistedPlayer.currentCoordsX - MAP_OFFSET : undefined;
+    const psy = persistedPlayer?.active ? persistedPlayer.currentCoordsY - MAP_OFFSET : undefined;
+    const spawnPX = psx !== undefined && psx >= 0 ? psx : sx;
+    const spawnPY = psy !== undefined && psy >= 0 ? psy : sy;
     // Phase 4.6 : destroy player sprite avant re-init pour éviter leak OAM.
     DestroyPlayerAvatar(this.rt);
     // Bug fix session 122 : 'MALE' était hardcodé → joueur toujours Brendan
@@ -1078,7 +1089,7 @@ export class OverworldScene extends Phaser.Scene {
     // `gSaveBlock2Ptr->playerGender` pour piquer le sprite asset (= Brendan ou May).
     // 1:1 décomp field_player_avatar.c : lit `gSaveBlock2Ptr->playerGender`.
     const playerGender: 'MALE' | 'FEMALE' = gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE';
-    await InitPlayerAvatar(sx, sy, spawnDir, playerGender, this.rt);
+    await InitPlayerAvatar(spawnPX, spawnPY, spawnDir, playerGender, this.rt);
 
     // FIX 2 (Bug 2b/3b) — 1:1 décomp `InitObjectEventsLocal` (overworld.c:2172-2174) :
     //   player = GetInitialPlayerAvatarState();

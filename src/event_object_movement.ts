@@ -9146,7 +9146,13 @@ export function MoveObjectEventToMapCoords(npc: ObjectEvent, x: number, y: numbe
     npc.heldMovementFinished = false;
     npc.movementActionId = MOVEMENT_ACTION_NONE;
   }
-  // Dette R3 : CameraObjectReset si trackedByCamera (= rarement utilisé).
+  // 1:1 décomp event_object_movement.c:2143 : un téléport d'objet suivi par la
+  // caméra doit resnapper l'ancre du CameraObject (delta→0), sinon CameraMove
+  // « ramène » pos vers l'ancienne ancre à la frame suivante (= bug tuto Birch :
+  // le joueur téléporté 6,13 revenait à 5,12 — verdict wf_6b138a4f-02b).
+  if (npc.trackedByCamera) {
+    CameraObjectReset();
+  }
   // Notre TS : reset walk progression résiduelle pour que UpdateObjectEvents
   // le dessine statique à worldX/Y. Pas dans le décomp (= geree autrement)
   // mais nécessaire pour notre tick model qui caches walk state.
