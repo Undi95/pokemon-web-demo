@@ -52,7 +52,7 @@ import { getRuntime, LoadPalette, ResetTasks, RunTasks } from '../harness/runtim
 // 1:1 décomp task.c via le foyer src/task.ts (chantier item 7-② : dissolution du
 // mini task-system local — précédent : egg_hatch.ts:420 `CreateTask((t) => Task_X(t.taskId), n)`).
 import { CreateTask, DestroyTask, gTasks } from './task';
-import { DestroySprite, FreeOamMatrix, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, FreeAllSpritePalettes, LoadSpriteSheet, LoadSpritePalette, TAG_NONE, type SpriteTemplate } from './sprite';
+import { DestroySprite, FreeOamMatrix, _CreateSpriteAtTemplate, ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, FreeAllSpritePalettes, LoadSpriteSheet, LoadSpritePalette, TAG_NONE, ResetSpriteData, type SpriteTemplate } from './sprite';
 import { CreateMonPicSprite_Affine, FreeAndDestroyMonPicSprite, ResetAllPicSprites, MON_PIC_AFFINE_FRONT, _registerMonPicSubstrate } from './trainer_pokemon_sprites';
 import { BG_PLTT_ID, MAX_SPRITES } from '../harness/runtime/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './text_window';
@@ -416,7 +416,24 @@ async function CB2_ChooseStarter(): Promise<void> {
   // sont recréées par le flux post-combat ResumeMap, overworld.ts:1266, comme après
   // n'importe quel combat — battle_main fait le même ResetTasks à son init).
   ResetTasks();
-  // ResetSpriteData(); — already done via OAM fill above + sprite store cleanup.
+  // ResetSpriteData() : 1:1 décomp CB2_ChooseStarter (starter_choose.c:413).
+  // 🩸 ÉTAIT un commentaire mensonger (« already done via OAM fill above ») : le DmaFill32 OAM
+  // + le hide-all ci-dessus n'effacent QUE l'affichage — l'ALLOCATEUR de tiles OBJ
+  // (sSpriteTileAllocBitmap / sSpriteTileRanges / gReservedSpriteTileCount) restait chargé de
+  // TOUTES les sheets de l'overworld. Constaté en jeu (sonde live) : la sheet pokéball se
+  // faisait allouer à la tuile 895/1024 sur une map presque vide ; dès qu'une sheet de plus est
+  // chargée côté field, AllocSpriteTiles ne trouve plus 64 tuiles contiguës → LoadSpriteSheet
+  // retourne 0 SANS copier en OBJ VRAM → pokéballs + main + pic du starter INVISIBLES.
+  // On reset donc l'allocateur ici, exactement comme le fait ResetSpriteData (sprite.ts:1537)
+  // et comme le fait déjà InitPlayerAvatar au chargement de map (field_player_avatar.ts:775-784).
+  // ⚠️ Le wipe de gSprites fait PARTIE du fix, il n'est pas optionnel : masquer les sprites OW
+  // ne suffit pas — leurs requêtes de copie de frame (ProcessSpriteCopyRequests) continuent
+  // d'écrire en OBJ VRAM à leur tileBase, donc libérer l'allocateur SANS les détruire fait
+  // atterrir la sheet pokéball sur les tuiles du joueur, qui la réécrase ensuite (vérifié en
+  // jeu : pokéballs garbled). Les sprites OW sont intégralement recréés au retour field par
+  // loadAndInitMap → InitPlayerAvatar + SpawnObjectEventsOnReturnToField, exactement comme
+  // après n'importe quel combat.
+  ResetSpriteData();
   // ResetPaletteFade(); — NOP (runtime manages).
   // FreeAllSpritePalettes() : 1:1 décomp CB2_ChooseStarter (c:415) — libère TOUS les slots
   // OBJ palette (reserved=0 + tags=TAG_NONE). 🩸 ÉTAIT un no-op silencieux : appelé via
