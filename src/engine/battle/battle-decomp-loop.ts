@@ -613,10 +613,33 @@ export function bootDecompBattleLoop(
     // (dev `'` / vraies rencontres) ; les probes harness (returnToOverworld=false) ne
     // jouent pas de musique. Reprise OW au retour (ci-dessous).
     _playBattleBGM(opts?.song);
+    // 1:1 décomp `CB2_StartFirstBattle` (battle_setup.c:936) : le PREMIER combat (tuto Birch)
+    // pose `gMain.savedCallback = CB2_EndFirstBattle` — un callback de fin DIFFÉRENT des
+    // combats sauvages/dresseurs. Le port n'a qu'UN savedCallback générique (closure
+    // ci-dessous) → on capture le flag AU BOOT (= au moment où le décomp CHOISIT le
+    // callback ; à la fin du combat gBattleTypeFlags peut avoir été rebattu) et on ajoute
+    // la seule ligne qui distingue CB2_EndFirstBattle : `Overworld_ClearSavedMusic()`.
+    const isFirstBattleEnd = (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE) !== 0;
     let restored = false;
     _setMainSavedCallback(() => {
       if (restored) return;
       restored = true;
+      // 1:1 décomp `CB2_EndFirstBattle` (battle_setup.c:950-954) :
+      //     Overworld_ClearSavedMusic();
+      //     SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
+      // La 2e ligne = le retour field ci-dessous (restore()). La 1re efface le
+      // `savedMusic` posé par `playbgm MUS_HELP, TRUE` du tuto Birch — sinon
+      // Overworld_PlaySpecialMapMusic (overworld.c:1146, appelé au retour field)
+      // le relit et MUS_HELP reste à vie. Import dynamique (module déjà évalué →
+      // résolution en microtâche, donc AVANT le 1er await réel de restore()) : un
+      // import statique de src/overworld.ts fermerait le cycle ESM (cf. en-tête
+      // GetReturnToFieldFn), même précédent que le `import('../../overworld')` du
+      // chemin whiteout plus bas.
+      if (isFirstBattleEnd) {
+        void import('../../overworld')
+          .then((m) => m.Overworld_ClearSavedMusic())
+          .catch((e) => console.error('[decomp-loop] CB2_EndFirstBattle : Overworld_ClearSavedMusic KO', e));
+      }
       // 1:1 decomp CB2_EndWildBattle/CB2_EndTrainerBattle (battle_setup.c:614/1327) :
       // defaite (B_OUTCOME_LOST=2) ou nul (DREW=3) -> CB2_WhiteOut (overworld.c) ->
       // DoWhiteOut (overworld.c:358) : RunScriptImmediately(EventScript_WhiteOut) +

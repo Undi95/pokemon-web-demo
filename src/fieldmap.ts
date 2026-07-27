@@ -1372,6 +1372,20 @@ export function TransitionToConnection(connection: MapConnection): boolean {
   gMapHeader = cMap;
   (globalThis as Record<string, unknown>).gMapHeader = cMap;
 
+  // 1:1 décomp `LoadMapFromCameraTransition` (overworld.c:805-807) :
+  //     SetDefaultFlashLevel();
+  //     Overworld_ClearSavedMusic();
+  //     RunOnTransitionMapScript();
+  // → le `savedMusic` (posé par `playbgm <song>, TRUE` = Overworld_SetSavedMusic) ne
+  // SURVIT PAS à un changement de map : sans ce clear il est relu à vie par
+  // Overworld_PlaySpecialMapMusic (overworld.c:1146). Placé ici = AVANT
+  // RunOnTransitionMapScript (que le pilote de connexion lance après ce swap) et avant
+  // InitMap, comme le décomp. Import dynamique : src/overworld.ts importe DÉJÀ ce
+  // module (overworld.ts:17) → un import statique fermerait le cycle ESM (TDZ au boot).
+  void import('./overworld')
+    .then((m) => m.Overworld_ClearSavedMusic())
+    .catch((e) => console.error('[map-loader] LoadMapFromCameraTransition : Overworld_ClearSavedMusic KO', e));
+
   // 1:1 décomp `InitMap` : rebuild gBackupMapLayout + run on-load script.
   // NB : InitMap call InitBackupMapLayoutConnections qui depend du cache des
   // connections de cMap. Si pas cached (= depth 2 manquante), borders unfilled
