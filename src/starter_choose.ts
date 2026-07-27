@@ -746,13 +746,24 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     // dans runSpriteCallbacks → tickFixed mourait (plus de caméra ni d'object events), et la
     // main restait affichée en sautant au centre. On coupe donc le callback ici, à la sortie
     // de l'écran, comme le décomp (le sprite lui-même part avec le ResetSpriteData du combat).
+    // 🐛 fix 2026-07-26 : la comparaison d'identité `_s.callback === SpriteCB_SelectionHand`
+    // ne matchait JAMAIS (le template pose un wrapper `(s) => SpriteCB_SelectionHand(s)`,
+    // cf. sSpriteTemplate_Hand l.197) → neutralisation MORTE. Conséquence en jeu : la main
+    // (et les pokéballs) continuaient de ticker pendant la transition alors que le slot de
+    // task venait d'être libéré par `DestroyTask` ci-dessus puis RECYCLÉ par le combat →
+    // `tStarterSelection` lu = data[0] d'une AUTRE task (=1) → la main SAUTAIT AU CENTRE
+    // ~0,7 s au lieu de rester au-dessus de la ball choisie (bug user : « après un NON puis
+    // re-choix, la main revient toujours au centre »). Référence 1:1 : `CB2_GiveStarter`
+    // fait `ResetTasks()` (battle_setup.c:924) et `CB2_StartFirstBattle` (c:930-948)
+    // n'appelle QUE `UpdatePaletteFade()` + `RunTasks()` — PAS `AnimateSprites()` : sur GBA
+    // aucun callback de sprite ne tourne pendant la transition BLUR, la main reste FIGÉE
+    // au-dessus de la ball choisie jusqu'au ResetSpriteData du combat. On reproduit ce gel
+    // en retirant les callbacks des sprites de l'écran (par ID enregistré, pas par identité),
+    // SANS toucher à la visibilité (le GBA les garde à l'écran pour la capture de la BLUR).
     {
-      const _rt = getRuntime();
-      for (const _s of (_rt?.gSprites ?? [])) {
-        if (_s?.inUse && _s.callback === SpriteCB_SelectionHand) {
-          _s.callback = () => { /* dummy — écran starter quitté */ };
-          _s.invisible = true;
-        }
+      for (const _id of [_starterHandSpriteId, ..._starterPokeballSpriteIds]) {
+        const _s = _id >= 0 ? rt.gSprites[_id] : undefined;
+        if (_s?.inUse) _s.callback = null;
       }
     }
     // NB : le release `setFieldCameraSuspended(false)` a été DÉPLACÉ dans
