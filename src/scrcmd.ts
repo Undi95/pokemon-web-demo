@@ -52,7 +52,7 @@ import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from './ba
 import { MALE, FEMALE } from '../include/constants/global';
 import { A_BUTTON, B_BUTTON } from '../include/gba/io_reg';
 import { PlaySE, PlayFanfare, getRuntime, FadeInBGM } from '../harness/runtime/decomp-globals';
-import { FadeOutBGMTemporarily, IsBGMPausedOrStopped } from './sound';
+import { FadeOutBGMTemporarily, IsBGMPausedOrStopped, PlayNewMapMusic } from './sound';
 import { ScriptMovement_UnfreezeObjectEvents } from './script_movement';
 // Système FREEZE 1:1 décomp event_object_lock.c (logique relocalisée de scrcmd → son foyer miroir).
 import {
@@ -939,10 +939,17 @@ const ScrCmd_waitse: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => !(_dg(
 // Jouer la fanfare sur le slot dédié rend aussi waitfanfare correct (tient le texte).
 const ScrCmd_playfanfare: ScrCmdFunc = (ctx) => { PlayFanfare(ScriptReadHalfword(ctx)); return false; };
 const ScrCmd_waitfanfare: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => _dg()?.IsFanfareTaskInactive?.() ?? true); return true; };
-const ScrCmd_playbgm: ScrCmdFunc = (ctx) => { const song = ScriptReadHalfword(ctx); ScriptReadByte(ctx);
-  // 🔬 SONDE BGM tuto (retirer après diag) : l'opcode est-il atteint, avec quel id, la clé existe-t-elle ?
-  console.warn(`[playbgm] song=${song} m4aSongNumStart=${typeof _dg()?.m4aSongNumStart}`);
-  _dg()?.m4aSongNumStart?.(song, true); return false; };
+// 1:1 scrcmd.c:940-949 : save==TRUE → Overworld_SetSavedMusic (sinon la musique de
+// map — async chez nous — ÉCRASE le playbgm : MUS_HELP 410 écrasé par 359, tuto
+// Birch muet, prouvé en jeu) ; puis PlayNewMapMusic (state machine sCurrentMapMusic),
+// PAS m4aSongNumStart brut (qui court-circuitait la state machine).
+const ScrCmd_playbgm: ScrCmdFunc = (ctx) => {
+  const song = ScriptReadHalfword(ctx);
+  const save = ScriptReadByte(ctx);
+  if (save === 1) Overworld_SetSavedMusic(song);
+  PlayNewMapMusic(song);
+  return false;
+};
 const ScrCmd_playmoncry: ScrCmdFunc = (ctx) => { const sp = VarGet(ScriptReadHalfword(ctx)); VarGet(ScriptReadHalfword(ctx)); _dg()?.PlayCryInternal?.(sp, 0, 64, 0, 0); return false; };
 const ScrCmd_waitmoncry: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => _dg()?.IsCryFinished?.() ?? true); return true; };
 
