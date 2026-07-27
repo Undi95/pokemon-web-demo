@@ -5153,6 +5153,16 @@ function _InitMoveInPlace(rt: DecompRuntime, npc: ObjectEvent, dir: number, anim
   // figeait sur la frame de MARCHE (cmd0). C'était le « PNJ figé en marche » du greeting mère
   // (LittlerootTown_Movement_MomApproachPlayerAtTruck → walk_in_place_faster_left).
   _npcStartStepAnimWithNum(rt, npc, animNum);
+  // 1:1 décomp :5709 `sprite->animPaused = FALSE` — LA ligne qui fait jouer l'anim
+  // in-place : notre modèle NPC est un stop-motion pausé en permanence (seek par pas,
+  // cf. _npcEndWalkAnim) et la chaîne du seek FINIT par animPaused=true → sans cette
+  // dépause, le tick global (rt.animateSprites, 1:1 OverworldBasic) ne déroule jamais
+  // les AnimCmd pendant la durée → « Birch ne court pas sur place » (prouvé sonde live :
+  // anim=11 cmd=1 paused=TRUE). Step1/_npcEndWalkAnim re-pause à la fin (1:1 :5719).
+  if (npc.spriteId >= 0) {
+    const _sIMP = rt.gSprites[npc.spriteId];
+    if (_sIMP) _sIMP.animPaused = false;
+  }
   npc.actionStep = 1;
   npc.actionTimer = duration;
 }
