@@ -55,6 +55,7 @@ import {
   CameraUpdate,
   SetCameraTopLeftCoords,
   GetCameraTopLeftCoords,
+  SetSpritePosToMapCoords,
   gFieldCamera,
   gTotalCamera,
   IsBgRedrawPending,
@@ -140,7 +141,6 @@ import {
   getPendingWarp,
   setPendingWarp,
   getPlayerCoordsFromWarp,
-  GetAdjustedInitialDirection,
   GetDynamicWarp,
 } from '../../src/overworld';
 import { getExitTaskKindFor, getMetatileBehaviorAtPlayerPos, FillPalBufferWhite, FieldCB_SpinEnterWarp } from '../../src/field_screen_effect';
@@ -1102,6 +1102,37 @@ export class OverworldScene extends Phaser.Scene {
     if (returnToField) {
       gSaveBlock1Ptr.pos.x = savedCamPosX;
       gSaveBlock1Ptr.pos.y = savedCamPosY;
+      // FIX D-2 (cadrage post-combat) — 1:1 décomp `SpawnObjectEventOnReturnToField`
+      // (event_object_movement.c:1772-1776) : au retour au field, l'ancre écran d'un object
+      // event restauré est dérivée du `gSaveBlock1Ptr->pos` PRÉSERVÉ (= la CAMÉRA) :
+      //     GetMapCoordsFromSpritePos(x + currentCoords.x, y + currentCoords.y, &sprite->x, &sprite->y);
+      //     sprite->x += 8;
+      // et `ReturnToFieldLocal` (overworld.c:1955-1962) n'appelle JAMAIS InitPlayerAvatar — donc
+      // le décomp ne touche pas à `pos`, le cadrage d'avant le combat est conservé tel quel.
+      // Notre InitPlayerAvatar (adaptation port : il RECRÉE le sprite joueur) fait
+      // `SetCameraTopLeftCoords(mapX, mapY)` (field_player_avatar.ts:908) — soit `pos = coords
+      // JOUEUR`, `_camPos` étant l'alias de `gSaveBlock1Ptr.pos` (field_camera.ts:669-680) — PUIS
+      // calcule worldX/Y contre ce pos (:915-918). Restaurer pos après l'appel (ci-dessus) répare
+      // le BG (DrawWholeMapView lit pos) mais PAS l'ancre du joueur, déjà figée « joueur au centre
+      // de l'écran » : c'est le recadrage constaté au retour du combat starter (le joueur a été
+      // téléporté par `setobjectxy LOCALID_PLAYER, 6, 13` sans que la caméra suive — 1:1
+      // MoveObjectEventToMapCoords → CameraObjectReset, event_object_movement.c:2143).
+      // On re-dérive donc l'ancre contre le pos caméra restauré, ici — c.-à-d. AVANT
+      // `InitCameraUpdateCallback` (plus bas) : sinon CameraObject_Init s'ancrerait sur la valeur
+      // périmée et la caméra scrollerait du delta au premier UpdateObjectEvents.
+      const playerSlotRTF = gObjectEvents[gPlayerAvatar.objectEventId];
+      if (playerSlotRTF) {
+        const anchor = SetSpritePosToMapCoords(playerSlotRTF.currentCoordsX, playerSlotRTF.currentCoordsY);
+        // Même convention que InitPlayerAvatar / MoveObjectEventToMapCoords (event_object_movement
+        // .ts:9146) : worldX = destX + 8, worldY = destY (le `+16+ctcvY` vit dans sprite.y2).
+        playerSlotRTF.worldX = anchor.x + 8;
+        playerSlotRTF.worldY = anchor.y;
+        const playerSpriteRTF = this.rt.gSprites[gPlayerAvatar.spriteId];
+        if (playerSpriteRTF) {
+          playerSpriteRTF.x = playerSlotRTF.worldX;
+          playerSpriteRTF.y = playerSlotRTF.worldY;
+        }
+      }
     }
 
     // FIX 2 (Bug 2b/3b) — 1:1 décomp `InitObjectEventsLocal` (overworld.c:2172-2174) :
@@ -1128,6 +1159,22 @@ export class OverworldScene extends Phaser.Scene {
         await PreloadObjectEventGraphics(GetPlayerAvatarGraphicsIdByStateId(state))
           .catch((e) => console.error('[loadAndInitMap] preload gfx état monté (surf/underwater)', e));
       }
+      // FIX D-1 (direction d'arrivée) — 1:1 décomp `InitObjectEventsLocal` (overworld.c:2171-2177) :
+      //     player = GetInitialPlayerAvatarState();            // :2172 → GetAdjustedInitialDirection (:906)
+      //     InitPlayerAvatar(x, y, player->direction, gender); // :2173 ← la direction d'arrivée est posée ICI
+      //     SetPlayerAvatarTransitionFlags(player->transitionFlags);
+      //     ResetInitialPlayerAvatarState();
+      //     TrySpawnObjectEvents(0, 0);
+      //     TryRunOnWarpIntoMapScript();                       // :2177 ← DONC le script OnWarp a le dernier mot
+      // Notre InitPlayerAvatar a déjà spawné le sprite (avec `spawnDir`) quelques lignes plus haut :
+      // on applique la direction ajustée au MÊME point du flux, donc AVANT le
+      // `TryRunOnWarpIntoMapScript()` de cette fonction. Avant ce fix l'ajustement vivait dans
+      // `executeWarp`, APRÈS le retour de `loadAndInitMap` — donc APRÈS TryRunOnWarpIntoMapScript —
+      // et ÉCRASAIT le `turnobject LOCALID_PLAYER, DIR_NORTH` des tables ON_WARP_INTO_MAP_TABLE
+      // (LittlerootTown_ProfessorBirchsLab_OnWarp → EventScript_SetPlayerPosForReceiveStarter,
+      // data/maps/LittlerootTown_ProfessorBirchsLab/scripts.inc) : après `warp BIRCHS_LAB, 6, 5`
+      // (Route101/scripts.inc:242) le joueur arrivait REGARD SUD, dos au prof.
+      SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], initialState.direction);
       SetPlayerAvatarTransitionFlags(initialState.transitionFlags);
       ResetInitialPlayerAvatarState();
     }
@@ -1997,18 +2044,13 @@ export class OverworldScene extends Phaser.Scene {
         await FieldSetDoorOpened(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
       }
 
-      // 1:1 décomp `InitObjectEventsLocal` → `GetInitialPlayerAvatarState` →
-      // `GetAdjustedInitialDirection` (overworld.c:929) : ajuste le facing du
-      // player selon le metatile_behavior à la dest position. Pour les
-      // MB_NON_ANIMATED_DOOR / MB_ANIMATED_DOOR → DIR_SOUTH, pour MB_DEEP_SOUTH_WARP
-      // → DIR_NORTH, pour MB_*_ARROW_WARP → direction opposée à l'arrow, pour
-      // MB_LADDER → preserve l'ancien facing. Appliqué avant Phase 5 pour que
-      // le push 1 case se fasse dans la bonne direction.
-      const previousFacing = GetPlayerFacingDirection();
-      const adjustedDir = GetAdjustedInitialDirection(postWarpBehavior, previousFacing);
-      // 1:1 décomp : pa.facing n'existe PAS — source unique slot.facingDirection
-      // via SetObjectEventDirection (= maintient invariant previousMovementDirection).
-      SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], adjustedDir);
+      // FIX D-1 : l'ajustement `GetAdjustedInitialDirection` (overworld.c:929) N'EST PLUS fait
+      // ici. 1:1 décomp, la direction d'arrivée est posée par `InitObjectEventsLocal` à
+      // l'InitPlayerAvatar (overworld.c:2172-2173), AVANT `TryRunOnWarpIntoMapScript()` (:2177) —
+      // donc dans `loadAndInitMap` (cf. FIX D-1 là-bas). L'appliquer ICI, après le retour de
+      // loadAndInitMap, écrasait le `turnobject` des tables ON_WARP_INTO_MAP_TABLE.
+      // Les exit-tasks ci-dessous lisent donc le facing COURANT (= 1:1 Task_ExitNonAnimDoor,
+      // field_screen_effect.c:386) ou DIR_SOUTH en dur (= 1:1 Task_ExitDoor, :338).
 
       // ─── Phase 4 : fade in (= 1:1 décomp `WarpFadeInScreen` field_screen_effect.c:74) ─
       // L'ordre 1:1 décomp :
@@ -2085,9 +2127,10 @@ export class OverworldScene extends Phaser.Scene {
         // [M3-C3.2c] 1:1 STRICT décomp `Task_ExitDoor` case 1 (field_screen_effect.c:338) :
         // ObjectEventSetHeldMovement(player, WALK_NORMAL_DOWN) via forceMovement → held
         // movement avance worldY (_NpcTakeStep) → le CameraObject suit. La scène attend
-        // forceMovement===DIR_NONE. (adjustedDir = DIR_SOUTH pour une door, cf. GetAdjusted
-        // InitialDirection.) Remplace l'applyMovement legacy (driver mort → desync).
-        gPlayerAvatar.forceMovement = adjustedDir;
+        // forceMovement===DIR_NONE. Remplace l'applyMovement legacy (driver mort → desync).
+        // 1:1 STRICT : `Task_ExitDoor` HARDCODE `MOVEMENT_ACTION_WALK_NORMAL_DOWN`
+        // (field_screen_effect.c:338) — pas de dérivation depuis le facing.
+        gPlayerAvatar.forceMovement = DIR_SOUTH;
         await this.waitForForceMovementDone();
         // case 2 : FieldAnimateDoorClose à la door position originale +
         // ObjectEventClearHeldMovementIfFinished (= le held movement est déjà
@@ -2109,8 +2152,10 @@ export class OverworldScene extends Phaser.Scene {
         LockPlayerFieldControls();
         SetPlayerVisibility(this.rt, true);
         // [M3-C3.2c] 1:1 STRICT décomp `Task_ExitNonAnimDoor` case 1 (field_screen_effect.c:386) :
-        // ObjectEventSetHeldMovement(player, GetWalkNormalMovementAction(facing)) via forceMovement.
-        gPlayerAvatar.forceMovement = adjustedDir;
+        // ObjectEventSetHeldMovement(player, GetWalkNormalMovementAction(GetPlayerFacingDirection()))
+        // → on lit le facing COURANT (posé par GetAdjustedInitialDirection au spawn, éventuellement
+        // re-tourné par le script ON_WARP_INTO_MAP_TABLE de la map d'arrivée), pas un snapshot.
+        gPlayerAvatar.forceMovement = GetPlayerFacingDirection();
         await this.waitForForceMovementDone();
         // case 2 : IsPlayerStandingStill → case 3 UnfreezeObjectEvents.
         UnfreezeObjectEvents();

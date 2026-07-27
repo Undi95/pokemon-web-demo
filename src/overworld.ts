@@ -1727,15 +1727,24 @@ function GetAdjustedInitialTransitionFlags(
 }
 
 /** 1:1 STRICT décomp `static struct InitialPlayerAvatarState *GetInitialPlayerAvatarState(void)`
- *  (overworld.c:899-908). Renvoie l'état à appliquer à l'arrivée (via SetPlayerAvatarTransitionFlags).
- *  Le port calcule `transitionFlags` 1:1 ; la direction (GetAdjustedInitialDirection : nombreux
- *  MetatileBehavior_Is*Warp) n'est PAS re-dérivée ici — le harness passe déjà la direction de spawn
- *  du warp à InitPlayerAvatar → dette documentée (n'affecte pas l'état monté = le bug traité). */
+ *  (overworld.c:899-908) :
+ *  ```c
+ *  u8 transitionFlags = GetAdjustedInitialTransitionFlags(&sInitialPlayerAvatarState, metatileBehavior, mapType);
+ *  playerStruct.transitionFlags = transitionFlags;
+ *  playerStruct.direction = GetAdjustedInitialDirection(&sInitialPlayerAvatarState, transitionFlags, metatileBehavior, mapType);
+ *  sInitialPlayerAvatarState = playerStruct;
+ *  ```
+ *  ⚠️ ORDRE 1:1 : `GetAdjustedInitialDirection` lit `playerStruct->direction` de l'ANCIEN
+ *  `sInitialPlayerAvatarState` (branche MB_LADDER = preserve le facing d'avant le warp, posé par
+ *  `StoreInitialPlayerAvatarState`) — l'écrasement (`= playerStruct`, :907) vient APRÈS. */
 export function GetInitialPlayerAvatarState(): { direction: number; transitionFlags: number } {
   const mapType = gMapHeader?.mapType;  // 1:1 GetCurrentMapType() ; le port lit le string du header courant.
   const metatileBehavior = GetCenterScreenMetatileBehavior();
   const transitionFlags = GetAdjustedInitialTransitionFlags(sInitialPlayerAvatarState, metatileBehavior, mapType);
+  // 1:1 décomp overworld.c:906 (calculé AVANT l'assignation, cf. note d'ordre ci-dessus).
+  const direction = GetAdjustedInitialDirection(metatileBehavior, sInitialPlayerAvatarState.direction);
   sInitialPlayerAvatarState.transitionFlags = transitionFlags;
+  sInitialPlayerAvatarState.direction = direction;
   return sInitialPlayerAvatarState;
 }
 
