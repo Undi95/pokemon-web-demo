@@ -939,7 +939,10 @@ const ScrCmd_waitse: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => !(_dg(
 // Jouer la fanfare sur le slot dédié rend aussi waitfanfare correct (tient le texte).
 const ScrCmd_playfanfare: ScrCmdFunc = (ctx) => { PlayFanfare(ScriptReadHalfword(ctx)); return false; };
 const ScrCmd_waitfanfare: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => _dg()?.IsFanfareTaskInactive?.() ?? true); return true; };
-const ScrCmd_playbgm: ScrCmdFunc = (ctx) => { const song = ScriptReadHalfword(ctx); ScriptReadByte(ctx); _dg()?.m4aSongNumStart?.(song, true); return false; };
+const ScrCmd_playbgm: ScrCmdFunc = (ctx) => { const song = ScriptReadHalfword(ctx); ScriptReadByte(ctx);
+  // 🔬 SONDE BGM tuto (retirer après diag) : l'opcode est-il atteint, avec quel id, la clé existe-t-elle ?
+  console.warn(`[playbgm] song=${song} m4aSongNumStart=${typeof _dg()?.m4aSongNumStart}`);
+  _dg()?.m4aSongNumStart?.(song, true); return false; };
 const ScrCmd_playmoncry: ScrCmdFunc = (ctx) => { const sp = VarGet(ScriptReadHalfword(ctx)); VarGet(ScriptReadHalfword(ctx)); _dg()?.PlayCryInternal?.(sp, 0, 64, 0, 0); return false; };
 const ScrCmd_waitmoncry: ScrCmdFunc = (ctx) => { SetupNativeScript(ctx, () => _dg()?.IsCryFinished?.() ?? true); return true; };
 

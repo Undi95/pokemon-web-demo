@@ -92,6 +92,7 @@ import type { WarpKind } from './field_control_avatar';
 import { ScriptContext_Snapshot, ScriptContext_Restore } from './script';
 import { TrySpawnTallGrassOnReturnToField } from './field_effect_helpers';
 import { GetOverworldHost, SetReturnToFieldFn, GetMainCB2Fn } from './engine/overworld-host';
+import { setFieldCameraSuspended } from './field_camera';
 
 // ─── Dépendances des corps CB2_NewGame / CB2_ContinueSavedGame : LAZY (anti-TDZ) ──
 // overworld.ts est évalué TRÈS TÔT au boot. Importer STATIQUEMENT ces ~15 modules
@@ -1490,6 +1491,12 @@ export async function ReturnToFieldFromBattleOrMenu(): Promise<void> {
   // → registres BG VOFS=0 → map rendue ~3 cases trop haut (bug reproduit en
   // ouvrant le sac/pokémon puis en ressortant).
   GetOverworldHost().rt.SetVBlankCallback(GetOverworldHost()._fieldVBlankCB);
+  // Release du suspend posé par CB2_ChooseStarter (starter_choose.ts:390) —
+  // ICI et pas à la sortie de l'écran starter : le field redevient propriétaire
+  // des BG à cet instant précis (VBlank field re-armé). Sans release, VOFS
+  // gelés à 0 → overworld décalé de 40 px à vie ([[warp-stale-camera-glitch]]
+  // 3e chemin) ; release trop tôt → fond du starter décalé avant le combat.
+  setFieldCameraSuspended(false);
   // 1:1 décomp `CB2_ReturnToField` finit par `SetMainCallback2(CB2_Overworld)` :
   // rendre la main à la boucle OW. SANS ça, callback2 reste = le savedCallback
   // one-shot du retour combat (ReturnFromBattleToOverworld) → l'OW est rendu UNE
