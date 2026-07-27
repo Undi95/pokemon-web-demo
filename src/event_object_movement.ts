@@ -5197,9 +5197,21 @@ function _makeWalkInPlaceAction(dir: number, animNum: number, duration: number, 
     if (npc.actionStep === 0) {
       _InitMoveInPlace(rt, npc, dir, animNum, duration);
     }
-    return slow
+    const done = slow
       ? _MovementAction_WalkInPlaceSlow_Step1(rt, npc)
       : _MovementAction_WalkInPlace_Step1(rt, npc);
+    // ⚠️ Le décomp avance l'anim via `AnimateSprites()` (tick global par frame, overworld.c:1467
+    // OverworldBasic) ; notre port ne tick PAS les sprites d'object event ailleurs (UpdateObjectEvents
+    // ne tick que les `inanimate`) → même précédent/justification que `_makeAcroPopWheelieAction`
+    // (ci-dessous) : on avance l'anim ICI, une fois par frame, APRÈS l'action (ordre 1:1 : l'action
+    // tourne dans le callback field, AnimateSprites après). Sans ça, InitMoveInPlace pose UNE seule
+    // frame et rien ne la fait avancer pendant la durée → walk_in_place FIGÉ (Birch Route101,
+    // walk-in-place joueur au tuto). Le gate `animPaused` est respecté par AnimateSprite : à la
+    // dernière frame, Step1 vient de poser animPaused=TRUE → no-op, exactement comme le décomp.
+    // (Pour SLOW, l'`animDelayCounter++` posé par WalkInPlaceSlow_Step1 est bien consommé ici.)
+    const sprite = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
+    if (sprite && sprite.anims && !npc.inanimate) AnimateSprite(rt, sprite as never);
+    return done;
   };
 }
 
