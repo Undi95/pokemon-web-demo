@@ -1113,6 +1113,11 @@ export function IsFanfareTaskInactive(): boolean {
   IsSEPlaying, IsCryPlaying, IsCryFinished, IsFanfareTaskInactive,
   // T5 shiny : acces par TAG (battle_anim_throw _LoadGoldStarsGfx, anti-cycle).
   GetSpriteTileStartByTag, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
+  // BUG 3 tuto Birch (dette d'origine byte-VM) : ScrCmd_playbgm/playmoncry/
+  // fadedefaultbgm/fadenewbgm appellent `_dg()?.X?.()` — ces clés n'ont JAMAIS
+  // été exposées → no-op silencieux (papa-TV et Birch-à-l'aide muets). Les
+  // fonctions existent ci-dessus (:892/:1052/:2378) : on les publie.
+  m4aSongNumStart, PlayCryInternal, FadeOutBGM,
 };
 
 // ─── Side-effect imports : load modules qui s'auto-registrent sur globalThis ─
