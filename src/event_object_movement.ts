@@ -5196,10 +5196,6 @@ function _makeWalkInPlaceAction(dir: number, animNum: number, duration: number, 
   return (rt, npc) => {
     if (npc.actionStep === 0) {
       _InitMoveInPlace(rt, npc, dir, animNum, duration);
-      // 🔬 SONDE WIP (retirer après diag) : état d'anim au départ de chaque walk-in-place.
-      const s0 = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
-      console.warn(`[walk-in-place] gfx=${npc.graphicsId} animNum=${animNum} anims=${s0?.anims ? s0.anims.length : 'NULL'} `
-        + `animCmd=${s0?.anims?.[animNum] ? 'OK' : 'ABSENT'} paused=${s0?.animPaused} inanimate=${npc.inanimate}`);
     }
     const done = slow
       ? _MovementAction_WalkInPlaceSlow_Step1(rt, npc)

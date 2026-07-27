@@ -22,7 +22,6 @@ import { VarGet, FlagSet, FlagClear } from './engine/script/script-vars';
 import { MAP_OFFSET, gMapHeader } from './fieldmap';
 import { SetObjectEventSpritePosToMapCoords, TrySpawnObjectEvent, gObjectEvents, MoveObjectEventToMapCoords } from './event_object_movement';
 import { gSaveBlock1Ptr } from './engine/save/save-block-state';
-import { GetSaveBlock1 } from './save';
 import { GetCurrentMap, SetObjEventTemplateCoords } from './load_save';
 import { getRuntime } from '../harness/runtime/decomp-globals';
 import { DestroySprite } from './sprite';
@@ -37,48 +36,6 @@ export function doSetObjectXY(localIdArg: string, x: number, y: number): void {
   const npc = findNpcByLocalId(localIdArg);
   if (!npc) return;
   MoveObjectEventToMapCoords(npc, x + MAP_OFFSET, y + MAP_OFFSET);
-  if (npc.isPlayer) _armPosProbe();  // 🔬 sonde re-test tuto (diag, à retirer)
-}
-
-// 🔬 SONDE Birch (retirer après diag) : armée au 1er setobjectxy joueur (= tuto).
-// Hurle avec stack sur CHAQUE écriture de pos qui suit — setters x/y ET
-// remplacement de l'objet pos entier (block1.pos = {…}, invisible aux setters).
-// Bornée à 40 logs pour ne pas noyer la console après le warp labo.
-let _posProbeArmed = false;
-let _posProbeLogs = 0;
-function _posProbeLog(msg: string): void {
-  const stack = new Error().stack ?? '';
-  // Recalibrage : les writes de CameraMove (marche normale, 1-2/pas) = bruit
-  // connu qui brûlait les 40 logs avant Route 101 — on ne trace que le reste.
-  if (stack.includes('CameraMove')) return;
-  if (_posProbeLogs++ < 40) console.error(`[POS-PROBE] ${msg}\n`, stack);
-}
-function _armPosProbe(): void {
-  _posProbeLogs = 0;  // réarme le quota à chaque setobjectxy joueur (tuto = le dernier gagne)
-  if (_posProbeArmed) return;
-  _posProbeArmed = true;
-  const blk = GetSaveBlock1() as unknown as { pos: { x: number; y: number } };
-  const hook = (o: { x: number; y: number }): void => {
-    let _x = o.x, _y = o.y;
-    Object.defineProperty(o, 'x', {
-      get: () => _x, configurable: true, enumerable: true,
-      set: (v: number) => { if (v !== _x) _posProbeLog(`pos.x ${_x}→${v}`); _x = v; },
-    });
-    Object.defineProperty(o, 'y', {
-      get: () => _y, configurable: true, enumerable: true,
-      set: (v: number) => { if (v !== _y) _posProbeLog(`pos.y ${_y}→${v}`); _y = v; },
-    });
-  };
-  hook(blk.pos);
-  let _p = blk.pos;
-  Object.defineProperty(blk, 'pos', {
-    get: () => _p, configurable: true, enumerable: true,
-    set: (v: { x: number; y: number }) => {
-      _posProbeLog(`pos REMPLACÉ (${_p.x},${_p.y})→(${v.x},${v.y})`);
-      _p = v; hook(_p);
-    },
-  });
-  console.warn('[POS-PROBE] armée — toute écriture de gSaveBlock1Ptr.pos sera tracée (40 max)');
 }
 
 /** 1:1 décomp `ScrCmd_setobjectxyperm` → SetObjEventTemplateCoords (persistant). */
