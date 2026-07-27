@@ -755,6 +755,18 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
         }
       }
     }
+    // FIN de l'émulation `SetMainCallback2` posée à l'init de l'écran (:388-390) :
+    // à cet instant le CB2 **et** le VBlank passent au combat (1:1 décomp
+    // `CB2_StartFirstBattle` → `CB2_InitBattle`), donc le VBlank FIELD
+    // (`_fieldVBlankCB` → `FieldUpdateBgTilemapScroll`) cesse d'être appelé et n'a
+    // plus à être bridé. Sans ce release symétrique, `_fieldCameraSuspended` reste
+    // TRUE pour TOUTE la partie : FieldUpdateBgTilemapScroll early-return
+    // (field_camera.ts:353) → les registres BG1/2/3 H/VOFS ne sont plus jamais
+    // réécrits et restent à 0 au lieu de `sVerticalCameraPan(32) + yPixelOffset + 8`
+    // = 40 → tout l'overworld d'après le tuto (arrivée labo de Birch) rend 40 px
+    // (2,5 métatuiles) décalé. Cf. [[warp-stale-camera-glitch]] : « VOFS=0 au lieu
+    // de 40 » — 3e chemin de cette même famille de bug.
+    setFieldCameraSuspended(false);
     StartFirstBattle();
     _firstBattleStarted = true;
     _done = true;
