@@ -3352,7 +3352,17 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     if (npc.walkFramesLeft === 0) {
       npc.walkFramesLeft = duration;
       npc.walkDirection = npc.facingDirection;
-      _npcStartWalkAnim(rt, npc, npc.facingDirection);
+      // 1:1 décomp : chaque vitesse route vers SON action → l'anim de SA vitesse
+      // (MovementType_JogInPlace_Step0 → GetWalkInPlaceFastMovementAction →
+      // InitMoveInPlace(GetMoveDirectionFastAnimNum), c:4440-4447). L'ex-appel
+      // _npcStartWalkAnim posait l'anim NORMALE (8f/cmd) pour TOUTES les vitesses →
+      // avec duration 8 (jog), la cmd0 (8 ticks) expirait PILE au re-seek du cycle
+      // suivant = résonance parfaite, anim visuellement FIGÉE (Birch/Zigzagoon
+      // Route101 post-cinématique, prouvé sonde frame-par-frame).
+      let animNum = GetMoveDirectionAnimNum(npc.facingDirection);
+      if (mt.startsWith('MOVEMENT_TYPE_JOG_IN_PLACE_')) animNum = GetMoveDirectionFastAnimNum(npc.facingDirection);
+      else if (mt.startsWith('MOVEMENT_TYPE_RUN_IN_PLACE_')) animNum = GetMoveDirectionFasterAnimNum(npc.facingDirection);
+      _npcStartStepAnimWithNum(rt, npc, animNum);
     }
     npc.walkFramesLeft--;
     // 1:1 décomp `MovementAction_WalkInPlace_Step1` (5713) :
