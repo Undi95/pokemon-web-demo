@@ -5197,21 +5197,24 @@ function _makeWalkInPlaceAction(dir: number, animNum: number, duration: number, 
     if (npc.actionStep === 0) {
       _InitMoveInPlace(rt, npc, dir, animNum, duration);
     }
-    const done = slow
+    // ⚠️ NE PAS avancer l'anim ici. Le défilement des AnimCmd pendant `data[3]` frames est fait par
+    // `AnimateSprites()` — 1:1 décomp overworld.c:1469 (`OverworldBasic`), et notre port L'A DÉJÀ :
+    // `MainCB2_Overworld` appelle `rt.animateSprites()` dans son slot AnimateSprites
+    // (harness/scenes/OverworldScene.ts:840, APRÈS TickObjectEventMovements = ordre décomp), qui
+    // délègue à `tickSpriteAnims` (src/sprite.ts:2098) → `AnimateSprite` pour TOUT sprite `inUse`
+    // ayant une table `.anims` — les object events inclus. Mesuré en jeu : les `animCmdIndex` /
+    // `animDelayCounter` des sprites NPC avancent chaque frame sans qu'aucune action de mouvement ne
+    // tourne. C'est CE tick qui rend la marche visible (les pixels arrivent par ApplyAnimFrame →
+    // RequestSpriteFrameImageCopy → ProcessSpriteCopyRequests dans l'OBJ VRAM ; l'`oam.tileId` d'un
+    // NPC ne bouge jamais) ; `_npcSetStepAnim`/SeekSpriteAnim au Step0 ne fait que poser animNum + la
+    // PHASE (alternation animPos {1,3,0,2}). Un 2e AnimateSprite ici = 2 cmds consommées par frame :
+    // walk_in_place_faster (anim 2f/cmd, durée 4) devient 1 pose PAR FRAME = strobe 60 Hz que l'œil
+    // moyenne en flou statique, et le `animDelayCounter++` de `MovementAction_WalkInPlaceSlow_Step1`
+    // (event_object_movement.c:5724), calibré pour annuler EXACTEMENT UN décrément par frame, ne
+    // ralentit plus le bump mur de moitié.
+    return slow
       ? _MovementAction_WalkInPlaceSlow_Step1(rt, npc)
       : _MovementAction_WalkInPlace_Step1(rt, npc);
-    // ⚠️ Le décomp avance l'anim via `AnimateSprites()` (tick global par frame, overworld.c:1467
-    // OverworldBasic) ; notre port ne tick PAS les sprites d'object event ailleurs (UpdateObjectEvents
-    // ne tick que les `inanimate`) → même précédent/justification que `_makeAcroPopWheelieAction`
-    // (ci-dessous) : on avance l'anim ICI, une fois par frame, APRÈS l'action (ordre 1:1 : l'action
-    // tourne dans le callback field, AnimateSprites après). Sans ça, InitMoveInPlace pose UNE seule
-    // frame et rien ne la fait avancer pendant la durée → walk_in_place FIGÉ (Birch Route101,
-    // walk-in-place joueur au tuto). Le gate `animPaused` est respecté par AnimateSprite : à la
-    // dernière frame, Step1 vient de poser animPaused=TRUE → no-op, exactement comme le décomp.
-    // (Pour SLOW, l'`animDelayCounter++` posé par WalkInPlaceSlow_Step1 est bien consommé ici.)
-    const sprite = npc.spriteId >= 0 ? rt.gSprites[npc.spriteId] : null;
-    if (sprite && sprite.anims && !npc.inanimate) AnimateSprite(rt, sprite as never);
-    return done;
   };
 }
 
